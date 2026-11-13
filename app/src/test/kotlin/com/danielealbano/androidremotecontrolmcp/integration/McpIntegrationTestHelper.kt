@@ -29,6 +29,7 @@ import com.danielealbano.androidremotecontrolmcp.mcp.tools.LoggedToolRegistrar
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.McpToolUtils
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.ShellToolContext
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerAppManagementTools
+import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerBatchActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerCameraTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerFileTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerGestureTools
@@ -319,6 +320,8 @@ object McpIntegrationTestHelper {
         registerGestureTools(registrar, deps.actionExecutor, toolNamePrefix, perms)
         registerInteractionToolBundle(registrar, deps, toolNamePrefix, perms)
         registerNonAccessibilityTools(registrar, deps, toolNamePrefix, perms)
+        // Last, as in McpToolRegistration: the batch tool dispatches through the registrar.
+        registerBatchActionTools(registrar, toolNamePrefix, perms)
     }
 
     private fun registerInteractionToolBundle(

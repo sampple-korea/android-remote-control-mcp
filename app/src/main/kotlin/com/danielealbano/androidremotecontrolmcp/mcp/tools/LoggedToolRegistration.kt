@@ -19,6 +19,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 private const val NANOS_PER_MILLI = 1_000_000L
@@ -157,6 +158,21 @@ class LoggedToolRegistrar internal constructor(
     ) : this(server, serverLog, toolCallIndicator, inFlightToolCalls, { currentRequestHandlerExtra()?.requestId })
 
     /**
+     * The raw handlers passed to [addTool], by un-prefixed tool name. Registration completes before the
+     * server serves, so by call time this holds every registered tool.
+     */
+    private val handlersByToolName = ConcurrentHashMap<String, suspend (CallToolRequest) -> CallToolResult>()
+
+    /**
+     * The raw handler registered for [toolName] (un-prefixed), or null when no tool was registered under
+     * that name (unknown name, or the tool is disabled in the tool permissions). Lets a tool dispatch to
+     * other tools in-process (the batch actions tool): the returned handler is the one handed to [addTool],
+     * WITHOUT the logging/cancellation wrappers — the dispatching call itself is logged and cancellable as
+     * a whole, and only it appears in the server log.
+     */
+    fun handlerFor(toolName: String): (suspend (CallToolRequest) -> CallToolResult)? = handlersByToolName[toolName]
+
+    /**
      * [Server.addTool] with per-call TOOL_CALL logging, cancellable by `notifications/cancelled` (see
      * [cancellableToolHandler]). [toolName] is the un-prefixed display name.
      */
@@ -167,6 +183,7 @@ class LoggedToolRegistrar internal constructor(
         inputSchema: ToolSchema,
         handler: suspend (CallToolRequest) -> CallToolResult,
     ) {
+        handlersByToolName[toolName] = handler
         val cancellable = cancellableToolHandler(inFlightToolCalls, currentRequestId, handler)
         server.addTool(name = name, description = description, inputSchema = inputSchema) { request ->
             // The caller is bound to this request's session, whether the session runs the call inline or launches it

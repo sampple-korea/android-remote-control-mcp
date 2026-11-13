@@ -30,12 +30,13 @@ This document provides a comprehensive reference for all MCP tools available in 
 17. [Location Tools](#13-location-tools)
 18. [Sharing Tools](#14-sharing-tools)
 19. [Shell Tools](#15-shell-tools)
+20. [Batch Tools](#16-batch-tools)
 
 ---
 
 ## Overview
 
-The MCP server exposes 65 tools via the JSON-RPC 2.0 protocol, organized into 15 categories:
+The MCP server exposes 66 tools via the JSON-RPC 2.0 protocol, organized into 16 categories:
 
 | Category | Tools | Plan |
 |----------|-------|------|
@@ -54,6 +55,7 @@ The MCP server exposes 65 tools via the JSON-RPC 2.0 protocol, organized into 15
 | Location | `android_get_location` | 43 |
 | Sharing | `android_get_shared_content`, `android_share_file_via_web` | 48 |
 | Shell | `android_shell_exec`, `android_shell_start`, `android_shell_output`, `android_shell_kill`, `android_shell_list` | 68 |
+| Batch | `android_batch_actions` | - |
 
 ## Tool Naming Convention
 
@@ -4145,3 +4147,71 @@ Lists the running and the kept finished processes, oldest first.
 - **Authentication**: shell tools do not require authentication beyond the server's own; keep bearer token or OAuth authentication on whenever the server can be reached from other devices.
 - **Privacy Mode** does not apply to shell tools.
 - **Audit**: every elevated command is in the server log.
+
+---
+
+## 16. Batch Tools
+
+### `android_batch_actions`
+
+**Description**: Runs several action tools in order in one call and returns every step's result together, so a whole interaction sequence (open an app, wait for a node, tap it, type text, press a key) costs a single round trip. Each step is dispatched to the named tool's own handler, exactly as if it had been called directly.
+
+**Parameters**:
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `actions` | array | Yes | — | The actions to run, in order; at most 50. Each item is an object with `tool` (the un-prefixed tool name, e.g. `"tap"`; the device prefix may be included and is stripped) and optional `arguments` (that tool's arguments object, exactly as in a direct call; omit for tools that take no parameters). |
+| `continue_on_error` | boolean | No | `false` | Keep running the remaining actions after a failing step. By default the batch stops at the first failure and reports the steps that ran. |
+| `return_screen_state` | boolean | No | `false` | Append a fresh `android_get_screen_state` capture (no diff) after the last step. Off by default: prefer a separate call. |
+
+**Allowlist**: Only manipulation tools may run in a batch:
+
+- Touch actions: `tap`, `long_press`, `double_tap`, `swipe`, `scroll`
+- Gestures: `pinch`, `custom_gesture`
+- Node actions: `click_node`, `long_click_node`, `perform_node_action`, `tap_node`, `scroll_to_node`, `scroll_node`
+- Text input: `type_append_text`, `type_insert_text`, `type_replace_text`, `type_clear_text`, `press_key`
+- System actions: `press_back`, `press_home`, `press_recents`, `open_notifications`, `open_quick_settings`, `dismiss_keyboard`
+- Utilities: `wait_for_node`, `wait_for_idle`, `set_clipboard`
+- App management: `open_app`
+
+Anything else is refused: read-only tools (`get_screen_state`, `find_nodes`, `get_node_details`, `get_clipboard`, the `list_*` tools), the file, shell, camera, intent, notification and location tools, `close_app` (it kills the app's process), and `batch_actions` itself (batches cannot nest). The whole batch is validated before anything runs, so a step naming a tool outside the allowlist fails the call with `INVALID_PARAMS` without executing any step. A step naming an allowed tool that is not registered (for example because it is disabled in Settings → MCP Tools) fails that step instead.
+
+**Behavior**:
+
+- Steps run in order and are NOT rolled back when a later step fails.
+- A step fails when its tool returns an error result or throws; with `continue_on_error=false` (the default) the batch stops there, and the result is an error result whenever any executed step failed.
+- The result text starts with a summary line (`batch: N/M steps succeeded`, plus `(stopped at step K)` when the batch stopped early), followed by one `--- step i/M: <tool> — OK|FAILED` section per executed step holding that step's own result text.
+- Steps never call `get_screen_state`, so a batch does not touch the diff baseline. With `return_screen_state=true` the appended capture is a regular fresh capture: like a direct call, it becomes the new diff baseline.
+- Only the `batch_actions` call itself appears in the server log as a tool call; the steps run through the tools' handlers without their own log entries.
+
+**Example**:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "tools/call",
+  "params": {
+    "name": "android_batch_actions",
+    "arguments": {
+      "actions": [
+        { "tool": "open_app", "arguments": { "package_name": "com.example.app" } },
+        { "tool": "wait_for_node", "arguments": { "text": "Sign in", "timeout_ms": 5000 } },
+        { "tool": "tap_node", "arguments": { "text": "Sign in" } }
+      ]
+    }
+  }
+}
+```
+
+**Example Response**:
+
+```
+batch: 3/3 steps succeeded
+--- step 1/3: open_app — OK
+Launched com.example.app
+--- step 2/3: wait_for_node — OK
+Node appeared after 812 ms: ...
+--- step 3/3: tap_node — OK
+Tapped node ...
+```

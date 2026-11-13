@@ -94,6 +94,7 @@
     <string name="mcp_tool_wait_for_node">Wait for Node</string>
     <string name="mcp_tool_wait_for_idle">Wait for Idle</string>
     <string name="mcp_tool_get_node_details">Get Node Details</string>
+    <string name="mcp_tool_batch_actions">Batch Actions</string>
     <string name="mcp_tool_list_storage_locations">List Storage Locations</string>
     <string name="mcp_tool_list_files">List Files</string>
     <string name="mcp_tool_read_file">Read File</string>

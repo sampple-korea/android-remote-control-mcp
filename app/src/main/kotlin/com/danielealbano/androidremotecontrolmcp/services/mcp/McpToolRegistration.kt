@@ -7,6 +7,7 @@ import com.danielealbano.androidremotecontrolmcp.mcp.tools.LoggedToolRegistrar
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.ReferenceCountedToolCallIndicator
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.ShellToolContext
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerAppManagementTools
+import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerBatchActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerCameraTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerFileTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerGestureTools
@@ -86,6 +87,9 @@ class McpToolRegistration
                 toolNamePrefix,
                 perms,
             )
+            // Last on purpose: the batch tool dispatches to the other tools' handlers through the
+            // registrar at call time, so everything it may run must be registered first.
+            registerBatchActionTools(registrar, toolNamePrefix, perms)
         }
 
         private fun registerAccessibilityToolBundle(

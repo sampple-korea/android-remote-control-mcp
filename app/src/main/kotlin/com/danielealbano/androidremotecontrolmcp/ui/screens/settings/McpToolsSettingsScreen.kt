@@ -137,6 +137,7 @@ private val ALL_TOOL_CATEGORIES: List<ToolCategory> =
                 ToolEntry("wait_for_node", R.string.mcp_tool_wait_for_node),
                 ToolEntry("wait_for_idle", R.string.mcp_tool_wait_for_idle),
                 ToolEntry("get_node_details", R.string.mcp_tool_get_node_details),
+                ToolEntry("batch_actions", R.string.mcp_tool_batch_actions),
             ),
         ),
         ToolCategory(
