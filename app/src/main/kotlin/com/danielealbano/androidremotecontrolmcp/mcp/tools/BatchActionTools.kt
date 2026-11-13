@@ -357,7 +357,7 @@ private fun batchActionsProperties(): JsonObject =
                         )
                     }
                 }
-                putJsonArray("required") { add("tool") }
+                putJsonArray("required") { add(JsonPrimitive("tool")) }
             }
         }
         putJsonObject(BatchActionsHandler.PARAM_CONTINUE_ON_ERROR) {
