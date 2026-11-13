@@ -1275,6 +1275,95 @@ class CompactTreeFormatterTest {
             assertTrue(output.contains(CompactTreeFormatter.NOTE_LINE_OFFSCREEN_HINT))
         }
 
+        private val interactiveOnly = ScreenStateFormatOptions(interactiveOnly = true)
+
+        /**
+         * root (plain container, never listed) -> label (text only), panel (resource id only) ->
+         * field (editable), scroller (scrollable) -> item button (clickable).
+         */
+        private fun interactiveResult(): MultiWindowResult {
+            val root =
+                makeNode(
+                    id = "node_root",
+                    visible = true,
+                    children =
+                        listOf(
+                            makeNode(id = "node_label", text = "Title", visible = true),
+                            makeNode(
+                                id = "node_panel",
+                                resourceId = "app:id/panel",
+                                visible = true,
+                                children = listOf(makeNode(id = "node_field", editable = true, visible = true)),
+                            ),
+                            makeNode(
+                                id = "node_scroller",
+                                resourceId = "app:id/list",
+                                scrollable = true,
+                                visible = true,
+                                children =
+                                    listOf(
+                                        makeNode(id = "node_item_button", text = "Open", clickable = true, visible = true),
+                                    ),
+                            ),
+                        ),
+                )
+            return PaginationTestTrees.result(
+                WindowData(windowId = 1, windowType = "APPLICATION", packageName = "com.example.app", tree = root),
+            )
+        }
+
+        @Test
+        @DisplayName("interactive_only lists only interactive nodes")
+        fun interactiveOnlyListsOnlyInteractiveNodes() {
+            val result = interactiveResult()
+
+            val defaultOutput = formatter.formatMultiWindow(result, defaultScreenInfo)
+            assertEquals(
+                listOf("node_label", "node_panel", "node_field", "node_scroller", "node_item_button"),
+                rowIds(defaultOutput),
+            )
+
+            val output = formatter.formatMultiWindow(result, defaultScreenInfo, interactiveOnly)
+            assertEquals(listOf("node_field", "node_scroller", "node_item_button"), rowIds(output))
+            assertEquals(3, formatter.countKeptNodes(result, interactiveOnly))
+        }
+
+        @Test
+        @DisplayName("interactive_only nests an interactive node under its nearest listed ancestor")
+        fun interactiveOnlyNestsUnderNearestListedAncestor() {
+            val output = formatter.formatMultiWindow(interactiveResult(), defaultScreenInfo, interactiveOnly)
+
+            // The field's panel is not listed, so the field surfaces at the top level; the item
+            // button stays nested under its scrollable (listed) parent.
+            assertEquals(listOf("node_field", "node_scroller", "  node_item_button"), hierarchyOf(output))
+        }
+
+        @Test
+        @DisplayName("interactive_only keeps a node exposing accessibility actions")
+        fun interactiveOnlyKeepsNodesWithActions() {
+            val actionsOnly =
+                PaginationTestTrees.result(
+                    WindowData(
+                        windowId = 1,
+                        windowType = "APPLICATION",
+                        packageName = "com.example.app",
+                        tree = makeNode(id = "node_votebar", actions = listOf("Upvote"), visible = true),
+                    ),
+                )
+            val labelOnly =
+                PaginationTestTrees.result(
+                    WindowData(
+                        windowId = 1,
+                        windowType = "APPLICATION",
+                        packageName = "com.example.app",
+                        tree = makeNode(id = "node_label", text = "Title", visible = true),
+                    ),
+                )
+
+            assertEquals(1, formatter.countKeptNodes(actionsOnly, interactiveOnly))
+            assertEquals(0, formatter.countKeptNodes(labelOnly, interactiveOnly))
+        }
+
         @Test
         @DisplayName("include_hierarchy=false leaves out the hierarchy and keeps the rows")
         fun includeHierarchyFalseLeavesOutTheHierarchy() {

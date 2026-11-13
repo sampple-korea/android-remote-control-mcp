@@ -385,7 +385,21 @@ class CompactTreeFormatter
 internal fun CompactTreeFormatter.isListed(
     node: AccessibilityNodeData,
     options: ScreenStateFormatOptions,
-): Boolean = shouldKeepNode(node) && (options.includeOffscreen || node.visible)
+): Boolean =
+    shouldKeepNode(node) &&
+        (options.includeOffscreen || node.visible) &&
+        (!options.interactiveOnly || isInteractive(node))
+
+/**
+ * True when the user can interact with [node]: it is clickable, long-clickable, editable or
+ * scrollable, or it exposes accessibility actions (the target of the `interactive_only` filter).
+ */
+internal fun CompactTreeFormatter.isInteractive(node: AccessibilityNodeData): Boolean =
+    node.clickable ||
+        node.longClickable ||
+        node.editable ||
+        node.scrollable ||
+        node.actions.isNotEmpty()
 
 /** The offscreen note line matching [options]. */
 private fun offscreenNote(options: ScreenStateFormatOptions): String =

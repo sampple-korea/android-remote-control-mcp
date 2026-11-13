@@ -132,6 +132,7 @@ class GetScreenStateHandler
             ScreenStateFormatOptions(
                 includeOffscreen = McpToolUtils.optionalBoolean(arguments, PARAM_INCLUDE_OFFSCREEN, true),
                 includeHierarchy = McpToolUtils.optionalBoolean(arguments, PARAM_INCLUDE_HIERARCHY, true),
+                interactiveOnly = McpToolUtils.optionalBoolean(arguments, PARAM_INTERACTIVE_ONLY, false),
             )
 
         @Suppress("LongParameterList")
@@ -180,6 +181,7 @@ class GetScreenStateHandler
                 TAG,
                 "get_screen_state: includeScreenshot=$includeScreenshot annotate=$annotate " +
                     "includeOffscreen=${options.includeOffscreen} includeHierarchy=${options.includeHierarchy} " +
+                    "interactiveOnly=${options.interactiveOnly} " +
                     "diff=${diffText != null} settle=$settle pages=$totalPages",
             )
             return if (includeScreenshot) {
@@ -389,6 +391,9 @@ class GetScreenStateHandler
                         "next page. You do NOT need to fetch every page — stop once you have found " +
                         "what you need. A screenshot can only be requested on page 1 (without a cursor). " +
                         "Set include_offscreen=false to list on-screen nodes only. " +
+                        "Set interactive_only=true to list only interactive nodes (clickable, " +
+                        "long-clickable, editable, scrollable, or exposing accessibility actions), " +
+                        "dropping pure labels and containers for a much smaller node list. " +
                         "Set diff=true to receive only what changed since the previous fresh " +
                         "get_screen_state capture — added/changed/removed node rows with a " +
                         "'+', '~' or '-' prefix — instead of the full state; the first diff call, " +
@@ -412,6 +417,7 @@ class GetScreenStateHandler
             internal const val PARAM_ANNOTATE = "annotate"
             internal const val PARAM_INCLUDE_OFFSCREEN = "include_offscreen"
             internal const val PARAM_INCLUDE_HIERARCHY = "include_hierarchy"
+            internal const val PARAM_INTERACTIVE_ONLY = "interactive_only"
             internal const val PARAM_DIFF = "diff"
             internal const val PARAM_SETTLE = "settle"
             internal const val PARAM_SETTLE_TIMEOUT_MS = "settle_timeout_ms"
@@ -560,6 +566,18 @@ private fun getScreenStateProperties(includeScreenshotParamEnabled: Boolean): Js
             )
             put("default", true)
         }
+        putJsonObject(GetScreenStateHandler.PARAM_INTERACTIVE_ONLY) {
+            put("type", "boolean")
+            put(
+                "description",
+                "List only interactive nodes: clickable, long-clickable, editable or scrollable " +
+                    "nodes, and nodes exposing accessibility actions. Pure labels, images and " +
+                    "containers are omitted (their interactive descendants are still listed), " +
+                    "shrinking the node list when only actionable elements matter. Applies to a " +
+                    "fresh capture; its cursor pages keep the same value.",
+            )
+            put("default", false)
+        }
         putJsonObject(GetScreenStateHandler.PARAM_DIFF) {
             put("type", "boolean")
             put(
@@ -568,7 +586,7 @@ private fun getScreenStateProperties(includeScreenshotParamEnabled: Boolean): Js
                     "capture: added and changed rows prefixed with '+' and '~', removed rows " +
                     "prefixed with '-' and shown as they were. Much smaller than the full state " +
                     "after an action. The first diff call (no previous capture), a capture taken " +
-                    "with different include_offscreen/include_hierarchy values, or a change " +
+                    "with different include_offscreen/include_hierarchy/interactive_only values, or a change " +
                     "covering most of the screen returns the full state instead. Applies to a " +
                     "fresh capture only (ignored with a cursor).",
             )

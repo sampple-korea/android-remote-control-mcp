@@ -228,9 +228,14 @@ Replaces the previous `get_accessibility_tree`, `capture_screenshot`, `get_curre
       "description": "Include the 'hierarchy:' section (node nesting by indentation) of each window. Set false for a smaller response. Applies to a fresh capture; its cursor pages keep the same value.",
       "default": true
     },
+    "interactive_only": {
+      "type": "boolean",
+      "description": "List only interactive nodes: clickable, long-clickable, editable or scrollable nodes, and nodes exposing accessibility actions. Pure labels, images and containers are omitted (their interactive descendants are still listed), shrinking the node list when only actionable elements matter. Applies to a fresh capture; its cursor pages keep the same value.",
+      "default": false
+    },
     "diff": {
       "type": "boolean",
-      "description": "Return only the nodes that changed since the previous fresh get_screen_state capture: added and changed rows prefixed with '+' and '~', removed rows prefixed with '-' and shown as they were. Much smaller than the full state after an action. The first diff call (no previous capture), a capture taken with different include_offscreen/include_hierarchy values, or a change covering most of the screen returns the full state instead. Applies to a fresh capture only (ignored with a cursor).",
+      "description": "Return only the nodes that changed since the previous fresh get_screen_state capture: added and changed rows prefixed with '+' and '~', removed rows prefixed with '-' and shown as they were. Much smaller than the full state after an action. The first diff call (no previous capture), a capture taken with different include_offscreen/include_hierarchy/interactive_only values, or a change covering most of the screen returns the full state instead. Applies to a fresh capture only (ignored with a cursor).",
       "default": false
     },
     "settle": {
@@ -248,7 +253,7 @@ Replaces the previous `get_accessibility_tree`, `capture_screenshot`, `get_curre
 }
 ```
 
-`include_screenshot` and `annotate` are listed only while the `include_screenshot` parameter is enabled in the tool permissions. `include_offscreen` and `include_hierarchy` are fixed by the fresh capture (no `cursor`); the cursor pages of that capture keep them, and values passed with a `cursor` are type-checked but otherwise ignored. `diff`, `settle`, and `settle_timeout_ms` likewise apply to a fresh capture only. Every fresh capture (with or without `diff`) becomes the baseline the next `diff=true` call compares against; nodes are matched by node id, and a node also counts as changed when only its labelled accessibility actions changed.
+`include_screenshot` and `annotate` are listed only while the `include_screenshot` parameter is enabled in the tool permissions. `include_offscreen`, `include_hierarchy`, and `interactive_only` are fixed by the fresh capture (no `cursor`); the cursor pages of that capture keep them, and values passed with a `cursor` are type-checked but otherwise ignored. `diff`, `settle`, and `settle_timeout_ms` likewise apply to a fresh capture only. Every fresh capture (with or without `diff`) becomes the baseline the next `diff=true` call compares against; nodes are matched by node id, and a node also counts as changed when only its labelled accessibility actions changed.
 
 **Request Example** (text only):
 ```json
@@ -335,6 +340,8 @@ The text output is a multi-window compact flat TSV (tab-separated values) format
    - **Hierarchy rows**: One line per kept node (node ID only), indented by 2 spaces per nesting depth. Structural-only nodes are omitted; their kept children are promoted to the parent's depth.
 
 With `include_offscreen=false`, nodes that are not on screen (flag `off`) get no data row and no hierarchy row; their on-screen descendants are still listed, nested under the nearest listed ancestor (the same way children of structural-only nodes are). Page counts and `nodes:` ranges count the listed nodes only.
+
+With `interactive_only=true`, the same listing rule applies to interactivity: only clickable, long-clickable, editable or scrollable nodes, and nodes exposing accessibility actions, get a data row and a hierarchy row; labels, images and containers drop out while their interactive descendants stay listed under the nearest listed ancestor. The filter covers the node listing only — screenshot annotation is unaffected. Because the diff baseline records the options it was taken with, `diff=true` compares like with like: a baseline taken with `interactive_only=true` only tracks interactive nodes, and a later call with a different value falls back to the full state.
 
 The `activity:` field in the window header is only present for the focused APPLICATION window whose package matches the tracked foreground package. Window types include: APPLICATION, INPUT_METHOD, SYSTEM, ACCESSIBILITY_OVERLAY, SPLIT_SCREEN_DIVIDER, MAGNIFICATION_OVERLAY.
 
