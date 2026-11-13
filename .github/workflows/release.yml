@@ -116,7 +116,33 @@ jobs:
             echo "keyPassword=$SIGNING_KEY_PASSWORD"
           } > "$GITHUB_WORKSPACE/keystore.properties"
 
-      # ── 5. Unit tests gate the release ──
+      # ── 5. Build the ngrok-java jars the Gradle classpath expects.
+      #        app/build.gradle.kts references vendor/ngrok-java/**/target/*.jar
+      #        as file dependencies; they are not in git, so they must be built
+      #        before any Gradle task runs (mirrors upstream CI test-unit job,
+      #        minus its caches). ──
+      - name: Set up Rust (ngrok-java host native)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cloudflared (host binary for tests)
+        run: |
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+          chmod +x /usr/local/bin/cloudflared
+          cloudflared --version
+
+      - name: Build ngrok-java JARs (required for Gradle classpath)
+        run: |
+          cd vendor/ngrok-java
+          mvn compile -pl ngrok-java-native --also-make --global-toolchains toolchains.xml -q
+          mvn package -pl ngrok-java -DskipTests --global-toolchains toolchains.xml -q
+          (cd ngrok-java-native/target/classes && jar cf ../ngrok-java-native-classes.jar com/)
+          (cd ngrok-java-native && cargo build --release)
+          (cd ngrok-java-native/target/release && jar cf ../ngrok-java-native-host.jar $(ls libngrok_java.so libngrok_java.dylib 2>/dev/null))
+        env:
+          JAVA_11_HOME: ${{ env.JAVA_HOME }}
+          JAVA_17_HOME: ${{ env.JAVA_HOME }}
+
+      # ── 6. Unit tests gate the release ──
       - name: Run FOSS unit tests
         run: ./gradlew :app:testFossDebugUnitTest
 
