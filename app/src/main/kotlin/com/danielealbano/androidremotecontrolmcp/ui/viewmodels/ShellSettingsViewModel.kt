@@ -104,7 +104,13 @@ class ShellSettingsViewModel
             limit: ShellLimit,
             text: String,
         ) {
-            limitEditor.edit(limit, text)?.let { limitSaves.trySend(limit to it) }
+            // Typing only edits and validates. The value is persisted on commit (focus loss),
+            // so intermediate keystroke states are never stored as the limit.
+            limitEditor.edit(limit, text)
+        }
+
+        fun commitLimit(limit: ShellLimit) {
+            limitEditor.pendingValue(limit)?.let { limitSaves.trySend(limit to it) }
         }
 
         fun setSwitch(

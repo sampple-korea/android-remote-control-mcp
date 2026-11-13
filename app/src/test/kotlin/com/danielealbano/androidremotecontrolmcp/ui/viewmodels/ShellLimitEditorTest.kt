@@ -61,6 +61,36 @@ class ShellLimitEditorTest {
     }
 
     @Test
+    fun `pending value is the loaded value before any edit`() {
+        editor.load(ShellConfig())
+
+        ShellLimit.entries.forEach { limit ->
+            assertEquals(ShellConfig().limit(limit), editor.pendingValue(limit), limit.key)
+        }
+    }
+
+    @Test
+    fun `pending value follows the latest valid edit only`() {
+        val limit = ShellLimit.MAX_RUNNING_PROCESSES
+        editor.load(ShellConfig())
+
+        editor.edit(limit, "1")
+        assertEquals(1, editor.pendingValue(limit))
+
+        // An intermediate keystroke state parses, but only the final text is ever committed:
+        // the pending value tracks the field, and nothing is stored until it is read.
+        editor.edit(limit, "16")
+        assertEquals(16, editor.pendingValue(limit))
+        assertEquals(emptyList<Pair<ShellLimit, Int>>(), stores)
+
+        editor.edit(limit, "165")
+        assertNull(editor.pendingValue(limit))
+
+        editor.edit(limit, "")
+        assertNull(editor.pendingValue(limit))
+    }
+
+    @Test
     fun `refused default shows above max`() =
         runTest {
             answer = { _, _, _ -> false }

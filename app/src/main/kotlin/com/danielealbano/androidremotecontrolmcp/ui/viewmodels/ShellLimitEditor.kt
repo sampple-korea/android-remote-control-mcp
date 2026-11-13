@@ -48,6 +48,18 @@ class ShellLimitEditor(
         return value.takeIf { error == null }
     }
 
+    /**
+     * The value a commit should persist for [limit]: the field's current text parsed, when it is
+     * valid. Typing only edits (see [edit]); persistence is deferred to a commit (focus loss) so
+     * an intermediate keystroke state — or a stray character committed into the focused field by
+     * an IME gesture — never becomes the stored limit.
+     */
+    fun pendingValue(limit: ShellLimit): Int? {
+        val field = fields.value[limit] ?: return null
+        if (field.error != null) return null
+        return field.text.trim().toIntOrNull()
+    }
+
     suspend fun save(
         limit: ShellLimit,
         value: Int,

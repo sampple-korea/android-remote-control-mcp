@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -93,7 +94,11 @@ fun ShellSettingsScreen(
                 onRemove = { viewModel.removePattern(ShellPatternKind.BLOCKLIST, it) },
             )
             Spacer(Modifier.height(24.dp))
-            ShellLimitsSection(fields = fields, onChange = viewModel::updateLimit)
+            ShellLimitsSection(
+                fields = fields,
+                onChange = viewModel::updateLimit,
+                onCommit = viewModel::commitLimit,
+            )
         }
     }
 }
@@ -102,6 +107,7 @@ fun ShellSettingsScreen(
 private fun ShellLimitsSection(
     fields: Map<ShellLimit, ShellLimitField>,
     onChange: (ShellLimit, String) -> Unit,
+    onCommit: (ShellLimit) -> Unit,
 ) {
     Text(stringResource(R.string.shell_limits_title), style = MaterialTheme.typography.titleMedium)
     Text(
@@ -120,7 +126,12 @@ private fun ShellLimitsSection(
             supportingText = field.error?.let { error -> { Text(limitErrorText(limit, error)) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            // A limit is stored only when its field loses focus, so what gets saved is the
+            // final value the user settled on, not every intermediate keystroke state.
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focusState -> if (!focusState.isFocused) onCommit(limit) },
         )
     }
 }

@@ -13,7 +13,6 @@ import com.danielealbano.androidremotecontrolmcp.services.shell.SuProbeResult
 import com.danielealbano.androidremotecontrolmcp.services.shell.SuShell
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -71,18 +70,28 @@ class ShellSettingsViewModelTest {
     }
 
     @Test
-    fun `limit edits are saved in the order typed`() {
+    fun `limit edits are not saved until committed`() {
         val limit = ShellLimit.BACKGROUND_TIMEOUT_MAX_MINUTES
 
         viewModel.updateLimit(limit, "1")
         viewModel.updateLimit(limit, "12")
         viewModel.updateLimit(limit, "120")
 
-        coVerifyOrder {
-            settingsRepository.updateShellLimit(limit, 1)
-            settingsRepository.updateShellLimit(limit, 12)
-            settingsRepository.updateShellLimit(limit, 120)
-        }
+        coVerify(exactly = 0) { settingsRepository.updateShellLimit(any(), any()) }
+
+        viewModel.commitLimit(limit)
+
+        coVerify(exactly = 1) { settingsRepository.updateShellLimit(limit, 120) }
+    }
+
+    @Test
+    fun `committing an invalid limit input saves nothing`() {
+        val limit = ShellLimit.MAX_RUNNING_PROCESSES
+
+        viewModel.updateLimit(limit, "abc")
+        viewModel.commitLimit(limit)
+
+        coVerify(exactly = 0) { settingsRepository.updateShellLimit(any(), any()) }
     }
 
     @Test
