@@ -76,9 +76,11 @@ class ScreenIntrospectionToolsTest {
         // single-page (formatMultiWindow) path. Pagination tests below use a real CompactTreeFormatter.
         every { mockCompactTreeFormatter.shouldKeepNode(any()) } returns true
         // collectScreenStateRows (an extension fn, runs on every fresh capture to maintain the diff
-        // baseline) renders each row via appendElementRow; on the strict mock it appends nothing,
+        // baseline) renders each row via appendElementRow and tags it with the window's
+        // buildWindowHeader; on the strict mock the row appends nothing and the header is empty,
         // which is fine — the existing tests never ask for a diff.
         every { mockCompactTreeFormatter.appendElementRow(any(), any()) } returns Unit
+        every { mockCompactTreeFormatter.buildWindowHeader(any()) } returns ""
     }
 
     @AfterEach

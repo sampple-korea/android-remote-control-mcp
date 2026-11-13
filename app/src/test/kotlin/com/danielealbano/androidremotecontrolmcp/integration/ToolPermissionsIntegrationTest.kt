@@ -337,6 +337,7 @@ class ToolPermissionsIntegrationTest {
                 "shell_output",
                 "shell_kill",
                 "shell_list",
+                "batch_actions",
             )
     }
 }
