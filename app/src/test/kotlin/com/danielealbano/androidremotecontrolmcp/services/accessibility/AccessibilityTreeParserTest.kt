@@ -371,6 +371,53 @@ class AccessibilityTreeParserTest {
         }
 
         @Test
+        @DisplayName("generates different IDs for nodes differing only by text")
+        fun generatesDifferentIdsForDifferentText() {
+            // Arrange — same class, resource ID, bounds, depth, index and parent: only the
+            // (non-editable) text differs, as with two same-sized buttons in a stack.
+            val bounds = BoundsData(10, 20, 100, 80)
+            val first = createMockNode(className = "android.widget.Button", text = "First")
+            val second = createMockNode(className = "android.widget.Button", text = "Second")
+
+            // Act & Assert
+            assertTrue(
+                parser.generateNodeId(first, bounds, 0, 0, "root") !=
+                    parser.generateNodeId(second, bounds, 0, 0, "root"),
+            )
+        }
+
+        @Test
+        @DisplayName("generates different IDs for nodes differing only by content description")
+        fun generatesDifferentIdsForDifferentContentDescription() {
+            // Arrange
+            val bounds = BoundsData(10, 20, 100, 80)
+            val first = createMockNode(contentDescription = "Maximum running processes")
+            val second = createMockNode(contentDescription = "Finished processes kept")
+
+            // Act & Assert
+            assertTrue(
+                parser.generateNodeId(first, bounds, 0, 0, "root") !=
+                    parser.generateNodeId(second, bounds, 0, 0, "root"),
+            )
+        }
+
+        @Test
+        @DisplayName("keeps the ID of an editable node when its text changes")
+        fun keepsIdForEditableNodeAcrossTextChanges() {
+            // Arrange — an editable node's text is its value: typing into it must not change
+            // its ID mid-edit, or follow-up actions addressed by ID would lose the field.
+            val bounds = BoundsData(10, 20, 100, 80)
+            val before = createMockNode(className = "android.widget.EditText", text = "1", editable = true)
+            val after = createMockNode(className = "android.widget.EditText", text = "16", editable = true)
+
+            // Act & Assert
+            assertEquals(
+                parser.generateNodeId(before, bounds, 0, 0, "root"),
+                parser.generateNodeId(after, bounds, 0, 0, "root"),
+            )
+        }
+
+        @Test
         @DisplayName("generates IDs with node_ prefix")
         fun generatesIdsWithNodePrefix() {
             // Arrange

@@ -247,7 +247,16 @@ class AccessibilityTreeParser
          * Generates a stable, deterministic node ID based on the node's properties.
          *
          * The ID is stable across tree parses as long as the UI state has not changed.
-         * Uses resource ID, class name, bounds, depth, and sibling index for uniqueness.
+         * Uses resource ID, class name, bounds, depth, and sibling index for uniqueness, plus the
+         * node's identity text: its content description, the text of the label associated with it
+         * (Compose text fields expose their floating label this way), and — for nodes whose text
+         * cannot be edited — its own text. Without an identity component, the ID of a node in a
+         * uniformly stacked list (e.g. a column of same-sized text fields) is purely positional:
+         * after a layout shift (keyboard opening, an error label appearing), a stale ID silently
+         * matches the *neighbouring* element that moved into the same bounds, and an action lands
+         * on the wrong element. With the label in the hash, a stale ID instead matches nothing.
+         * An editable or password node's own text is its value, so it is left out: the ID must
+         * not change while the user types into the field.
          */
         internal fun generateNodeId(
             node: AccessibilityNodeInfo,
@@ -258,8 +267,13 @@ class AccessibilityTreeParser
         ): String {
             val resourceId = node.viewIdResourceName ?: ""
             val className = node.className?.toString() ?: ""
+            val contentDescription = node.contentDescription?.toString() ?: ""
+            val labeledByText = readLabeledByText(node) ?: ""
+            val text =
+                if (node.isEditable || node.isPassword) "" else node.text?.toString() ?: ""
             val hashInput =
-                "$resourceId|$className|${bounds.left},${bounds.top}," +
+                "$resourceId|$className|$contentDescription|$labeledByText|$text|" +
+                    "${bounds.left},${bounds.top}," +
                     "${bounds.right},${bounds.bottom}|$depth|$index|$parentId"
             val hash = hashInput.hashCode().toUInt().toString(HASH_RADIX)
             return "node_$hash"
