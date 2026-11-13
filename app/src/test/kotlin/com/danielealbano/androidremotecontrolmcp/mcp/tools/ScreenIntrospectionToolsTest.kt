@@ -13,6 +13,7 @@ import com.danielealbano.androidremotecontrolmcp.services.accessibility.BoundsDa
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.CompactTreeFormatter
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.PaginationTestTrees
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenInfo
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateDiffStoreImpl
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateFormatOptions
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateSnapshotCacheImpl
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.WebViewNodeMerger
@@ -31,6 +32,7 @@ import io.mockk.verifyOrder
 import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
@@ -73,6 +75,10 @@ class ScreenIntrospectionToolsTest {
         // formatter mock so every existing test's small tree counts as <=200 nodes and stays on the
         // single-page (formatMultiWindow) path. Pagination tests below use a real CompactTreeFormatter.
         every { mockCompactTreeFormatter.shouldKeepNode(any()) } returns true
+        // collectScreenStateRows (an extension fn, runs on every fresh capture to maintain the diff
+        // baseline) renders each row via appendElementRow; on the strict mock it appends nothing,
+        // which is fine — the existing tests never ask for a diff.
+        every { mockCompactTreeFormatter.appendElementRow(any(), any()) } returns Unit
     }
 
     @AfterEach
@@ -172,6 +178,7 @@ class ScreenIntrospectionToolsTest {
                     WebViewNodeMerger(),
                     PrivacyToolTestDoubles.passthroughGate(),
                     PrivacyToolTestDoubles.screenshotRedactor(),
+                    ScreenStateDiffStoreImpl(),
                 )
         }
 
@@ -615,6 +622,7 @@ class ScreenIntrospectionToolsTest {
                     WebViewNodeMerger(),
                     PrivacyToolTestDoubles.passthroughGate(),
                     PrivacyToolTestDoubles.screenshotRedactor(),
+                    ScreenStateDiffStoreImpl(),
                 )
         }
 
@@ -865,6 +873,204 @@ class ScreenIntrospectionToolsTest {
                 val text = (result.content[0] as TextContent).text
                 assertTrue(text.contains("invalid cursor"))
                 assertTrue(text.contains("screenshot can only be requested on page 1"))
+            }
+    }
+
+    @Nested
+    @DisplayName("get_screen_state diff and settle")
+    inner class DiffAndSettleTests {
+        private lateinit var handler: GetScreenStateHandler
+
+        @BeforeEach
+        fun setUp() {
+            handler =
+                GetScreenStateHandler(
+                    mockTreeParser,
+                    mockAccessibilityServiceProvider,
+                    mockScreenCaptureProvider,
+                    CompactTreeFormatter(),
+                    mockScreenshotAnnotator,
+                    mockScreenshotEncoder,
+                    mockNodeCache,
+                    ScreenStateSnapshotCacheImpl(),
+                    WebViewNodeMerger(),
+                    PrivacyToolTestDoubles.passthroughGate(),
+                    PrivacyToolTestDoubles.screenshotRedactor(),
+                    ScreenStateDiffStoreImpl(),
+                )
+        }
+
+        private fun labelNode(
+            id: String,
+            text: String,
+        ) = AccessibilityNodeData(
+            id = id,
+            className = "android.widget.TextView",
+            text = text,
+            bounds = BoundsData(0, 0, 100, 50),
+            enabled = true,
+            visible = true,
+        )
+
+        private fun screenTree(children: List<AccessibilityNodeData>) =
+            AccessibilityNodeData(
+                id = "node_root",
+                className = "android.widget.FrameLayout",
+                resourceId = "com.example:id/root",
+                bounds = BoundsData(0, 0, 1080, 2400),
+                enabled = true,
+                visible = true,
+                children = children,
+            )
+
+        /** Root + 6 unchanged labels + 1 label = 8 listed nodes. */
+        private fun baseTree() =
+            screenTree((1..6).map { labelNode("node_same_$it", "same$it") } + labelNode("node_label", "Hello"))
+
+        private fun stubCaptureWithTree(tree: AccessibilityNodeData) {
+            every { mockAccessibilityServiceProvider.isReady() } returns true
+            every { mockWindowInfo.id } returns 0
+            every { mockWindowInfo.root } returns mockRootNode
+            every { mockWindowInfo.type } returns AccessibilityWindowInfo.TYPE_APPLICATION
+            every { mockWindowInfo.title } returns "Test"
+            every { mockWindowInfo.layer } returns 0
+            every { mockWindowInfo.isFocused } returns true
+            every { mockRootNode.refresh() } returns true
+            every { mockRootNode.packageName } returns "com.example"
+            every {
+                mockAccessibilityServiceProvider.getAccessibilityWindows()
+            } returns listOf(mockWindowInfo)
+            every { mockAccessibilityServiceProvider.getCurrentPackageName() } returns "com.example"
+            every { mockAccessibilityServiceProvider.getCurrentActivityName() } returns ".Main"
+            every { mockAccessibilityServiceProvider.getScreenInfo() } returns sampleScreenInfo
+            every { mockTreeParser.parseTree(mockRootNode, "root_w0", any()) } returns tree
+        }
+
+        private suspend fun executeText(params: JsonObject?): String =
+            (handler.execute(params).content[0] as TextContent).text
+
+        @Test
+        @DisplayName("first diff call returns the full state (no baseline yet)")
+        fun firstDiffCallReturnsFullState() =
+            runTest {
+                stubCaptureWithTree(baseTree())
+
+                val text = executeText(buildJsonObject { put("diff", true) })
+
+                assertFalse(text.contains("diff against the previous"), text)
+                assertTrue(text.contains("hierarchy:"), text)
+            }
+
+        @Test
+        @DisplayName("diff call returns only the added and changed rows")
+        fun diffCallReturnsOnlyAddedAndChangedRows() =
+            runTest {
+                stubCaptureWithTree(baseTree())
+                executeText(null)
+
+                stubCaptureWithTree(
+                    screenTree(
+                        (1..6).map { labelNode("node_same_$it", "same$it") } +
+                            listOf(labelNode("node_label", "World"), labelNode("node_new", "New")),
+                    ),
+                )
+                val text = executeText(buildJsonObject { put("diff", true) })
+
+                assertTrue(text.contains("+1 added, ~1 changed, -0 removed (nodes 8 -> 9)"), text)
+                assertTrue(text.lines().any { it.startsWith("~node_label\t") && it.contains("World") }, text)
+                assertTrue(text.lines().any { it.startsWith("+node_new\t") && it.contains("New") }, text)
+                assertFalse(text.lines().any { it.contains("node_same_1") }, text)
+                assertFalse(text.contains("hierarchy:"), text)
+            }
+
+        @Test
+        @DisplayName("diff call lists removed rows as they were")
+        fun diffCallListsRemovedRows() =
+            runTest {
+                stubCaptureWithTree(baseTree())
+                executeText(null)
+
+                stubCaptureWithTree(screenTree((1..6).map { labelNode("node_same_$it", "same$it") }))
+                val text = executeText(buildJsonObject { put("diff", true) })
+
+                assertTrue(text.contains("+0 added, ~0 changed, -1 removed"), text)
+                assertTrue(text.lines().any { it.startsWith("-node_label\t") && it.contains("Hello") }, text)
+            }
+
+        @Test
+        @DisplayName("diff call with an unchanged screen returns the no-changes note")
+        fun diffCallWithUnchangedScreenReturnsNoChangesNote() =
+            runTest {
+                stubCaptureWithTree(baseTree())
+                executeText(null)
+
+                val text = executeText(buildJsonObject { put("diff", true) })
+
+                assertTrue(text.contains("note:no changes since the previous get_screen_state capture (8 nodes)"), text)
+            }
+
+        @Test
+        @DisplayName("diff falls back to the full state when most of the screen changed")
+        fun diffFallsBackToFullStateWhenMostChanged() =
+            runTest {
+                stubCaptureWithTree(baseTree())
+                executeText(null)
+
+                val otherRoot =
+                    AccessibilityNodeData(
+                        id = "node_other_root",
+                        className = "android.widget.FrameLayout",
+                        resourceId = "com.other:id/root",
+                        bounds = BoundsData(0, 0, 1080, 2400),
+                        enabled = true,
+                        visible = true,
+                        children = (1..5).map { labelNode("node_other_$it", "other$it") },
+                    )
+                stubCaptureWithTree(otherRoot)
+                val text = executeText(buildJsonObject { put("diff", true) })
+
+                assertFalse(text.contains("diff against the previous"), text)
+                assertTrue(text.contains("hierarchy:"), text)
+            }
+
+        @Test
+        @DisplayName("diff falls back to the full state when the output options changed")
+        fun diffFallsBackWhenOutputOptionsChanged() =
+            runTest {
+                stubCaptureWithTree(baseTree())
+                executeText(null)
+
+                val text =
+                    executeText(
+                        buildJsonObject {
+                            put("diff", true)
+                            put("include_hierarchy", false)
+                        },
+                    )
+
+                assertFalse(text.contains("diff against the previous"), text)
+            }
+
+        @Test
+        @DisplayName("settle=true still returns the captured state")
+        fun settleReturnsCapturedState() =
+            runTest {
+                stubCaptureWithTree(baseTree())
+
+                val text = executeText(buildJsonObject { put("settle", true) })
+
+                assertTrue(text.contains("node_label"), text)
+            }
+
+        @Test
+        @DisplayName("settle_timeout_ms out of range is rejected")
+        fun settleTimeoutOutOfRangeRejected() =
+            runTest {
+                stubCaptureWithTree(baseTree())
+
+                assertThrows<McpToolException.InvalidParams> {
+                    handler.execute(buildJsonObject { put("settle_timeout_ms", 99999) })
+                }
             }
     }
 

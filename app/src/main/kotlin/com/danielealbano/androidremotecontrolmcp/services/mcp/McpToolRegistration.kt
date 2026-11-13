@@ -158,6 +158,7 @@ class McpToolRegistration
                 screen.screenshotEncoder,
                 accessibility.nodeCache,
                 screen.screenStateSnapshotCache,
+                screen.screenStateDiffStore,
                 screen.webViewNodeMerger,
                 privacy.privacyToolGate,
                 privacy.screenshotRedactor,

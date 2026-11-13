@@ -600,58 +600,7 @@ class WaitForIdleTool
         }
 
         private fun generateCurrentFingerprint(): IntArray =
-            // Serialize the clear+read critical section against concurrent MCP requests (see
-            // AccessibilityTreeLock): a parallel request's cache clear must not wipe the framework
-            // tree mid-traversal of this fingerprint read.
-            synchronized(AccessibilityTreeLock.monitor) {
-                generateCurrentFingerprintLocked()
-            }
-
-        @Suppress("ThrowsCount")
-        private fun generateCurrentFingerprintLocked(): IntArray {
-            if (!accessibilityServiceProvider.isReady()) {
-                throw McpToolException.PermissionDenied(
-                    "Accessibility service not enabled or not ready. " +
-                        "Please enable it in Android Settings > Accessibility.",
-                )
-            }
-
-            // Drop the framework's accessibility node cache before fingerprinting. Chromium WebView
-            // suppresses/throttles the content-changed events that invalidate that cache, so without
-            // this the fingerprint would be computed from a stale tree that never reflects ongoing
-            // JavaScript DOM changes — reporting the UI as idle while it is still mutating. See
-            // AccessibilityServiceProvider.clearFrameworkNodeCache.
-            accessibilityServiceProvider.clearFrameworkNodeCache()
-
-            val accessibilityWindows = accessibilityServiceProvider.getAccessibilityWindows()
-
-            if (accessibilityWindows.isNotEmpty()) {
-                try {
-                    val rootNodes =
-                        accessibilityWindows.mapNotNull { window ->
-                            window.root
-                        }
-                    if (rootNodes.isEmpty()) {
-                        throw McpToolException.ActionFailed("All windows returned null root nodes.")
-                    }
-                    return treeFingerprint.generateFromRawNodes(rootNodes)
-                } finally {
-                    for (w in accessibilityWindows) {
-                        @Suppress("DEPRECATION")
-                        w.recycle()
-                    }
-                }
-            }
-
-            // Fallback to single root node
-            val rootNode =
-                accessibilityServiceProvider.getRootNode()
-                    ?: throw McpToolException.ActionFailed(
-                        "No windows available and no active window root node. " +
-                            "The screen may be transitioning.",
-                    )
-            return treeFingerprint.generateFromRawNodes(listOf(rootNode))
-        }
+            generateCurrentTreeFingerprint(accessibilityServiceProvider, treeFingerprint)
 
         fun register(
             registrar: LoggedToolRegistrar,

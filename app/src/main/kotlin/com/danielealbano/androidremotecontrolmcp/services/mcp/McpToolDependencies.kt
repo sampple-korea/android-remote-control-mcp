@@ -9,6 +9,7 @@ import com.danielealbano.androidremotecontrolmcp.services.accessibility.Accessib
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ActionExecutor
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.CompactTreeFormatter
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ElementFinder
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateDiffStore
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateSnapshotCache
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.TypeInputController
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.WebViewNodeMerger
@@ -52,6 +53,7 @@ data class ScreenToolDeps
         val screenshotAnnotator: ScreenshotAnnotator,
         val screenshotEncoder: ScreenshotEncoder,
         val screenStateSnapshotCache: ScreenStateSnapshotCache,
+        val screenStateDiffStore: ScreenStateDiffStore,
         val webViewNodeMerger: WebViewNodeMerger,
         val nodeImageCropper: NodeImageCropper,
     )

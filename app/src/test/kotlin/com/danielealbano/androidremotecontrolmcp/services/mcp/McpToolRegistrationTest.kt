@@ -42,6 +42,7 @@ class McpToolRegistrationTest {
                 deps.screenshotAnnotator,
                 deps.screenshotEncoder,
                 deps.screenStateSnapshotCache,
+                deps.screenStateDiffStore,
                 WebViewNodeMerger(),
                 deps.nodeImageCropper,
             ),

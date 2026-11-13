@@ -16,9 +16,14 @@ import com.danielealbano.androidremotecontrolmcp.services.accessibility.BoundsDa
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.CompactTreeFormatter
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.MultiWindowResult
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenInfo
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateDiffStore
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateFormatOptions
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateRows
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateSnapshot
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateSnapshotCache
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.collectScreenStateRows
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.computeScreenStateDiff
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.formatScreenStateDiff
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.WebViewNodeMerger
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.WindowData
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.countKeptNodes
@@ -70,14 +75,21 @@ class GetScreenStateHandler
         private val webViewNodeMerger: WebViewNodeMerger,
         private val privacyToolGate: PrivacyToolGate,
         private val screenshotRedactor: ScreenshotRedactor,
+        private val screenStateDiffStore: ScreenStateDiffStore,
     ) {
         @Volatile private var includeScreenshotEnabled: Boolean = true
+
+        private val screenSettler = ScreenSettler(accessibilityServiceProvider)
 
         suspend fun execute(arguments: JsonObject?): CallToolResult {
             val includeScreenshot = parseIncludeScreenshot(arguments)
             // Validated with a cursor too, although the cursor's page keeps the options of its fresh capture
             val annotate = parseAnnotate(arguments)
             val formatOptions = parseFormatOptions(arguments)
+            // Validated with a cursor too, although both only take effect on a fresh capture
+            val diff = McpToolUtils.optionalBoolean(arguments, PARAM_DIFF, false)
+            val settle = McpToolUtils.optionalBoolean(arguments, PARAM_SETTLE, false)
+            val settleTimeoutMs = parseSettleTimeoutMs(arguments)
             val cursorElement = arguments?.get("cursor")
             // Absent, JSON null, or a blank string ⇒ fresh cursorless capture (settled behavior 1).
             // A present, non-blank value (INCLUDING a non-primitive object/array) ⇒ paged path,
@@ -87,10 +99,22 @@ class GetScreenStateHandler
                     cursorElement is JsonNull ||
                     ((cursorElement as? JsonPrimitive)?.contentOrNull?.isBlank() == true)
             return if (isFresh) {
-                handleFreshRequest(includeScreenshot, annotate, formatOptions)
+                handleFreshRequest(includeScreenshot, annotate, formatOptions, diff, settle, settleTimeoutMs)
             } else {
                 McpToolUtils.untrustedTextResult(buildPagedText(cursorElement, includeScreenshot))
             }
+        }
+
+        /** The settle budget: 0 disables the wait even with settle=true; capped so a capture stays responsive. */
+        private fun parseSettleTimeoutMs(arguments: JsonObject?): Long {
+            val value = McpToolUtils.optionalLong(arguments, PARAM_SETTLE_TIMEOUT_MS, DEFAULT_SETTLE_TIMEOUT_MS)
+            if (value < 0 || value > MAX_SETTLE_TIMEOUT_MS) {
+                throw McpToolException.InvalidParams(
+                    "Parameter '$PARAM_SETTLE_TIMEOUT_MS' must be between 0 and " +
+                        "$MAX_SETTLE_TIMEOUT_MS, got: $value",
+                )
+            }
+            return value
         }
 
         private fun parseIncludeScreenshot(arguments: JsonObject?): Boolean =
@@ -110,11 +134,21 @@ class GetScreenStateHandler
                 includeHierarchy = McpToolUtils.optionalBoolean(arguments, PARAM_INCLUDE_HIERARCHY, true),
             )
 
+        @Suppress("LongParameterList")
         private suspend fun handleFreshRequest(
             includeScreenshot: Boolean,
             annotate: Boolean,
             options: ScreenStateFormatOptions,
+            diff: Boolean,
+            settle: Boolean,
+            settleTimeoutMs: Long,
         ): CallToolResult {
+            // Settle BEFORE capturing: right after an action the UI is usually mid-transition, and a
+            // capture taken then shows an animation frame the next action cannot target. A settle
+            // timeout is not an error — the current state is captured anyway.
+            if (settle) {
+                screenSettler.awaitIdle(settleTimeoutMs)
+            }
             // getFreshWindows clears the framework accessibility cache before reading (see there),
             // so this fresh capture — and the node cache it populates for element/action tools —
             // round-trips live even for stale-prone WebView content.
@@ -128,20 +162,49 @@ class GetScreenStateHandler
             val processed = privacyToolGate.tree(rawResult)
             val result = processed.result
             val screenInfo = accessibilityServiceProvider.getScreenInfo()
+            // Every fresh capture becomes the diff baseline for the next one, whether or not this
+            // call asked for a diff; the rows are collected from the same redacted, merged tree the
+            // full output is rendered from, so a diff never shows anything the full state would not.
+            val currentRows = compactTreeFormatter.collectScreenStateRows(result, options)
+            val previousRows = screenStateDiffStore.replace(currentRows)
+            val diffText = if (diff) buildDiffText(previousRows, currentRows, screenInfo, options) else null
             val totalKept = compactTreeFormatter.countKeptNodes(result, options)
             val totalPages = ceilDiv(totalKept, CompactTreeFormatter.PAGE_SIZE)
-            val compactOutput = buildFreshPageText(result, screenInfo, totalKept, totalPages, options)
+            val compactOutput = diffText ?: buildFreshPageText(result, screenInfo, totalKept, totalPages, options)
+            if (diffText != null) {
+                // The diff response has no pages: a cursor issued by an earlier capture no longer
+                // describes what the client last saw.
+                screenStateSnapshotCache.clear()
+            }
             Log.d(
                 TAG,
                 "get_screen_state: includeScreenshot=$includeScreenshot annotate=$annotate " +
                     "includeOffscreen=${options.includeOffscreen} includeHierarchy=${options.includeHierarchy} " +
-                    "pages=$totalPages",
+                    "diff=${diffText != null} settle=$settle pages=$totalPages",
             )
             return if (includeScreenshot) {
                 buildScreenshotResult(result, screenInfo, compactOutput, processed.flaggedBounds, annotate)
             } else {
                 McpToolUtils.untrustedTextResult(compactOutput)
             }
+        }
+
+        /**
+         * The diff rendering of this capture against [previousRows], or null when the full state must
+         * be returned instead: no baseline yet (first fresh capture), a baseline taken under different
+         * output options (its listed nodes are not comparable), or a change covering most of the tree
+         * (a diff listing would be no smaller than the full state).
+         */
+        private fun buildDiffText(
+            previousRows: ScreenStateRows?,
+            currentRows: ScreenStateRows,
+            screenInfo: ScreenInfo,
+            options: ScreenStateFormatOptions,
+        ): String? {
+            if (previousRows == null || previousRows.options != options) return null
+            val diff = computeScreenStateDiff(previousRows, currentRows)
+            if (diff.coversMostOfTree) return null
+            return formatScreenStateDiff(diff, screenInfo)
         }
 
         private fun buildFreshPageText(
@@ -325,7 +388,14 @@ class GetScreenStateHandler
                         "'page:N/total' line and a cursor; call again with that cursor to fetch the " +
                         "next page. You do NOT need to fetch every page — stop once you have found " +
                         "what you need. A screenshot can only be requested on page 1 (without a cursor). " +
-                        "Set include_offscreen=false to list on-screen nodes only.",
+                        "Set include_offscreen=false to list on-screen nodes only. " +
+                        "Set diff=true to receive only what changed since the previous fresh " +
+                        "get_screen_state capture — added/changed/removed node rows with a " +
+                        "'+', '~' or '-' prefix — instead of the full state; the first diff call, " +
+                        "or a change covering most of the screen, returns the full state. " +
+                        "Set settle=true to wait for the UI to stop changing (up to " +
+                        "settle_timeout_ms) before capturing, e.g. right after an action; a " +
+                        "settle timeout still returns the current state.",
                 inputSchema =
                     ToolSchema(
                         properties = getScreenStateProperties(includeScreenshotParamEnabled),
@@ -342,6 +412,11 @@ class GetScreenStateHandler
             internal const val PARAM_ANNOTATE = "annotate"
             internal const val PARAM_INCLUDE_OFFSCREEN = "include_offscreen"
             internal const val PARAM_INCLUDE_HIERARCHY = "include_hierarchy"
+            internal const val PARAM_DIFF = "diff"
+            internal const val PARAM_SETTLE = "settle"
+            internal const val PARAM_SETTLE_TIMEOUT_MS = "settle_timeout_ms"
+            internal const val DEFAULT_SETTLE_TIMEOUT_MS = 2500L
+            internal const val MAX_SETTLE_TIMEOUT_MS = 10000L
             internal const val INVALID_CURSOR_MESSAGE =
                 "note:invalid cursor. Call get_screen_state without a cursor to get a fresh " +
                     "screen-state snapshot starting at page 1."
@@ -383,6 +458,7 @@ fun registerScreenIntrospectionTools(
     screenshotEncoder: ScreenshotEncoder,
     nodeCache: AccessibilityNodeCache,
     screenStateSnapshotCache: ScreenStateSnapshotCache,
+    screenStateDiffStore: ScreenStateDiffStore,
     webViewNodeMerger: WebViewNodeMerger,
     privacyToolGate: PrivacyToolGate,
     screenshotRedactor: ScreenshotRedactor,
@@ -404,6 +480,7 @@ fun registerScreenIntrospectionTools(
             webViewNodeMerger,
             privacyToolGate,
             screenshotRedactor,
+            screenStateDiffStore,
         ).register(
             registrar,
             toolNamePrefix,
@@ -482,6 +559,41 @@ private fun getScreenStateProperties(includeScreenshotParamEnabled: Boolean): Js
                     "same value.",
             )
             put("default", true)
+        }
+        putJsonObject(GetScreenStateHandler.PARAM_DIFF) {
+            put("type", "boolean")
+            put(
+                "description",
+                "Return only the nodes that changed since the previous fresh get_screen_state " +
+                    "capture: added and changed rows prefixed with '+' and '~', removed rows " +
+                    "prefixed with '-' and shown as they were. Much smaller than the full state " +
+                    "after an action. The first diff call (no previous capture), a capture taken " +
+                    "with different include_offscreen/include_hierarchy values, or a change " +
+                    "covering most of the screen returns the full state instead. Applies to a " +
+                    "fresh capture only (ignored with a cursor).",
+            )
+            put("default", false)
+        }
+        putJsonObject(GetScreenStateHandler.PARAM_SETTLE) {
+            put("type", "boolean")
+            put(
+                "description",
+                "Wait for the UI to stop changing before capturing (fingerprint-based idle " +
+                    "detection, the same mechanism as wait_for_idle). Useful right after an " +
+                    "action, so the capture shows the settled screen instead of an animation " +
+                    "frame. A timeout does not fail the call: the current state is returned. " +
+                    "Applies to a fresh capture only (ignored with a cursor).",
+            )
+            put("default", false)
+        }
+        putJsonObject(GetScreenStateHandler.PARAM_SETTLE_TIMEOUT_MS) {
+            put("type", "integer")
+            put(
+                "description",
+                "Maximum time to wait for the UI to settle when settle=true, in milliseconds " +
+                    "(0-${GetScreenStateHandler.MAX_SETTLE_TIMEOUT_MS}). 0 captures immediately.",
+            )
+            put("default", GetScreenStateHandler.DEFAULT_SETTLE_TIMEOUT_MS)
         }
     }
 

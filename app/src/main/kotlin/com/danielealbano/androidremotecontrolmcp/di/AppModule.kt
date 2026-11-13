@@ -37,6 +37,8 @@ import com.danielealbano.androidremotecontrolmcp.services.accessibility.Accessib
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.AccessibilityServiceProviderImpl
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ActionExecutor
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ActionExecutorImpl
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateDiffStore
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateDiffStoreImpl
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateSnapshotCache
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateSnapshotCacheImpl
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.TypeInputController
@@ -217,6 +219,10 @@ abstract class ServiceModule {
     @Binds
     @Singleton
     abstract fun bindScreenStateSnapshotCache(impl: ScreenStateSnapshotCacheImpl): ScreenStateSnapshotCache
+
+    @Binds
+    @Singleton
+    abstract fun bindScreenStateDiffStore(impl: ScreenStateDiffStoreImpl): ScreenStateDiffStore
 
     @Binds
     @Singleton

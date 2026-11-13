@@ -225,13 +225,28 @@ Replaces the previous `get_accessibility_tree`, `capture_screenshot`, `get_curre
       "type": "boolean",
       "description": "Include the 'hierarchy:' section (node nesting by indentation) of each window. Set false for a smaller response. Applies to a fresh capture; its cursor pages keep the same value.",
       "default": true
+    },
+    "diff": {
+      "type": "boolean",
+      "description": "Return only the nodes that changed since the previous fresh get_screen_state capture: added and changed rows prefixed with '+' and '~', removed rows prefixed with '-' and shown as they were. Much smaller than the full state after an action. The first diff call (no previous capture), a capture taken with different include_offscreen/include_hierarchy values, or a change covering most of the screen returns the full state instead. Applies to a fresh capture only (ignored with a cursor).",
+      "default": false
+    },
+    "settle": {
+      "type": "boolean",
+      "description": "Wait for the UI to stop changing before capturing (fingerprint-based idle detection, the same mechanism as wait_for_idle). Useful right after an action, so the capture shows the settled screen instead of an animation frame. A timeout does not fail the call: the current state is returned. Applies to a fresh capture only (ignored with a cursor).",
+      "default": false
+    },
+    "settle_timeout_ms": {
+      "type": "integer",
+      "description": "Maximum time to wait for the UI to settle when settle=true, in milliseconds (0-10000). 0 captures immediately.",
+      "default": 2500
     }
   },
   "required": []
 }
 ```
 
-`include_screenshot` and `annotate` are listed only while the `include_screenshot` parameter is enabled in the tool permissions. `include_offscreen` and `include_hierarchy` are fixed by the fresh capture (no `cursor`); the cursor pages of that capture keep them, and values passed with a `cursor` are type-checked but otherwise ignored.
+`include_screenshot` and `annotate` are listed only while the `include_screenshot` parameter is enabled in the tool permissions. `include_offscreen` and `include_hierarchy` are fixed by the fresh capture (no `cursor`); the cursor pages of that capture keep them, and values passed with a `cursor` are type-checked but otherwise ignored. `diff`, `settle`, and `settle_timeout_ms` likewise apply to a fresh capture only. Every fresh capture (with or without `diff`) becomes the baseline the next `diff=true` call compares against; nodes are matched by node id, and a node also counts as changed when only its labelled accessibility actions changed.
 
 **Request Example** (text only):
 ```json
