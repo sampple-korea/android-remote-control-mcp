@@ -63,10 +63,10 @@ class AccessibilityTreeParserTest {
         // otherwise identical mock nodes.
         val labeledByNode =
             labeledByText?.let { labelText ->
-                mockk<AccessibilityNodeInfo>(relaxed = true) {
-                    every { text } returns labelText
-                    every { contentDescription } returns null
-                }
+                val labelNode = mockk<AccessibilityNodeInfo>(relaxed = true)
+                every { labelNode.text } returns labelText
+                every { labelNode.contentDescription } returns null
+                labelNode
             }
         every { node.labeledBy } returns labeledByNode
         every { node.labeledByList } returns listOfNotNull(labeledByNode)
