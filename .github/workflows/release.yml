@@ -84,12 +84,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Use the runner image's preinstalled Android SDK (same as upstream CI).
-      # android-actions/setup-android@v3 fails here: its default package list
-      # includes the legacy 'tools' package, which no longer exists in
-      # cmdline-tools 16, so sdkmanager exits 1.
-      - name: Install Android platform (compileSdk 37)
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-37"
+      # No explicit SDK setup step: upstream CI builds with no SDK action at
+      # all — the runner image's preinstalled SDK plus AGP auto-download cover
+      # the compileSdk platform. (android-actions/setup-android@v3 fails on
+      # the removed legacy 'tools' package, and a manual sdkmanager install
+      # of 'platforms;android-37' is not in the stable-channel catalog.)
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
