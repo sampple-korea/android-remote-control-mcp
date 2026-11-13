@@ -51,12 +51,25 @@ class AccessibilityTreeParserTest {
         childCount: Int = 0,
         children: List<AccessibilityNodeInfo> = emptyList(),
         actions: List<AccessibilityNodeInfo.AccessibilityAction> = emptyList(),
+        labeledByText: String? = null,
     ): AccessibilityNodeInfo {
         val node = mockk<AccessibilityNodeInfo>(relaxed = true)
         every { node.className } returns className
         every { node.text } returns text
         every { node.contentDescription } returns contentDescription
         every { node.viewIdResourceName } returns resourceId
+        // Pin the label association: left relaxed, the compat label lookup returns a different
+        // child mock per instance, which would make generated node IDs differ between two
+        // otherwise identical mock nodes.
+        val labeledByNode =
+            labeledByText?.let { labelText ->
+                mockk<AccessibilityNodeInfo>(relaxed = true) {
+                    every { text } returns labelText
+                    every { contentDescription } returns null
+                }
+            }
+        every { node.labeledBy } returns labeledByNode
+        every { node.labeledByList } returns listOfNotNull(labeledByNode)
         every { node.isClickable } returns clickable
         every { node.isLongClickable } returns longClickable
         every { node.isFocusable } returns focusable
@@ -393,6 +406,24 @@ class AccessibilityTreeParserTest {
             val bounds = BoundsData(10, 20, 100, 80)
             val first = createMockNode(contentDescription = "Maximum running processes")
             val second = createMockNode(contentDescription = "Finished processes kept")
+
+            // Act & Assert
+            assertTrue(
+                parser.generateNodeId(first, bounds, 0, 0, "root") !=
+                    parser.generateNodeId(second, bounds, 0, 0, "root"),
+            )
+        }
+
+        @Test
+        @DisplayName("generates different IDs for nodes differing only by label")
+        fun generatesDifferentIdsForDifferentLabels() {
+            // Arrange — two stacked settings fields: same class and bounds, told apart only by
+            // the label associated with each (the Compose floating label).
+            val bounds = BoundsData(10, 20, 100, 80)
+            val first =
+                createMockNode(className = "android.widget.EditText", editable = true, labeledByText = "Maximum running processes")
+            val second =
+                createMockNode(className = "android.widget.EditText", editable = true, labeledByText = "Finished processes kept")
 
             // Act & Assert
             assertTrue(
