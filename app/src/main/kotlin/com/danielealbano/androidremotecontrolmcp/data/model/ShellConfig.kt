@@ -13,16 +13,16 @@ private const val UPPER_APPROVAL_SECONDS = 85
 private const val DEFAULT_FOREGROUND_SECONDS = 90
 private const val LOWER_FOREGROUND_SECONDS = 10
 private const val UPPER_FOREGROUND_SECONDS = 90
-private const val DEFAULT_OUTPUT_PER_CALL_KIB = 64
+private const val DEFAULT_OUTPUT_PER_CALL_KIB = 1024
 private const val LOWER_OUTPUT_PER_CALL_KIB = 4
-private const val UPPER_OUTPUT_PER_CALL_KIB = 256
-private const val DEFAULT_OUTPUT_BUFFER_KIB = 1024
+private const val UPPER_OUTPUT_PER_CALL_KIB = 16384
+private const val DEFAULT_OUTPUT_BUFFER_KIB = 8192
 private const val LOWER_OUTPUT_BUFFER_KIB = 64
-private const val UPPER_OUTPUT_BUFFER_KIB = 16384
+private const val UPPER_OUTPUT_BUFFER_KIB = 32768
 private const val KIB_PER_MIB = 1024
 
 /** Output kept in memory, in all: (running + finished kept) × output kept per process. */
-const val SHELL_OUTPUT_MEMORY_CAP_MIB = 64
+const val SHELL_OUTPUT_MEMORY_CAP_MIB = 512
 const val SHELL_OUTPUT_MEMORY_CAP_KIB = SHELL_OUTPUT_MEMORY_CAP_MIB * KIB_PER_MIB
 
 enum class ShellLimit(

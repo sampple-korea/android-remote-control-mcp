@@ -560,7 +560,7 @@
     <string name="elevation_approval_gone">This request is no longer pending.</string>
     <string name="elevation_approval_close">Close</string>
     <string name="shell_limits_title">Limits</string>
-    <string name="shell_limits_memory_note">Output is kept in the app\'s memory: up to the output kept per process for every running and every kept finished process, at most 64 MiB in all.</string>
+    <string name="shell_limits_memory_note">Output is kept in the app\'s memory: up to the output kept per process for every running and every kept finished process, at most 512 MiB in all.</string>
     <string name="shell_limit_max_running_processes">Maximum running processes</string>
     <string name="shell_limit_max_finished_processes">Finished processes kept</string>
     <string name="shell_limit_background_timeout_default_minutes">Background timeout, default (minutes)</string>

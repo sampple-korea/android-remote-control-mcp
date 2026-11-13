@@ -71,6 +71,31 @@ class ShellOutputBufferTest {
     }
 
     @Test
+    fun `a multi-megabyte output pages back whole at the default buffer size`() {
+        // Regression for the 64 KiB truncation: a 5.6 MB base64 dump read back through
+        // nextOffset paging at the per-call size must reconstruct byte-for-byte, with no gap.
+        val buffer = ShellOutputBuffer(8192 * KIB)
+        val written = ascii(5_643_644)
+        buffer.append(written)
+        val total = buffer.totalBytes()
+
+        val pages = StringBuilder()
+        var offset = 0L
+        var pageCount = 0
+        while (offset < total) {
+            val chunk = buffer.read(offset, 1024 * KIB, growing = false)
+            assertEquals(0L, chunk.droppedBytes, "page at $offset")
+            assertEquals(total, chunk.totalBytes)
+            pages.append(chunk.text)
+            offset = chunk.nextOffset
+            pageCount++
+        }
+
+        assertEquals(6, pageCount)
+        assertEquals(String(written, Charsets.US_ASCII), pages.toString())
+    }
+
+    @Test
     fun `ring wraps correctly across many small appends`() {
         val capacity = 64
         val buffer = ShellOutputBuffer(capacity)

@@ -126,7 +126,7 @@ class ShellToolsTest {
 
             ShellRunHandler(context, background = false).execute(runArgs())
 
-            coVerify(exactly = 1) { processManager.startAndAwait(any(), any(), 85_000, 65_536) }
+            coVerify(exactly = 1) { processManager.startAndAwait(any(), any(), 85_000, 1_048_576) }
         }
 
     @Test
@@ -200,7 +200,7 @@ class ShellToolsTest {
                 },
             )
 
-            coVerify(exactly = 1) { processManager.page(1, 70_000, 0, 65_536) }
+            coVerify(exactly = 1) { processManager.page(1, 70_000, 0, 1_048_576) }
         }
 
     @Test

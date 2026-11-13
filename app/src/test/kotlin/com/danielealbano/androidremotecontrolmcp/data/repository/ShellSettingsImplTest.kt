@@ -194,16 +194,17 @@ class ShellSettingsImplTest {
         }
 
     @Test
-    fun `output memory over 64 MiB is refused`() =
+    fun `output memory over 512 MiB is refused`() =
         testScope.runTest {
-            assertTrue(settings.updateShellLimit(ShellLimit.OUTPUT_BUFFER_KIB, 1365).isSuccess)
+            // (16 running + 32 kept) x 10922 KiB = 524256 KiB <= 512 MiB; 10923 exceeds it.
+            assertTrue(settings.updateShellLimit(ShellLimit.OUTPUT_BUFFER_KIB, 10922).isSuccess)
 
-            val tooLarge = settings.updateShellLimit(ShellLimit.OUTPUT_BUFFER_KIB, 1366)
+            val tooLarge = settings.updateShellLimit(ShellLimit.OUTPUT_BUFFER_KIB, 10923)
 
             assertEquals(MEMORY_CAP_MESSAGE, tooLarge.exceptionOrNull()?.message)
-            assertEquals(1365, config().limit(ShellLimit.OUTPUT_BUFFER_KIB))
+            assertEquals(10922, config().limit(ShellLimit.OUTPUT_BUFFER_KIB))
 
-            settings.updateShellLimit(ShellLimit.OUTPUT_BUFFER_KIB, 1024).getOrThrow()
+            settings.updateShellLimit(ShellLimit.OUTPUT_BUFFER_KIB, 8192).getOrThrow()
 
             assertTrue(settings.updateShellLimit(ShellLimit.MAX_RUNNING_PROCESSES, 32).isSuccess)
             assertEquals(
@@ -221,7 +222,7 @@ class ShellSettingsImplTest {
     @Test
     fun `outputMemoryKib uses the new value`() {
         assertEquals(98_304L, ShellConfig().outputMemoryKib(ShellLimit.OUTPUT_BUFFER_KIB, 2048))
-        assertEquals(16_384L, ShellConfig().outputMemoryKib(ShellLimit.MAX_FINISHED_PROCESSES, 0))
+        assertEquals(131_072L, ShellConfig().outputMemoryKib(ShellLimit.MAX_FINISHED_PROCESSES, 0))
     }
 
     @Test
@@ -267,7 +268,7 @@ class ShellSettingsImplTest {
                 setOf(
                     "Elevated shell commands allowed",
                     "Auto-allow of elevated shell commands enabled",
-                    "Shell setting shell_output_per_call_kib changed from 64 to 8",
+                    "Shell setting shell_output_per_call_kib changed from 1024 to 8",
                     "Shell blocklist updated (1 patterns)",
                 ),
                 messages.toSet(),
@@ -285,6 +286,6 @@ class ShellSettingsImplTest {
             )
 
         const val MEMORY_CAP_MESSAGE =
-            "Running plus kept processes times the output kept per process must not exceed 64 MiB"
+            "Running plus kept processes times the output kept per process must not exceed 512 MiB"
     }
 }
