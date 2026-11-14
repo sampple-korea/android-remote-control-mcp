@@ -251,6 +251,10 @@ jobs:
             - **`android_batch_actions`** — new tool that runs a sequence of UI actions in a single MCP call (allowlist of 29 action tools; stops at the first failure unless `continue_on_error` is set).
             - **`interactive_only` snapshot filter** — opt-in `android_get_screen_state` filter that keeps only interactive elements (clickable, long-clickable, editable, scrollable, or carrying accessibility actions); composes with diff mode.
 
+            ### v1.13.5
+
+            - **File transfer speedup** — the v1.13.4 chunk tools carried each chunk inside the elevated shell command line (`printf '<base64>' | base64 -d | dd bs=1`), which capped a chunk at ~96 KB and cost a full shell round trip per small chunk (a 4 MiB file took ~2.3 minutes per direction). Chunks now move entirely inside the server: decoded in-process and written directly when the app can reach the path, otherwise staged in the shell scratch directory and placed by one short root `dd` (paths and numbers only — the data never appears on a command line). The per-call cap rises to 1,048,576 raw bytes (~1.4M base64 characters), so a 4 MiB file moves in 4 calls per direction. Tool names, arguments and result JSON are unchanged.
+
             ### v1.13.4
 
             - **Chunked binary file transfer (74 tools total)** — `android_write_file_chunk` writes a base64 chunk at a byte offset (optional truncate on the first chunk), `android_read_file_chunk` reads a chunk back as base64 with the total file size and an eof flag, and `android_file_info` reports existence, size and SHA-256 in one call. Files of any size move as a sequence of independent chunks — a failed chunk retries on its own — and every call is capped server-side at 131,072 raw bytes (~175K base64 characters), so a single MCP call stays well below the Cloudflare tunnel / JSON-RPC payload limits. Like the other root tools, each runs one fixed command through the existing elevation authorization with a mandatory justification; paths are absolute, so app-private and system files work too.
