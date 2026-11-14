@@ -23,6 +23,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -109,6 +110,7 @@ private fun ShellLimitsSection(
     onChange: (ShellLimit, String) -> Unit,
     onCommit: (ShellLimit) -> Unit,
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
     Text(stringResource(R.string.shell_limits_title), style = MaterialTheme.typography.titleMedium)
     Text(
         stringResource(R.string.shell_limits_memory_note),
@@ -127,11 +129,18 @@ private fun ShellLimitsSection(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             // A limit is stored only when its field loses focus, so what gets saved is the
-            // final value the user settled on, not every intermediate keystroke state.
+            // final value the user settled on, not every intermediate keystroke state. Gaining
+            // focus hides the soft keyboard instead of showing it (see hideSoftKeyboardOnFocus).
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .onFocusChanged { focusState -> if (!focusState.isFocused) onCommit(limit) },
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            keyboardController?.hide()
+                        } else {
+                            onCommit(limit)
+                        }
+                    },
         )
     }
 }

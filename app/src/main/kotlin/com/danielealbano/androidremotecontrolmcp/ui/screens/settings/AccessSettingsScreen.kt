@@ -51,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.AccessViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -212,7 +213,7 @@ fun AccessSettingsScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -227,7 +228,7 @@ fun AccessSettingsScreen(
                 },
                 isError = publicUrlError != null,
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
             )
         }
     }

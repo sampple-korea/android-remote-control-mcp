@@ -52,6 +52,7 @@ import androidx.navigation.NavHostController
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ChannelViewModel
 import kotlinx.coroutines.launch
 
@@ -90,7 +91,7 @@ fun ChannelSettingsScreen(
                     label = { Text(stringResource(R.string.channel_endpoint_url_label)) },
                     isError = endpointUrlError != null,
                     supportingText = endpointUrlError?.let { { Text(it) } },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).hideSoftKeyboardOnFocus(),
                     singleLine = true,
                 )
             }
@@ -99,7 +100,7 @@ fun ChannelSettingsScreen(
                     value = authTokenInput,
                     onValueChange = { viewModel.updateAuthToken(it) },
                     label = { Text(stringResource(R.string.channel_auth_token_label)) },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).hideSoftKeyboardOnFocus(),
                     singleLine = true,
                     keyboardOptions =
                         KeyboardOptions(

@@ -65,6 +65,7 @@ import com.danielealbano.androidremotecontrolmcp.data.model.StorageLocation
 import com.danielealbano.androidremotecontrolmcp.services.storage.StorageLocationProvider
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 import kotlinx.coroutines.launch
 
@@ -261,7 +262,7 @@ fun StorageSettingsScreen(
                     supportingText = fileSizeLimitError?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -274,7 +275,7 @@ fun StorageSettingsScreen(
                     supportingText = downloadTimeoutError?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -382,7 +383,7 @@ fun StorageSettingsScreen(
                             )
                         },
                         singleLine = false,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedButton(
@@ -466,7 +467,7 @@ fun StorageSettingsScreen(
                             )
                         },
                         singleLine = false,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
                     )
                 }
             },

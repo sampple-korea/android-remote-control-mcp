@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,6 +44,7 @@ import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTu
 import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTunnelRenewalState
 import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTunnelStatusPage
 import com.danielealbano.androidremotecontrolmcp.ui.components.ArcTunnelRenewalBlock
+import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelRenewalViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelUrlState
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelViewModel
@@ -177,6 +179,7 @@ fun ArcTunnelSettingsContent(
     state: ArcTunnelSettingsState,
     actions: ArcTunnelSettingsActions,
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
     val enrolling = state.enrollmentState is ArcTunnelEnrollmentState.Enrolling
     var showRotateDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -201,7 +204,15 @@ fun ArcTunnelSettingsContent(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .onFocusChanged { if (!it.isFocused) actions.onBaseAddressCommit() },
+                    .onFocusChanged { focusState ->
+                        // Gaining focus hides the soft keyboard instead of showing it (see
+                        // hideSoftKeyboardOnFocus); losing it commits the address.
+                        if (focusState.isFocused) {
+                            keyboardController?.hide()
+                        } else {
+                            actions.onBaseAddressCommit()
+                        }
+                    },
         )
         Spacer(modifier = Modifier.height(8.dp))
         ArcTunnelSwitchRow(
@@ -296,7 +307,7 @@ private fun UrlRow(
                         )
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
             )
         }
 

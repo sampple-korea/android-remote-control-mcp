@@ -44,6 +44,7 @@ import com.danielealbano.androidremotecontrolmcp.data.model.BindingAddress
 import com.danielealbano.androidremotecontrolmcp.data.model.ServerStatus
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -155,7 +156,7 @@ fun GeneralSettingsScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     singleLine = true,
                     enabled = isEnabled,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
                 )
             }
 
@@ -171,7 +172,7 @@ fun GeneralSettingsScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 enabled = isEnabled,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -186,7 +187,7 @@ fun GeneralSettingsScreen(
                 supportingText = deviceSlugError?.let { { Text(it) } },
                 singleLine = true,
                 enabled = isEnabled,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
             )
 
             Spacer(modifier = Modifier.height(16.dp))

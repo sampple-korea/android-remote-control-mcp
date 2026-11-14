@@ -62,6 +62,7 @@
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustNothing"
             android:theme="@style/Theme.AndroidRemoteControlMcp">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

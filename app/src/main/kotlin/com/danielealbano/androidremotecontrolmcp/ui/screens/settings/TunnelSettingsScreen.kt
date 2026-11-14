@@ -62,6 +62,7 @@ import com.danielealbano.androidremotecontrolmcp.data.model.TunnelStatus
 import com.danielealbano.androidremotecontrolmcp.mcp.ListenerSettingsCheck
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelRenewalViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
@@ -270,7 +271,7 @@ fun TunnelSettingsScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         enabled = isEnabled,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
                     )
                 }
             }
@@ -371,7 +372,7 @@ private fun NgrokConfigFields(
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -389,7 +390,7 @@ private fun NgrokConfigFields(
             placeholder = {
                 Text(text = stringResource(R.string.remote_access_ngrok_domain_hint))
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
         )
     }
 }
@@ -504,7 +505,7 @@ private fun CloudflareTokenFields(
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -557,7 +558,7 @@ private fun CloudflareExtraArgsField(
             placeholder = {
                 Text(text = stringResource(R.string.remote_access_cloudflare_extra_args_hint))
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(

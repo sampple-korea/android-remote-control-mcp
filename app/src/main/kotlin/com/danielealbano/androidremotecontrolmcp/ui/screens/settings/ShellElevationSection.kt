@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.data.model.ShellConfig
 import com.danielealbano.androidremotecontrolmcp.services.shell.ShizukuState
+import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ShellSwitch
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.SuStatus
 
@@ -110,7 +111,7 @@ internal fun ShellPatternListEditor(
             onValueChange = { input = it },
             label = { Text(stringResource(R.string.shell_pattern_input_label)) },
             singleLine = true,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).hideSoftKeyboardOnFocus(),
         )
         Spacer(Modifier.width(8.dp))
         Button(

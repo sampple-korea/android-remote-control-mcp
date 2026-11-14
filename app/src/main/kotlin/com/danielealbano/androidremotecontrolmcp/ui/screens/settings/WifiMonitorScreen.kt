@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ChannelViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +77,7 @@ fun WifiMonitorScreen(
                         value = newSsid,
                         onValueChange = { newSsid = it },
                         label = { Text(stringResource(R.string.wifi_monitor_ssid_label)) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).hideSoftKeyboardOnFocus(),
                         singleLine = true,
                     )
                     IconButton(
