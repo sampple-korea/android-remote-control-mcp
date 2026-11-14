@@ -66,8 +66,9 @@ class ScreenshotAnnotator
          *
          * Creates a mutable copy of the input bitmap and draws on it. The input bitmap
          * is NOT modified or recycled -- the caller retains ownership of both. Background
-         * luminance is always sampled from the INPUT bitmap, so already-drawn annotation
-         * strokes never feed back into later color decisions.
+         * luminance is sampled from the input's pixels (via a software copy when the input
+         * is a HARDWARE bitmap, whose pixels cannot be read directly), so already-drawn
+         * annotation strokes never feed back into later color decisions.
          *
          * @param bitmap The resized screenshot bitmap.
          * @param elements Flat list of on-screen elements to annotate (already filtered).
@@ -93,19 +94,35 @@ class ScreenshotAnnotator
                     "Failed to create mutable bitmap copy for annotation"
                 }
 
+            // Luminance sampling below reads individual pixels, which HARDWARE bitmaps do not
+            // support (getPixel throws IllegalStateException). When the source is a HARDWARE
+            // bitmap -- the usual case for captured screenshots -- sample from a software copy
+            // instead. The sampling source stays pristine: strokes are drawn on [copy] only.
+            var sampleSource: Bitmap? = null
             try {
+                val sampling =
+                    if (bitmap.config == Bitmap.Config.HARDWARE) {
+                        checkNotNull(bitmap.copy(Bitmap.Config.ARGB_8888, false)) {
+                            "Failed to create readable bitmap copy for annotation sampling"
+                        }
+                    } else {
+                        bitmap
+                    }
+                sampleSource = sampling
                 val canvas = Canvas(copy)
                 val scaleX = copy.width.toFloat() / screenWidth.toFloat()
                 val scaleY = copy.height.toFloat() / screenHeight.toFloat()
                 val density = copy.width.toFloat() / REFERENCE_WIDTH_DP
 
-                drawGrid(canvas, bitmap, screenWidth, screenHeight, scaleX, scaleY, density)
-                drawElements(canvas, bitmap, elements, copy.width, copy.height, scaleX, scaleY, density)
+                drawGrid(canvas, sampling, screenWidth, screenHeight, scaleX, scaleY, density)
+                drawElements(canvas, sampling, elements, copy.width, copy.height, scaleX, scaleY, density)
 
                 return copy
             } catch (e: Exception) {
                 copy.recycle()
                 throw e
+            } finally {
+                sampleSource?.takeIf { it !== bitmap }?.recycle()
             }
         }
 

@@ -146,7 +146,9 @@ class ScreenshotAnnotatorTest {
             mockCopy = mockk(relaxed = true)
             every { mockBitmap.width } returns 540
             every { mockBitmap.height } returns 1200
-            // annotate() uses ARGB_8888 unconditionally (not bitmap.config)
+            // annotate() draws on an ARGB_8888 copy; the input config only decides whether
+            // luminance sampling needs its own readable copy (HARDWARE inputs)
+            every { mockBitmap.config } returns Bitmap.Config.ARGB_8888
             every { mockBitmap.copy(Bitmap.Config.ARGB_8888, true) } returns mockCopy
             every { mockCopy.width } returns 540
             every { mockCopy.height } returns 1200
@@ -213,6 +215,26 @@ class ScreenshotAnnotatorTest {
             verify(atLeast = 1) {
                 anyConstructed<Canvas>().drawText(match { it.contains("Second") }, any(), any(), any())
             }
+        }
+
+        @Test
+        fun `hardware bitmap is sampled through a software copy`() {
+            // Captured screenshots are HARDWARE bitmaps, whose pixels cannot be read
+            // (getPixel throws). Sampling must go through a readable copy of the input.
+            val softwareCopy = mockk<Bitmap>(relaxed = true)
+            every { softwareCopy.width } returns 540
+            every { softwareCopy.height } returns 1200
+            every { mockBitmap.config } returns Bitmap.Config.HARDWARE
+            every { mockBitmap.copy(Bitmap.Config.ARGB_8888, false) } returns softwareCopy
+
+            val result = annotator.annotate(mockBitmap, emptyList(), 1080, 2400)
+
+            assertEquals(mockCopy, result)
+            verify(exactly = 1) { mockBitmap.copy(Bitmap.Config.ARGB_8888, false) }
+            verify(atLeast = 1) { softwareCopy.getPixel(any(), any()) }
+            verify(exactly = 0) { mockBitmap.getPixel(any(), any()) }
+            // The sampling copy is recycled; the input bitmap is not
+            verify(exactly = 1) { softwareCopy.recycle() }
         }
 
         @Test
