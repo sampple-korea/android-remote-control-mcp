@@ -83,7 +83,11 @@ class ScreenshotAnnotator
             elements: List<AccessibilityNodeData>,
             screenWidth: Int,
             screenHeight: Int,
-        ): Bitmap = annotateView(bitmap, elements, 0, 0, screenWidth, screenHeight)
+        ): Bitmap {
+            require(screenWidth > 0) { "screenWidth must be positive, was $screenWidth" }
+            require(screenHeight > 0) { "screenHeight must be positive, was $screenHeight" }
+            return annotateView(bitmap, elements, 0, 0, screenWidth, screenHeight)
+        }
 
         /**
          * Annotates a cropped, already-enlarged view of one screen region: [bitmap] shows ONLY the
