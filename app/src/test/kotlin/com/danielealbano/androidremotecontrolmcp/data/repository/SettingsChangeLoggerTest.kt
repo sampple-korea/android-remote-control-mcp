@@ -88,6 +88,75 @@ class SettingsChangeLoggerTest {
             assertFalse(message.contains("secret-new"))
         }
 
+    @Test
+    fun `immediate toggle is logged synchronously without waiting for the window`() =
+        runTest {
+            val logger = SettingsChangeLogger(serverLog, StandardTestDispatcher(testScheduler), WINDOW)
+            logger.submitToggle(
+                "shell_elevation_enabled",
+                oldValue = false,
+                newValue = true,
+                subject = "Elevated shell commands",
+                onWord = "allowed",
+                offWord = "disallowed",
+                immediate = true,
+            )
+
+            // No time has passed: the entry must already be there, so a process death right after
+            // the toggle cannot lose it.
+            assertEquals(1, serverLog.entries.size)
+            assertEquals("Elevated shell commands allowed", serverLog.entries.first().message)
+
+            advanceUntilIdle()
+            assertEquals(1, serverLog.entries.size)
+        }
+
+    @Test
+    fun `immediate change with no net change is dropped`() =
+        runTest {
+            val logger = SettingsChangeLogger(serverLog, StandardTestDispatcher(testScheduler), WINDOW)
+            logger.submit("shell_auto_allow_elevation", "true", "true", immediate = true) { o, n -> "$o -> $n" }
+
+            assertTrue(serverLog.entries.isEmpty())
+        }
+
+    @Test
+    fun `immediate submit supersedes a pending coalesced entry for the same key`() =
+        runTest {
+            val logger = SettingsChangeLogger(serverLog, StandardTestDispatcher(testScheduler), WINDOW)
+            logger.submit("shell_elevation_enabled", "false", "true") { o, n -> "Elevation $o -> $n" }
+            advanceTimeBy(500)
+            logger.submit("shell_elevation_enabled", "true", "true", immediate = true) { o, n -> "Elevation $o -> $n" }
+
+            // Exactly one entry, rendered from the value before the pending burst, and the
+            // superseded pending entry never flushes a second one.
+            assertEquals(1, serverLog.entries.size)
+            assertEquals("Elevation false -> true", serverLog.entries.first().message)
+            advanceUntilIdle()
+            assertEquals(1, serverLog.entries.size)
+        }
+
+    @Test
+    fun `immediate submit leaves other keys coalescing untouched`() =
+        runTest {
+            val logger = SettingsChangeLogger(serverLog, StandardTestDispatcher(testScheduler), WINDOW)
+            logger.submit("port", "8080", "9090") { o, n -> "Port changed $o → $n" }
+            logger.submitToggle(
+                "shell_auto_allow_elevation",
+                oldValue = false,
+                newValue = true,
+                subject = "Auto-allow of elevated shell commands",
+                immediate = true,
+            )
+
+            assertEquals(1, serverLog.entries.size)
+            assertEquals("Auto-allow of elevated shell commands enabled", serverLog.entries.first().message)
+
+            advanceUntilIdle()
+            assertEquals(2, serverLog.entries.size)
+            assertEquals("Port changed 8080 → 9090", serverLog.entries[1].message)
+        }
+
     private companion object {
         const val WINDOW = 2_000L
     }

@@ -89,6 +89,9 @@ class ShellSettingsImpl
                     "Elevated shell commands",
                     "allowed",
                     "disallowed",
+                    // No coalescing: a process death inside the window (e.g. an app reinstall right
+                    // after the toggle) must not be able to lose the record of this change.
+                    immediate = true,
                 )
                 shizukuProviderSwitch.setEnabled(enabled)
             }
@@ -107,6 +110,8 @@ class ShellSettingsImpl
                     old,
                     enabled,
                     "Auto-allow of elevated shell commands",
+                    // No coalescing: see updateShellElevationEnabled.
+                    immediate = true,
                 )
             }
         }

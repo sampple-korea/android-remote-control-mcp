@@ -17,6 +17,10 @@ import javax.inject.Singleton
  * the value BEFORE the burst and the latest value. Bursts that end where they started (old ==
  * final new) are dropped. Values are compared but only reach the log through [submit]'s render
  * lambda — secret settings pass a lambda that ignores them.
+ *
+ * A change submitted with `immediate = true` skips coalescing and is logged synchronously: boolean
+ * toggles produce no burst, and a coalesced entry is lost when the process dies inside the window
+ * (an app reinstall right after a toggle left the stored value changed with no log entry at all).
  */
 @Singleton
 class SettingsChangeLogger internal constructor(
@@ -46,8 +50,21 @@ class SettingsChangeLogger internal constructor(
         key: String,
         oldValue: String,
         newValue: String,
+        immediate: Boolean = false,
         render: (old: String, new: String) -> String,
     ) {
+        if (immediate) {
+            // Supersede any coalesced entry still pending for this key: it must not flush a second,
+            // stale entry later, and the value before its burst is the truthful "old" value.
+            val firstOldValue =
+                synchronized(pending) {
+                    pending.remove(key)?.also { it.flushJob?.cancel() }?.firstOldValue ?: oldValue
+                }
+            if (firstOldValue != newValue) {
+                serverLogRepository.log(ServerLogEntry.Type.SETTINGS, render(firstOldValue, newValue))
+            }
+            return
+        }
         synchronized(pending) {
             val existing = pending[key]
             if (existing == null) {
@@ -111,8 +128,9 @@ internal fun SettingsChangeLogger.submitToggle(
     subject: String,
     onWord: String = "enabled",
     offWord: String = "disabled",
+    immediate: Boolean = false,
 ) {
-    submit(key, oldValue.toString(), newValue.toString()) { _, n ->
+    submit(key, oldValue.toString(), newValue.toString(), immediate) { _, n ->
         "$subject ${if (n.toBoolean()) onWord else offWord}"
     }
 }
