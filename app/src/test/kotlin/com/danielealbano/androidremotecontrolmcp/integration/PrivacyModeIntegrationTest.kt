@@ -360,22 +360,13 @@ class PrivacyModeIntegrationTest {
                             ),
                         ),
                 )
-            McpIntegrationTestHelper.focusInputOn(deps, deps.setupTree(editTree), "node_edit")
-            coEvery { deps.actionExecutor.clickNode("node_edit", any<List<WindowData>>()) } returns Result.success(Unit)
-            every { deps.typeInputController.isReady() } returns true
-            every { deps.typeInputController.setSelection(any(), any()) } returns true
+            deps.setupTree(editTree)
 
-            // General reads (cursor positioning + initial length) see an empty field.
-            every { deps.typeInputController.getSurroundingText(any(), any(), any()) } returns mockSurroundingText("")
-
-            // Per-character verification reads back what has been committed so far.
-            val committed = StringBuilder()
-            every { deps.typeInputController.commitText(any(), any()) } answers {
-                committed.append(firstArg<String>())
-                true
-            }
-            every { deps.typeInputController.getSurroundingText(any(), eq(0), eq(0)) } answers {
-                mockSurroundingText(committed.toString())
+            // The tool sets the field's whole text in one ACTION_SET_TEXT operation; capture what it sets.
+            val setValues = mutableListOf<String>()
+            coEvery { deps.actionExecutor.setTextOnNode("node_edit", any(), any()) } answers {
+                setValues += secondArg<String>()
+                Result.success(Unit)
             }
 
             // Seed the pseudonym store so the placeholder reverses to the real value.
@@ -388,7 +379,7 @@ class PrivacyModeIntegrationTest {
                         arguments = mapOf("node_id" to "node_edit", "text" to placeholder),
                     )
                 assertNotEquals(true, result.isError)
-                assertEquals("john@example.com", committed.toString())
+                assertEquals(listOf("john@example.com"), setValues)
             }
         }
 
@@ -501,14 +492,5 @@ class PrivacyModeIntegrationTest {
     private suspend fun screenStateText(client: Client): String {
         val result = client.callTool(name = "android_get_screen_state", arguments = emptyMap())
         return (result.content[0] as TextContent).text
-    }
-
-    private fun mockSurroundingText(text: String): SurroundingText {
-        val mock = mockk<SurroundingText>()
-        every { mock.text } returns text
-        every { mock.offset } returns 0
-        every { mock.selectionStart } returns text.length
-        every { mock.selectionEnd } returns text.length
-        return mock
     }
 }

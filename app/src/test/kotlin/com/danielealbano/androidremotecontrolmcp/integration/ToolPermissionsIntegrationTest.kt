@@ -337,6 +337,11 @@ class ToolPermissionsIntegrationTest {
                 "shell_output",
                 "shell_kill",
                 "shell_list",
+                "install_apk",
+                "uninstall_app",
+                "reboot_device",
+                "read_logcat",
+                "read_root_file",
                 "batch_actions",
             )
     }
