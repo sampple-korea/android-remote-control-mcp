@@ -19,7 +19,6 @@ object OptionalToolPermissions {
                     "list_camera_photo_resolutions",
                     "list_camera_video_resolutions",
                     "take_camera_photo",
-                    "save_camera_photo",
                     "save_camera_video",
                 ),
             OptionalToolPermission.LOCATION to setOf("get_location"),

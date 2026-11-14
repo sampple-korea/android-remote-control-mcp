@@ -140,7 +140,6 @@ class PermissionGatedToolsIntegrationTest {
                 "android_list_camera_photo_resolutions",
                 "android_list_camera_video_resolutions",
                 "android_take_camera_photo",
-                "android_save_camera_photo",
                 "android_save_camera_video",
             )
 

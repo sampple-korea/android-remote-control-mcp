@@ -99,15 +99,15 @@ class TextInputIntegrationTest {
     }
 
     @Test
-    fun `type_append_text with node_id returns success with field content`() =
+    fun `edit_text append with node_id returns success with field content`() =
         runTest {
             val (deps, fieldText) = depsWithField("existing")
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_append_text",
-                        arguments = mapOf("node_id" to "node_edit", "text" to "Hello"),
+                        name = "android_edit_text",
+                        arguments = mapOf("mode" to "append", "node_id" to "node_edit", "text" to "Hello"),
                     )
                 assertNotEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text
@@ -120,13 +120,13 @@ class TextInputIntegrationTest {
         }
 
     @Test
-    fun `type_append_text with missing text returns error`() =
+    fun `edit_text append with missing text returns error`() =
         runTest {
             McpIntegrationTestHelper.withTestApplication { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_append_text",
-                        arguments = emptyMap(),
+                        name = "android_edit_text",
+                        arguments = mapOf("mode" to "append"),
                     )
                 assertEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text
@@ -135,16 +135,17 @@ class TextInputIntegrationTest {
         }
 
     @Test
-    fun `type_insert_text with valid offset returns success with field content`() =
+    fun `edit_text insert with valid offset returns success with field content`() =
         runTest {
             val (deps, fieldText) = depsWithField("Hello")
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_insert_text",
+                        name = "android_edit_text",
                         arguments =
                             mapOf(
+                                "mode" to "insert",
                                 "node_id" to "node_edit",
                                 "text" to " World",
                                 "offset" to 3,
@@ -158,16 +159,17 @@ class TextInputIntegrationTest {
         }
 
     @Test
-    fun `type_replace_text with found search text returns success with field content`() =
+    fun `edit_text replace with found search text returns success with field content`() =
         runTest {
             val (deps, fieldText) = depsWithField("Hello World")
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_replace_text",
+                        name = "android_edit_text",
                         arguments =
                             mapOf(
+                                "mode" to "replace",
                                 "node_id" to "node_edit",
                                 "search" to "Hello",
                                 "new_text" to "Goodbye",
@@ -181,16 +183,17 @@ class TextInputIntegrationTest {
         }
 
     @Test
-    fun `type_replace_text with missing search text returns error`() =
+    fun `edit_text replace with missing search text returns error`() =
         runTest {
             val (deps, _) = depsWithField("Something")
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_replace_text",
+                        name = "android_edit_text",
                         arguments =
                             mapOf(
+                                "mode" to "replace",
                                 "node_id" to "node_edit",
                                 "search" to "NotFound",
                                 "new_text" to "X",
@@ -201,15 +204,15 @@ class TextInputIntegrationTest {
         }
 
     @Test
-    fun `type_clear_text returns success with field content`() =
+    fun `edit_text clear returns success with field content`() =
         runTest {
             val (deps, fieldText) = depsWithField("Hello")
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_clear_text",
-                        arguments = mapOf("node_id" to "node_edit"),
+                        name = "android_edit_text",
+                        arguments = mapOf("mode" to "clear", "node_id" to "node_edit"),
                     )
                 assertNotEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text
@@ -219,15 +222,15 @@ class TextInputIntegrationTest {
         }
 
     @Test
-    fun `type_clear_text returns an error when the field is not cleared`() =
+    fun `edit_text clear returns an error when the field is not cleared`() =
         runTest {
             val (deps, _) = depsWithField("Hello", loseSets = true)
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_clear_text",
-                        arguments = mapOf("node_id" to "node_edit"),
+                        name = "android_edit_text",
+                        arguments = mapOf("mode" to "clear", "node_id" to "node_edit"),
                     )
                 assertEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text
@@ -236,7 +239,7 @@ class TextInputIntegrationTest {
         }
 
     @Test
-    fun `type_clear_text with a selector clears the matched field`() =
+    fun `edit_text clear with a selector clears the matched field`() =
         runTest {
             val (deps, fieldText) = depsWithField("Hello")
             every {
@@ -261,9 +264,9 @@ class TextInputIntegrationTest {
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_clear_text",
+                        name = "android_edit_text",
                         arguments =
-                            mapOf("by" to "class_name", "value" to "android.widget.EditText", "exact_match" to true),
+                            mapOf("mode" to "clear", "by" to "class_name", "value" to "android.widget.EditText", "exact_match" to true),
                     )
                 assertNotEquals(true, result.isError)
                 assertTrue((result.content[0] as TextContent).text.contains("Text cleared from node 'node_edit'"))
@@ -272,7 +275,7 @@ class TextInputIntegrationTest {
         }
 
     @Test
-    fun `press_key still works after tool changes`() =
+    fun `press_back works after the press_key dedup`() =
         runTest {
             val deps = McpIntegrationTestHelper.createMockDependencies()
             coEvery { deps.actionExecutor.pressBack() } returns Result.success(Unit)
@@ -280,12 +283,12 @@ class TextInputIntegrationTest {
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_press_key",
-                        arguments = mapOf("key" to "BACK"),
+                        name = "android_press_back",
+                        arguments = emptyMap(),
                     )
                 assertNotEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text
-                assertTrue(text.contains("BACK"))
+                assertTrue(text.contains("Back"))
             }
         }
 
@@ -297,13 +300,14 @@ class TextInputIntegrationTest {
                 val toolNames = result.tools.map { it.name }.toSet()
 
                 // New tools must be present
-                assertTrue(toolNames.contains("android_type_append_text"))
-                assertTrue(toolNames.contains("android_type_insert_text"))
-                assertTrue(toolNames.contains("android_type_replace_text"))
-                assertTrue(toolNames.contains("android_type_clear_text"))
+                assertTrue(toolNames.contains("android_edit_text"))
                 assertTrue(toolNames.contains("android_press_key"))
 
                 // Old tools must NOT be present
+                assertFalse(toolNames.contains("android_type_append_text"))
+                assertFalse(toolNames.contains("android_type_insert_text"))
+                assertFalse(toolNames.contains("android_type_replace_text"))
+                assertFalse(toolNames.contains("android_type_clear_text"))
                 assertFalse(toolNames.contains("android_input_text"))
                 assertFalse(toolNames.contains("android_clear_text"))
                 assertFalse(toolNames.contains("android_set_text"))

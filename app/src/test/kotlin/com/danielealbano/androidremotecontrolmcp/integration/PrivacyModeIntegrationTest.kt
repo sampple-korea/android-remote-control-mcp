@@ -335,7 +335,7 @@ class PrivacyModeIntegrationTest {
         }
 
     @Test
-    fun `type_append_text substitutes placeholder back`() =
+    fun `edit_text append substitutes placeholder back`() =
         runTest {
             val deps = McpIntegrationTestHelper.createMockDependencies()
             McpIntegrationTestHelper.setPrivacy(deps, deterministicEnabled, PrivacyModeStatus.ReadyDeterministicOnly)
@@ -375,8 +375,8 @@ class PrivacyModeIntegrationTest {
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_append_text",
-                        arguments = mapOf("node_id" to "node_edit", "text" to placeholder),
+                        name = "android_edit_text",
+                        arguments = mapOf("mode" to "append", "node_id" to "node_edit", "text" to placeholder),
                     )
                 assertNotEquals(true, result.isError)
                 assertEquals(listOf("john@example.com"), setValues)

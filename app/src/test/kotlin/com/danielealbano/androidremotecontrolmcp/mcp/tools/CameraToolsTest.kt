@@ -243,7 +243,7 @@ class CameraToolsTest {
 
         @BeforeEach
         fun setUp() {
-            handler = TakeCameraPhotoHandler(cameraProvider)
+            handler = TakeCameraPhotoHandler(cameraProvider, fileOperationProvider)
         }
 
         @Test
@@ -480,17 +480,17 @@ class CameraToolsTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // SaveCameraPhotoHandler
+    // take_camera_photo save mode (formerly SaveCameraPhotoHandler)
     // ─────────────────────────────────────────────────────────────────────
 
     @Nested
-    @DisplayName("SaveCameraPhotoHandler")
-    inner class SaveCameraPhotoHandlerTests {
-        private lateinit var handler: SaveCameraPhotoHandler
+    @DisplayName("TakeCameraPhotoHandler save mode")
+    inner class TakeCameraPhotoSaveModeTests {
+        private lateinit var handler: TakeCameraPhotoHandler
 
         @BeforeEach
         fun setUp() {
-            handler = SaveCameraPhotoHandler(cameraProvider, fileOperationProvider)
+            handler = TakeCameraPhotoHandler(cameraProvider, fileOperationProvider)
         }
 
         @Test

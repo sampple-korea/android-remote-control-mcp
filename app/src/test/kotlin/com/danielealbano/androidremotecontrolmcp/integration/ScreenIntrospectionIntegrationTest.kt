@@ -99,7 +99,7 @@ class ScreenIntrospectionIntegrationTest {
                 assertTrue(textContent.contains("note:structural-only nodes are omitted from the tree"))
                 assertTrue(textContent.contains("note:certain elements are custom and will not be properly reported"))
                 assertTrue(textContent.contains("note:flags: on=onscreen off=offscreen"))
-                assertTrue(textContent.contains("note:offscreen items require scroll_to_node before interaction"))
+                assertTrue(textContent.contains("note:offscreen items require scroll (mode=until) before interaction"))
                 assertTrue(textContent.contains("screen:1080x2400 density:420 orientation:portrait"))
                 // Multi-window format: per-window header instead of global app line
                 assertTrue(textContent.contains("--- window:0 type:APPLICATION"))

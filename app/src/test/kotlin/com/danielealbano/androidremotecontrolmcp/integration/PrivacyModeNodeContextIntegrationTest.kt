@@ -569,20 +569,20 @@ class PrivacyModeNodeContextIntegrationTest {
     }
 
     @Test
-    fun `type_append_text redacts the content of a password field`() =
+    fun `edit_text append redacts the content of a password field`() =
         runTest {
             val tree = treeOf(passwordField(text = "hunter2secret"))
             val deps = privacyDeps(tree)
             val fieldText = deps.wireSetText(tree, "node_pwd", "hunter2secret")
 
-            val text = typeToolResult(deps, "android_type_append_text", mapOf("node_id" to "node_pwd", "text" to "9"))
+            val text = typeToolResult(deps, "android_edit_text", mapOf("mode" to "append", "node_id" to "node_pwd", "text" to "9"))
 
             assertEquals("hunter2secret9", fieldText())
             assertCredentialRedacted(text, secret = "hunter2secret")
         }
 
     @Test
-    fun `type_insert_text redacts the content of a password field`() =
+    fun `edit_text insert redacts the content of a password field`() =
         runTest {
             val tree = treeOf(passwordField(text = "hunter2secret"))
             val deps = privacyDeps(tree)
@@ -591,15 +591,15 @@ class PrivacyModeNodeContextIntegrationTest {
             val text =
                 typeToolResult(
                     deps,
-                    "android_type_insert_text",
-                    mapOf("node_id" to "node_pwd", "text" to "9", "offset" to 0),
+                    "android_edit_text",
+                    mapOf("mode" to "insert", "node_id" to "node_pwd", "text" to "9", "offset" to 0),
                 )
 
             assertCredentialRedacted(text, secret = "hunter2secret")
         }
 
     @Test
-    fun `type_replace_text redacts the content of a password field`() =
+    fun `edit_text replace redacts the content of a password field`() =
         runTest {
             val tree = treeOf(passwordField(text = "hunter2secret"))
             val deps = privacyDeps(tree)
@@ -608,15 +608,15 @@ class PrivacyModeNodeContextIntegrationTest {
             val text =
                 typeToolResult(
                     deps,
-                    "android_type_replace_text",
-                    mapOf("node_id" to "node_pwd", "search" to "secret", "new_text" to "9"),
+                    "android_edit_text",
+                    mapOf("mode" to "replace", "node_id" to "node_pwd", "search" to "secret", "new_text" to "9"),
                 )
 
             assertCredentialRedacted(text, secret = "hunter2")
         }
 
     @Test
-    fun `type_clear_text never returns the content of a password field it could not clear`() =
+    fun `edit_text clear never returns the content of a password field it could not clear`() =
         runTest {
             val tree = treeOf(passwordField(text = "hunter2secret"))
             val deps = privacyDeps(tree)
@@ -625,7 +625,7 @@ class PrivacyModeNodeContextIntegrationTest {
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
-                    client.callTool(name = "android_type_clear_text", arguments = mapOf("node_id" to "node_pwd"))
+                    client.callTool(name = "android_edit_text", arguments = mapOf("mode" to "clear", "node_id" to "node_pwd"))
                 assertEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text
                 assertTrue(text.contains("was not deleted"), text)
@@ -634,14 +634,14 @@ class PrivacyModeNodeContextIntegrationTest {
         }
 
     @Test
-    fun `type_clear_text redacts what a password field reads back after the clear`() =
+    fun `edit_text clear redacts what a password field reads back after the clear`() =
         runTest {
             val tree = treeOf(passwordField(text = "hunter2secret"))
             val deps = privacyDeps(tree)
             // The field fills itself again right after the clear, with the real characters of a password
             val fieldText = deps.wireSetText(tree, "node_pwd", "hunter2secret", refillOnClear = "hunter2refill")
 
-            val text = typeToolResult(deps, "android_type_clear_text", mapOf("node_id" to "node_pwd"))
+            val text = typeToolResult(deps, "android_edit_text", mapOf("mode" to "clear", "node_id" to "node_pwd"))
 
             assertEquals("hunter2refill", fieldText())
             assertCredentialRedacted(text, secret = "hunter2refill")
@@ -659,8 +659,8 @@ class PrivacyModeNodeContextIntegrationTest {
             val text =
                 typeToolResult(
                     deps,
-                    "android_type_append_text",
-                    mapOf("node_id" to "node_token", "text" to "9"),
+                    "android_edit_text",
+                    mapOf("mode" to "append", "node_id" to "node_token", "text" to "9"),
                 )
 
             assertCredentialRedacted(text)
@@ -687,8 +687,8 @@ class PrivacyModeNodeContextIntegrationTest {
             val text =
                 typeToolResult(
                     deps,
-                    "android_type_append_text",
-                    mapOf("node_id" to "node_wrapper", "text" to "9"),
+                    "android_edit_text",
+                    mapOf("mode" to "append", "node_id" to "node_wrapper", "text" to "9"),
                 )
 
             assertEquals("hunter2secret9", fieldText())
@@ -696,7 +696,7 @@ class PrivacyModeNodeContextIntegrationTest {
         }
 
     @Test
-    fun `type_append_text edits nothing when the target is not a text field`() =
+    fun `edit_text append edits nothing when the target is not a text field`() =
         runTest {
             // The toggle next to the password field is not editable and holds no editable field: the tool
             // must fail without touching the password field, whose content must not leak either.
@@ -717,8 +717,8 @@ class PrivacyModeNodeContextIntegrationTest {
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_type_append_text",
-                        arguments = mapOf("node_id" to "node_toggle", "text" to "9"),
+                        name = "android_edit_text",
+                        arguments = mapOf("mode" to "append", "node_id" to "node_toggle", "text" to "9"),
                     )
                 assertEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text

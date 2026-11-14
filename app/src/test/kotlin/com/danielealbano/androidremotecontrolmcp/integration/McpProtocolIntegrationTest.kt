@@ -154,8 +154,6 @@ class McpProtocolIntegrationTest {
                 "android_long_click_node",
                 "android_perform_node_action",
                 "android_tap_node",
-                "android_scroll_to_node",
-                "android_scroll_node",
                 // Screen introspection
                 "android_get_screen_state",
                 "android_get_node_screenshots",
@@ -167,10 +165,7 @@ class McpProtocolIntegrationTest {
                 "android_open_quick_settings",
                 "android_dismiss_keyboard",
                 // Text input
-                "android_type_append_text",
-                "android_type_insert_text",
-                "android_type_replace_text",
-                "android_type_clear_text",
+                "android_edit_text",
                 "android_press_key",
                 // Utility
                 "android_get_clipboard",
@@ -196,7 +191,6 @@ class McpProtocolIntegrationTest {
                 "android_list_camera_photo_resolutions",
                 "android_list_camera_video_resolutions",
                 "android_take_camera_photo",
-                "android_save_camera_photo",
                 "android_save_camera_video",
                 // Intent tools
                 "android_send_intent",

@@ -916,8 +916,9 @@ class NodeActionToolsTest {
                         realResolver,
                     )
                 val scroll =
-                    ScrollNodeTool(
+                    UnifiedScrollTool(
                         mockTreeParser,
+                        realFinder,
                         mockActionExecutor,
                         mockAccessibilityServiceProvider,
                         mockNodeCache,
@@ -925,6 +926,7 @@ class NodeActionToolsTest {
                     )
                 val scrollParams =
                     buildJsonObject {
+                        put("mode", "node")
                         put("by", "text")
                         put("value", "Save")
                         put("exact_match", true)
@@ -1046,12 +1048,13 @@ class NodeActionToolsTest {
     }
 
     @Nested
-    @DisplayName("ScrollNodeTool")
-    inner class ScrollNodeToolTests {
+    @DisplayName("scroll mode=node")
+    inner class ScrollNodeModeTests {
         private val tree = screenWith(leaf("node_row", "Row", visible = true))
         private val tool =
-            ScrollNodeTool(
+            UnifiedScrollTool(
                 mockTreeParser,
+                realFinder,
                 mockActionExecutor,
                 mockAccessibilityServiceProvider,
                 mockNodeCache,
@@ -1069,6 +1072,7 @@ class NodeActionToolsTest {
                     extractTextContent(
                         tool.execute(
                             buildJsonObject {
+                                put("mode", "node")
                                 put("node_id", "node_list")
                                 put("direction", "down")
                             },
@@ -1095,6 +1099,7 @@ class NodeActionToolsTest {
                 for ((name, direction) in directions) {
                     tool.execute(
                         buildJsonObject {
+                            put("mode", "node")
                             put("node_id", "node_list")
                             put("direction", name)
                         },
@@ -1115,6 +1120,7 @@ class NodeActionToolsTest {
                     extractTextContent(
                         tool.execute(
                             buildJsonObject {
+                                put("mode", "node")
                                 put("by", "content_desc")
                                 put("value", "long_list")
                                 put("direction", "up")
@@ -1135,6 +1141,7 @@ class NodeActionToolsTest {
                     assertThrows<McpToolException.InvalidParams> {
                         tool.execute(
                             buildJsonObject {
+                                put("mode", "node")
                                 put("node_id", "node_list")
                                 put("direction", "diagonal")
                             },
@@ -1154,6 +1161,7 @@ class NodeActionToolsTest {
                     extractTextContent(
                         tool.execute(
                             buildJsonObject {
+                                put("mode", "node")
                                 put("node_id", "node_list")
                                 put("direction", "Down")
                             },
@@ -1173,6 +1181,7 @@ class NodeActionToolsTest {
                 assertThrows<McpToolException.ActionFailed> {
                     tool.execute(
                         buildJsonObject {
+                            put("mode", "node")
                             put("node_id", "node_row")
                             put("direction", "down")
                         },

@@ -195,7 +195,7 @@ class NodeTargetResolver
                 "No on-screen node matches the selector (by=${selector.by}, exact_match=${selector.exactMatch})"
             } else {
                 "No node in the current screen matches the selector (by=${selector.by}, " +
-                    "exact_match=${selector.exactMatch}); scroll its list with scroll_node and retry"
+                    "exact_match=${selector.exactMatch}); scroll its list with scroll (mode=node) and retry"
             }
 
         /** A string parameter, absent when missing or JSON null. */

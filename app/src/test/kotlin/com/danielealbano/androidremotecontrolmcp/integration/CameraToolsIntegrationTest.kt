@@ -248,11 +248,11 @@ class CameraToolsIntegrationTest {
         }
 
     // ─────────────────────────────────────────────────────────────────────
-    // save_camera_photo
+    // take_camera_photo save mode
     // ─────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `save_camera_photo returns success text through MCP protocol`() =
+    fun `take_camera_photo with location_id and path saves and returns success text through MCP protocol`() =
         runTest {
             val deps = McpIntegrationTestHelper.createMockDependencies()
             val mockUri = mockk<Uri>()
@@ -273,7 +273,7 @@ class CameraToolsIntegrationTest {
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_save_camera_photo",
+                        name = "android_take_camera_photo",
                         arguments =
                             mapOf(
                                 "camera_id" to "0",
@@ -289,7 +289,7 @@ class CameraToolsIntegrationTest {
         }
 
     @Test
-    fun `save_camera_photo with write not allowed returns error through MCP protocol`() =
+    fun `take_camera_photo save with write not allowed returns error through MCP protocol`() =
         runTest {
             val deps = McpIntegrationTestHelper.createMockDependencies()
             coEvery {
@@ -299,7 +299,7 @@ class CameraToolsIntegrationTest {
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_save_camera_photo",
+                        name = "android_take_camera_photo",
                         arguments =
                             mapOf(
                                 "camera_id" to "0",

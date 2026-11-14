@@ -303,13 +303,8 @@ class BatchActionsHandler(
                 "long_click_node",
                 "perform_node_action",
                 "tap_node",
-                "scroll_to_node",
-                "scroll_node",
                 // Text input
-                "type_append_text",
-                "type_insert_text",
-                "type_replace_text",
-                "type_clear_text",
+                "edit_text",
                 "press_key",
                 // System actions
                 "press_back",

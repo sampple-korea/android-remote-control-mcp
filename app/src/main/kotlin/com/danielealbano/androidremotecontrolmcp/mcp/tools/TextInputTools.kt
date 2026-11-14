@@ -280,14 +280,22 @@ internal suspend fun responseFieldContent(
 internal const val FIELD_CONTENT_UNREADABLE = "(unable to read field content)"
 
 /**
- * MCP tool: type_append_text
+ * MCP tool: edit_text
  *
- * Appends text to the end of a text field: reads the field's current text from a fresh accessibility read,
- * computes the new content ([TextEditCalculator.appended]) and sets it in one ACTION_SET_TEXT operation.
- * The field is never clicked and no key event is sent, so the soft keyboard is not shown and the target app's
- * input method cannot alter the value.
+ * The one text-field editing tool, with a `mode` parameter (it replaces the former
+ * type_append_text, type_insert_text, type_replace_text and type_clear_text tools):
+ * - `append`: append [text] at the end of the field.
+ * - `insert`: insert [text] at character offset [offset].
+ * - `replace`: replace the first occurrence of [search] with [new_text] (empty deletes it).
+ * - `set`: set the whole field content to [text].
+ * - `clear`: empty the field, verifying afterwards that the text is actually gone.
+ *
+ * Every mode reads the field's current text from a fresh accessibility read, computes the new
+ * content ([TextEditCalculator]) and sets it in one ACTION_SET_TEXT operation. The field is never
+ * clicked and no key event is sent, so the soft keyboard is not shown and the target app's input
+ * method cannot alter the value.
  */
-class TypeAppendTextTool
+class EditTextTool
     @Inject
     constructor(
         private val treeParser: AccessibilityTreeParser,
@@ -301,394 +309,139 @@ class TypeAppendTextTool
     ) {
         suspend fun execute(arguments: JsonObject?): CallToolResult =
             guardedTextEdit(TOOL_NAME, serverLogRepository) {
-                val target = targetResolver.parse(arguments)
-
-                // Reverse any pseudonym placeholder so the real value is set; length checks use the real length.
-                val text = substitutor.substitute(McpToolUtils.requireString(arguments, "text"))
-                if (text.isEmpty()) {
-                    throw McpToolException.InvalidParams("Parameter 'text' must be non-empty")
-                }
-                validateTextLength(text)
-
-                // Legacy pacing parameters: validated as before, but the text is set in one operation now.
-                extractTypingParams(arguments)
-
-                val (nodeId, field) =
-                    typeOperationMutex.withLock {
-                        val windows =
-                            getFreshRead(treeParser, accessibilityServiceProvider, nodeCache).result.windows
-                        val nodeId =
-                            when (val resolution = targetResolver.resolve(target, windows)) {
-                                is NodeResolution.Resolved -> resolution.nodeId
-                                is NodeResolution.Ambiguous -> return resolution.result
-                            }
-                        val fieldNode = editableFieldOf(windows, nodeId)
-                        val newText = TextEditCalculator.appended(fieldNode.text ?: "", text)
-                        applySetText(actionExecutor, fieldNode.id, newText, windows)
-                        nodeId to
-                            readBackField(treeParser, accessibilityServiceProvider, nodeCache, fieldNode.id)
-                    }
-
-                Log.d(TAG, "type_append_text: appended ${text.length} chars on node '$nodeId'")
-                val redactedFieldContent = responseFieldContent(privacyToolGate, field)
-                McpToolUtils.untrustedTextResult(
-                    "Appended ${text.length} characters at end of node '$nodeId'.\n" +
-                        "Field content: $redactedFieldContent",
-                )
-            }
-
-        fun register(
-            registrar: LoggedToolRegistrar,
-            toolNamePrefix: String,
-        ) {
-            registrar.addTool(
-                toolName = TOOL_NAME,
-                name = "$toolNamePrefix$TOOL_NAME",
-                description =
-                    "Append text to the end of a text field. " +
-                        "Maximum text length: $MAX_TEXT_LENGTH characters. " +
-                        "For text longer than $MAX_TEXT_LENGTH chars, call this tool multiple times — " +
-                        "each call appends to the field's current end. " +
-                        verificationAndSetTextHint(),
-                inputSchema =
-                    ToolSchema(
-                        properties =
-                            buildJsonObject {
-                                putNodeTargetProperties(toolNamePrefix)
-                                putJsonObject("text") {
-                                    put("type", "string")
-                                    put(
-                                        "description",
-                                        "Text to append (must be non-empty, " +
-                                            "max $MAX_TEXT_LENGTH characters)",
-                                    )
-                                }
-                                putJsonObject("typing_speed") {
-                                    put("type", "integer")
-                                    put(
-                                        "description",
-                                        "Deprecated and ignored: the text is set in one operation, not typed. " +
-                                            "Still validated (default: $DEFAULT_TYPING_SPEED_MS, " +
-                                            "min: $MIN_TYPING_SPEED_MS, max: $MAX_TYPING_SPEED_MS)",
-                                    )
-                                }
-                                putJsonObject("typing_speed_variance") {
-                                    put("type", "integer")
-                                    put(
-                                        "description",
-                                        "Deprecated and ignored: the text is set in one operation, not typed. " +
-                                            "Still validated (>= 0, default: $DEFAULT_TYPING_VARIANCE_MS)",
-                                    )
-                                }
-                            },
-                        required = listOf("text"),
-                    ),
-            ) { request -> execute(request.arguments) }
-        }
-
-        companion object {
-            private const val TAG = "MCP:TypeAppendTextTool"
-            const val TOOL_NAME = "type_append_text"
-        }
-    }
-
-/**
- * MCP tool: type_insert_text
- *
- * Inserts text at a character offset in a text field: reads the field's current text, computes the new
- * content ([TextEditCalculator.inserted]) and sets it in one ACTION_SET_TEXT operation, without clicking
- * the field or sending key events.
- */
-class TypeInsertTextTool
-    @Inject
-    constructor(
-        private val treeParser: AccessibilityTreeParser,
-        private val actionExecutor: ActionExecutor,
-        private val accessibilityServiceProvider: AccessibilityServiceProvider,
-        private val nodeCache: AccessibilityNodeCache,
-        private val privacyToolGate: PrivacyToolGate,
-        private val substitutor: PlaceholderSubstitutor,
-        private val targetResolver: NodeTargetResolver,
-        private val serverLogRepository: ServerLogRepository,
-    ) {
-        @Suppress("ThrowsCount")
-        suspend fun execute(arguments: JsonObject?): CallToolResult =
-            guardedTextEdit(TOOL_NAME, serverLogRepository) {
-                val target = targetResolver.parse(arguments)
-
-                val text = substitutor.substitute(McpToolUtils.requireString(arguments, "text"))
-                if (text.isEmpty()) {
-                    throw McpToolException.InvalidParams("Parameter 'text' must be non-empty")
-                }
-                validateTextLength(text)
-
-                // Parse offset with proper type checking (see McpToolUtils.requireInt)
-                val offset = McpToolUtils.requireInt(arguments, "offset")
-                if (offset < 0) {
-                    throw McpToolException.InvalidParams("Parameter 'offset' must be >= 0, got $offset")
-                }
-
-                // Legacy pacing parameters: validated as before, but the text is set in one operation now.
-                extractTypingParams(arguments)
-
-                val (nodeId, field) =
-                    typeOperationMutex.withLock {
-                        val windows =
-                            getFreshRead(treeParser, accessibilityServiceProvider, nodeCache).result.windows
-                        val nodeId =
-                            when (val resolution = targetResolver.resolve(target, windows)) {
-                                is NodeResolution.Resolved -> resolution.nodeId
-                                is NodeResolution.Ambiguous -> return resolution.result
-                            }
-                        val fieldNode = editableFieldOf(windows, nodeId)
-                        val current = fieldNode.text ?: ""
-                        if (offset > current.length) {
-                            throw McpToolException.InvalidParams(
-                                "offset ($offset) exceeds text length (${current.length}) in node '$nodeId'",
-                            )
-                        }
-                        val newText = TextEditCalculator.inserted(current, offset, text)
-                        applySetText(actionExecutor, fieldNode.id, newText, windows)
-                        nodeId to
-                            readBackField(treeParser, accessibilityServiceProvider, nodeCache, fieldNode.id)
-                    }
-
-                Log.d(TAG, "type_insert_text: inserted ${text.length} chars at offset $offset on '$nodeId'")
-                val redactedFieldContent = responseFieldContent(privacyToolGate, field)
-                McpToolUtils.untrustedTextResult(
-                    "Inserted ${text.length} characters at offset $offset in node '$nodeId'.\n" +
-                        "Field content: $redactedFieldContent",
-                )
-            }
-
-        fun register(
-            registrar: LoggedToolRegistrar,
-            toolNamePrefix: String,
-        ) {
-            registrar.addTool(
-                toolName = TOOL_NAME,
-                name = "$toolNamePrefix$TOOL_NAME",
-                description =
-                    "Insert text at a specific position in a text field. " +
-                        "Maximum text length: $MAX_TEXT_LENGTH characters. " +
-                        verificationAndSetTextHint(),
-                inputSchema =
-                    ToolSchema(
-                        properties =
-                            buildJsonObject {
-                                putNodeTargetProperties(toolNamePrefix)
-                                putJsonObject("text") {
-                                    put("type", "string")
-                                    put(
-                                        "description",
-                                        "Text to insert (must be non-empty, " +
-                                            "max $MAX_TEXT_LENGTH characters)",
-                                    )
-                                }
-                                putJsonObject("offset") {
-                                    put("type", "integer")
-                                    put(
-                                        "description",
-                                        "0-based character offset (UTF-16 code units) " +
-                                            "for the insertion position. Must be within " +
-                                            "[0, current text length]. Note: emoji " +
-                                            "and other supplementary characters count " +
-                                            "as 2 units.",
-                                    )
-                                }
-                                putJsonObject("typing_speed") {
-                                    put("type", "integer")
-                                    put(
-                                        "description",
-                                        "Deprecated and ignored: the text is set in one operation, not typed. " +
-                                            "Still validated (default: $DEFAULT_TYPING_SPEED_MS, " +
-                                            "min: $MIN_TYPING_SPEED_MS, max: $MAX_TYPING_SPEED_MS)",
-                                    )
-                                }
-                                putJsonObject("typing_speed_variance") {
-                                    put("type", "integer")
-                                    put(
-                                        "description",
-                                        "Deprecated and ignored: the text is set in one operation, not typed. " +
-                                            "Still validated (>= 0, default: $DEFAULT_TYPING_VARIANCE_MS)",
-                                    )
-                                }
-                            },
-                        required = listOf("text", "offset"),
-                    ),
-            ) { request -> execute(request.arguments) }
-        }
-
-        companion object {
-            private const val TAG = "MCP:TypeInsertTextTool"
-            const val TOOL_NAME = "type_insert_text"
-        }
-    }
-
-/**
- * MCP tool: type_replace_text
- *
- * Finds the first occurrence of search text in a field and replaces it: reads the field's current text,
- * computes the result ([TextEditCalculator.replaced]) and sets it in one ACTION_SET_TEXT operation,
- * without clicking the field or sending key events. An empty new_text just deletes the found text.
- */
-class TypeReplaceTextTool
-    @Inject
-    constructor(
-        private val treeParser: AccessibilityTreeParser,
-        private val actionExecutor: ActionExecutor,
-        private val accessibilityServiceProvider: AccessibilityServiceProvider,
-        private val nodeCache: AccessibilityNodeCache,
-        private val privacyToolGate: PrivacyToolGate,
-        private val substitutor: PlaceholderSubstitutor,
-        private val targetResolver: NodeTargetResolver,
-        private val serverLogRepository: ServerLogRepository,
-    ) {
-        @Suppress("ThrowsCount")
-        suspend fun execute(arguments: JsonObject?): CallToolResult =
-            guardedTextEdit(TOOL_NAME, serverLogRepository) {
-                val target = targetResolver.parse(arguments)
-
-                // Substitute both the search term (to match the real field content) and the replacement value.
-                val search = substitutor.substitute(McpToolUtils.requireString(arguments, "search"))
-                if (search.isEmpty()) {
-                    throw McpToolException.InvalidParams("Parameter 'search' must be non-empty")
-                }
-                if (search.length > MAX_SURROUNDING_TEXT_LENGTH) {
+                val mode = McpToolUtils.requireString(arguments, PARAM_MODE).lowercase()
+                if (mode !in MODES) {
                     throw McpToolException.InvalidParams(
-                        "search exceeds maximum length of $MAX_SURROUNDING_TEXT_LENGTH characters " +
-                            "(got ${search.length})",
+                        "Parameter '$PARAM_MODE' must be one of: ${MODES.joinToString(", ")}, got: '$mode'",
+                    )
+                }
+                val target = targetResolver.parse(arguments)
+                if (mode == MODE_CLEAR) {
+                    executeClear(target)
+                } else {
+                    executeEdit(mode, arguments, target)
+                }
+            }
+
+        /** The append / insert / replace / set modes: parse and validate first, then edit under the typing lock. */
+        @Suppress("ThrowsCount", "LongMethod")
+        private suspend fun executeEdit(
+            mode: String,
+            arguments: JsonObject?,
+            target: NodeTarget,
+        ): CallToolResult {
+            var text = ""
+            var offset = 0
+            var search = ""
+            var replacement = ""
+            when (mode) {
+                MODE_APPEND -> {
+                    text = substitutor.substitute(McpToolUtils.requireString(arguments, "text"))
+                    if (text.isEmpty()) {
+                        throw McpToolException.InvalidParams("Parameter 'text' must be non-empty")
+                    }
+                    validateTextLength(text)
+                }
+
+                MODE_SET -> {
+                    text = substitutor.substitute(McpToolUtils.requireString(arguments, "text"))
+                    validateTextLength(text)
+                }
+
+                MODE_INSERT -> {
+                    text = substitutor.substitute(McpToolUtils.requireString(arguments, "text"))
+                    if (text.isEmpty()) {
+                        throw McpToolException.InvalidParams("Parameter 'text' must be non-empty")
+                    }
+                    validateTextLength(text)
+                    offset = McpToolUtils.requireInt(arguments, "offset")
+                    if (offset < 0) {
+                        throw McpToolException.InvalidParams("Parameter 'offset' must be >= 0, got $offset")
+                    }
+                }
+
+                MODE_REPLACE -> {
+                    // Substitute both the search term (to match the real field content) and the replacement.
+                    search = substitutor.substitute(McpToolUtils.requireString(arguments, "search"))
+                    if (search.isEmpty()) {
+                        throw McpToolException.InvalidParams("Parameter 'search' must be non-empty")
+                    }
+                    if (search.length > MAX_SURROUNDING_TEXT_LENGTH) {
+                        throw McpToolException.InvalidParams(
+                            "search exceeds maximum length of $MAX_SURROUNDING_TEXT_LENGTH characters " +
+                                "(got ${search.length})",
+                        )
+                    }
+                    replacement = substitutor.substitute(McpToolUtils.requireString(arguments, "new_text"))
+                    if (replacement.isNotEmpty()) {
+                        validateTextLength(replacement, "new_text")
+                    }
+                }
+            }
+
+            // Legacy pacing parameters: validated as before, but the text is set in one operation now.
+            extractTypingParams(arguments)
+
+            val (nodeId, field, message) =
+                typeOperationMutex.withLock {
+                    val windows =
+                        getFreshRead(treeParser, accessibilityServiceProvider, nodeCache).result.windows
+                    val nodeId =
+                        when (val resolution = targetResolver.resolve(target, windows)) {
+                            is NodeResolution.Resolved -> resolution.nodeId
+                            is NodeResolution.Ambiguous -> return resolution.result
+                        }
+                    val fieldNode = editableFieldOf(windows, nodeId)
+                    val current = fieldNode.text ?: ""
+                    val (newText, message) =
+                        when (mode) {
+                            MODE_APPEND ->
+                                TextEditCalculator.appended(current, text) to
+                                    "Appended ${text.length} characters at end of node '$nodeId'."
+
+                            MODE_SET ->
+                                text to
+                                    "Set text of node '$nodeId' (${text.length} characters)."
+
+                            MODE_INSERT -> {
+                                if (offset > current.length) {
+                                    throw McpToolException.InvalidParams(
+                                        "offset ($offset) exceeds text length (${current.length}) in node '$nodeId'",
+                                    )
+                                }
+                                TextEditCalculator.inserted(current, offset, text) to
+                                    "Inserted ${text.length} characters at offset $offset in node '$nodeId'."
+                            }
+
+                            MODE_REPLACE -> {
+                                val replaced =
+                                    TextEditCalculator.replaced(current, search, replacement)
+                                        ?: throw McpToolException.NodeNotFound(
+                                            "Search text (${search.length} chars) not found in node '$nodeId'",
+                                        )
+                                replaced to
+                                    "Replaced ${search.length} characters with ${replacement.length} " +
+                                        "characters in node '$nodeId'."
+                            }
+
+                            else -> throw IllegalStateException("Unexpected edit mode: $mode")
+                        }
+                    applySetText(actionExecutor, fieldNode.id, newText, windows)
+                    Triple(
+                        nodeId,
+                        readBackField(treeParser, accessibilityServiceProvider, nodeCache, fieldNode.id),
+                        message,
                     )
                 }
 
-                val newText = substitutor.substitute(McpToolUtils.requireString(arguments, "new_text"))
-                if (newText.isNotEmpty()) {
-                    validateTextLength(newText, "new_text")
-                }
-
-                // Legacy pacing parameters: validated as before, but the text is set in one operation now.
-                extractTypingParams(arguments)
-
-                val (nodeId, field) =
-                    typeOperationMutex.withLock {
-                        val windows =
-                            getFreshRead(treeParser, accessibilityServiceProvider, nodeCache).result.windows
-                        val nodeId =
-                            when (val resolution = targetResolver.resolve(target, windows)) {
-                                is NodeResolution.Resolved -> resolution.nodeId
-                                is NodeResolution.Ambiguous -> return resolution.result
-                            }
-                        val fieldNode = editableFieldOf(windows, nodeId)
-                        val current = fieldNode.text ?: ""
-                        val replaced =
-                            TextEditCalculator.replaced(current, search, newText)
-                                ?: throw McpToolException.NodeNotFound(
-                                    "Search text (${search.length} chars) not found in node '$nodeId'",
-                                )
-                        applySetText(actionExecutor, fieldNode.id, replaced, windows)
-                        nodeId to
-                            readBackField(treeParser, accessibilityServiceProvider, nodeCache, fieldNode.id)
-                    }
-
-                Log.d(
-                    TAG,
-                    "type_replace_text: replaced ${search.length} chars " +
-                        "with ${newText.length} chars on '$nodeId'",
-                )
-                val redactedFieldContent = responseFieldContent(privacyToolGate, field)
-                McpToolUtils.untrustedTextResult(
-                    "Replaced ${search.length} characters with ${newText.length} characters in node '$nodeId'.\n" +
-                        "Field content: $redactedFieldContent",
-                )
-            }
-
-        @Suppress("LongMethod")
-        fun register(
-            registrar: LoggedToolRegistrar,
-            toolNamePrefix: String,
-        ) {
-            registrar.addTool(
-                toolName = TOOL_NAME,
-                name = "$toolNamePrefix$TOOL_NAME",
-                description =
-                    "Find and replace text in a field. " +
-                        "Finds the first occurrence of search text and sets the field to the computed result. " +
-                        "Maximum new_text length: $MAX_TEXT_LENGTH characters. " +
-                        "Returns error if search text is not found. " +
-                        verificationAndSetTextHint(),
-                inputSchema =
-                    ToolSchema(
-                        properties =
-                            buildJsonObject {
-                                putNodeTargetProperties(toolNamePrefix)
-                                putJsonObject("search") {
-                                    put("type", "string")
-                                    put(
-                                        "description",
-                                        "Text to find in the field " +
-                                            "(first occurrence, " +
-                                            "max $MAX_SURROUNDING_TEXT_LENGTH chars)",
-                                    )
-                                }
-                                putJsonObject("new_text") {
-                                    put("type", "string")
-                                    put(
-                                        "description",
-                                        "Replacement text " +
-                                            "(max $MAX_TEXT_LENGTH characters). " +
-                                            "Can be empty to just delete " +
-                                            "the found text.",
-                                    )
-                                }
-                                putJsonObject("typing_speed") {
-                                    put("type", "integer")
-                                    put(
-                                        "description",
-                                        "Deprecated and ignored: the text is set in one operation, not typed. " +
-                                            "Still validated (default: $DEFAULT_TYPING_SPEED_MS, " +
-                                            "min: $MIN_TYPING_SPEED_MS, max: $MAX_TYPING_SPEED_MS)",
-                                    )
-                                }
-                                putJsonObject("typing_speed_variance") {
-                                    put("type", "integer")
-                                    put(
-                                        "description",
-                                        "Deprecated and ignored: the text is set in one operation, not typed. " +
-                                            "Still validated (>= 0, default: $DEFAULT_TYPING_VARIANCE_MS)",
-                                    )
-                                }
-                            },
-                        required = listOf("search", "new_text"),
-                    ),
-            ) { request -> execute(request.arguments) }
+            Log.d(TAG, "edit_text: mode=$mode on node '$nodeId'")
+            val redactedFieldContent = responseFieldContent(privacyToolGate, field)
+            return McpToolUtils.untrustedTextResult(
+                "$message\nField content: $redactedFieldContent",
+            )
         }
 
-        companion object {
-            private const val TAG = "MCP:TypeReplaceTextTool"
-            const val TOOL_NAME = "type_replace_text"
-        }
-    }
-
-/**
- * MCP tool: type_clear_text
- *
- * Clears all text from a field by setting its content to the empty string in one ACTION_SET_TEXT operation,
- * then reads the field back and fails when it reads back unchanged.
- *
- * If the field is already empty, returns success without performing any action.
- */
-class TypeClearTextTool
-    @Inject
-    constructor(
-        private val treeParser: AccessibilityTreeParser,
-        private val actionExecutor: ActionExecutor,
-        private val accessibilityServiceProvider: AccessibilityServiceProvider,
-        private val nodeCache: AccessibilityNodeCache,
-        private val privacyToolGate: PrivacyToolGate,
-        private val targetResolver: NodeTargetResolver,
-        private val serverLogRepository: ServerLogRepository,
-    ) {
-        /** What happened under the typing lock. */
+        /** What happened under the typing lock in clear mode. */
         private sealed interface ClearOutcome {
             data class Ambiguous(
                 val result: CallToolResult,
@@ -704,28 +457,25 @@ class TypeClearTextTool
             ) : ClearOutcome
         }
 
-        suspend fun execute(arguments: JsonObject?): CallToolResult =
-            guardedTextEdit(TOOL_NAME, serverLogRepository) {
-                val target = targetResolver.parse(arguments)
+        /** Clear mode: empty the field in one operation, then check that the text is gone. */
+        private suspend fun executeClear(target: NodeTarget): CallToolResult =
+            when (val outcome = typeOperationMutex.withLock { clearLocked(target) }) {
+                is ClearOutcome.Ambiguous -> {
+                    outcome.result
+                }
 
-                when (val outcome = typeOperationMutex.withLock { clearLocked(target) }) {
-                    is ClearOutcome.Ambiguous -> {
-                        outcome.result
-                    }
+                is ClearOutcome.AlreadyEmpty -> {
+                    McpToolUtils.untrustedTextResult(
+                        "Text cleared from node '${outcome.nodeId}'.\nField content: ",
+                    )
+                }
 
-                    is ClearOutcome.AlreadyEmpty -> {
-                        McpToolUtils.untrustedTextResult(
-                            "Text cleared from node '${outcome.nodeId}'.\nField content: ",
-                        )
-                    }
-
-                    is ClearOutcome.Cleared -> {
-                        Log.d(TAG, "type_clear_text: cleared text on node '${outcome.nodeId}'")
-                        val redactedFieldContent = responseFieldContent(privacyToolGate, outcome.field)
-                        McpToolUtils.untrustedTextResult(
-                            "Text cleared from node '${outcome.nodeId}'.\nField content: $redactedFieldContent",
-                        )
-                    }
+                is ClearOutcome.Cleared -> {
+                    Log.d(TAG, "edit_text: cleared text on node '${outcome.nodeId}'")
+                    val redactedFieldContent = responseFieldContent(privacyToolGate, outcome.field)
+                    McpToolUtils.untrustedTextResult(
+                        "Text cleared from node '${outcome.nodeId}'.\nField content: $redactedFieldContent",
+                    )
                 }
             }
 
@@ -740,7 +490,7 @@ class TypeClearTextTool
             val fieldNode = editableFieldOf(windows, nodeId)
             val previousText = fieldNode.text ?: ""
             if (previousText.isEmpty()) {
-                Log.d(TAG, "type_clear_text: field already empty on '$nodeId'")
+                Log.d(TAG, "edit_text: field already empty on '$nodeId'")
                 return ClearOutcome.AlreadyEmpty(nodeId)
             }
 
@@ -758,6 +508,7 @@ class TypeClearTextTool
             return ClearOutcome.Cleared(nodeId, readBack)
         }
 
+        @Suppress("LongMethod")
         fun register(
             registrar: LoggedToolRegistrar,
             toolNamePrefix: String,
@@ -766,33 +517,104 @@ class TypeClearTextTool
                 toolName = TOOL_NAME,
                 name = "$toolNamePrefix$TOOL_NAME",
                 description =
-                    "Clear all text from a field by setting its content to empty in one operation, " +
-                        "then check that the text is gone. " +
+                    "Edit a text field, chosen by mode: 'append' adds text at the end, 'insert' adds " +
+                        "text at a character offset, 'replace' swaps the first occurrence of 'search' " +
+                        "for 'new_text', 'set' replaces the whole content with 'text', and 'clear' " +
+                        "empties the field (verifying the text is gone). " +
+                        "Maximum text length: $MAX_TEXT_LENGTH characters; for longer text use mode " +
+                        "'append' repeatedly — each call appends to the field's current end. " +
                         verificationAndSetTextHint(),
                 inputSchema =
                     ToolSchema(
                         properties =
                             buildJsonObject {
                                 putNodeTargetProperties(toolNamePrefix)
+                                putJsonObject(PARAM_MODE) {
+                                    put("type", "string")
+                                    put(
+                                        "description",
+                                        "Edit mode: append | insert | replace | set | clear. " +
+                                            "append/insert/set use 'text'; insert also uses 'offset'; " +
+                                            "replace uses 'search' and 'new_text'; clear uses neither.",
+                                    )
+                                }
+                                putJsonObject("text") {
+                                    put("type", "string")
+                                    put(
+                                        "description",
+                                        "Text for modes append (must be non-empty), insert (must be " +
+                                            "non-empty) and set; max $MAX_TEXT_LENGTH characters.",
+                                    )
+                                }
+                                putJsonObject("offset") {
+                                    put("type", "integer")
+                                    put(
+                                        "description",
+                                        "Mode insert only: 0-based character offset (UTF-16 code " +
+                                            "units) for the insertion position, within [0, current " +
+                                            "text length]. Emoji and other supplementary characters " +
+                                            "count as 2 units.",
+                                    )
+                                }
+                                putJsonObject("search") {
+                                    put("type", "string")
+                                    put(
+                                        "description",
+                                        "Mode replace only: text to find in the field (first " +
+                                            "occurrence, max $MAX_SURROUNDING_TEXT_LENGTH chars).",
+                                    )
+                                }
+                                putJsonObject("new_text") {
+                                    put("type", "string")
+                                    put(
+                                        "description",
+                                        "Mode replace only: replacement text (max $MAX_TEXT_LENGTH " +
+                                            "characters). Can be empty to just delete the found text.",
+                                    )
+                                }
+                                putJsonObject("typing_speed") {
+                                    put("type", "integer")
+                                    put(
+                                        "description",
+                                        "Deprecated and ignored: the text is set in one operation, not typed. " +
+                                            "Still validated (default: $DEFAULT_TYPING_SPEED_MS, " +
+                                            "min: $MIN_TYPING_SPEED_MS, max: $MAX_TYPING_SPEED_MS)",
+                                    )
+                                }
+                                putJsonObject("typing_speed_variance") {
+                                    put("type", "integer")
+                                    put(
+                                        "description",
+                                        "Deprecated and ignored: the text is set in one operation, not typed. " +
+                                            "Still validated (>= 0, default: $DEFAULT_TYPING_VARIANCE_MS)",
+                                    )
+                                }
                             },
-                        required = emptyList(),
+                        required = listOf(PARAM_MODE),
                     ),
             ) { request -> execute(request.arguments) }
         }
 
         companion object {
-            private const val TAG = "MCP:TypeClearTextTool"
-            const val TOOL_NAME = "type_clear_text"
+            private const val TAG = "MCP:EditTextTool"
+            const val TOOL_NAME = "edit_text"
+            internal const val PARAM_MODE = "mode"
+            internal const val MODE_APPEND = "append"
+            internal const val MODE_INSERT = "insert"
+            internal const val MODE_REPLACE = "replace"
+            internal const val MODE_SET = "set"
+            internal const val MODE_CLEAR = "clear"
+            internal val MODES = listOf(MODE_APPEND, MODE_INSERT, MODE_REPLACE, MODE_SET, MODE_CLEAR)
         }
     }
 
 /**
  * MCP tool: press_key
  *
- * Presses a specific key. Supported keys: ENTER, BACK, DEL, HOME, TAB, SPACE.
+ * Presses a specific key. Supported keys: ENTER, DEL, TAB, SPACE.
+ * (BACK and HOME are not here: use the dedicated press_back / press_home tools.)
  *
  * Key mapping strategy:
- * - BACK, HOME: Delegate to ActionExecutor global actions (already implemented).
  * - ENTER: Use ACTION_IME_ENTER.
  * - DEL: Get current text from focused node, remove last character, set text.
  * - TAB, SPACE: Get current text from focused node, append character, set text.
@@ -800,7 +622,6 @@ class TypeClearTextTool
 class PressKeyTool
     @Inject
     constructor(
-        private val actionExecutor: ActionExecutor,
         private val accessibilityServiceProvider: AccessibilityServiceProvider,
     ) {
         @Suppress("ThrowsCount")
@@ -817,20 +638,6 @@ class PressKeyTool
             }
 
             when (upperKey) {
-                "BACK" -> {
-                    val result = actionExecutor.pressBack()
-                    result.onFailure { e ->
-                        throw McpToolException.ActionFailed("BACK key failed: ${e.message}")
-                    }
-                }
-
-                "HOME" -> {
-                    val result = actionExecutor.pressHome()
-                    result.onFailure { e ->
-                        throw McpToolException.ActionFailed("HOME key failed: ${e.message}")
-                    }
-                }
-
                 "ENTER" -> {
                     pressEnter()
                 }
@@ -936,7 +743,9 @@ class PressKeyTool
             registrar.addTool(
                 toolName = TOOL_NAME,
                 name = "$toolNamePrefix$TOOL_NAME",
-                description = "Press a specific key (ENTER, BACK, DEL, HOME, TAB, SPACE)",
+                description =
+                    "Press a specific key (ENTER, DEL, TAB, SPACE). " +
+                        "For the back and home buttons use the press_back / press_home tools.",
                 inputSchema =
                     ToolSchema(
                         properties =
@@ -947,9 +756,7 @@ class PressKeyTool
                                         "enum",
                                         buildJsonArray {
                                             add(JsonPrimitive("ENTER"))
-                                            add(JsonPrimitive("BACK"))
                                             add(JsonPrimitive("DEL"))
-                                            add(JsonPrimitive("HOME"))
                                             add(JsonPrimitive("TAB"))
                                             add(JsonPrimitive("SPACE"))
                                         },
@@ -965,7 +772,7 @@ class PressKeyTool
         companion object {
             private const val TAG = "MCP:PressKeyTool"
             const val TOOL_NAME = "press_key"
-            private val ALLOWED_KEYS = setOf("ENTER", "BACK", "DEL", "HOME", "TAB", "SPACE")
+            private val ALLOWED_KEYS = setOf("ENTER", "DEL", "TAB", "SPACE")
         }
     }
 
@@ -987,55 +794,20 @@ fun registerTextInputTools(
     perms: ToolPermissionsConfig,
 ) {
     val targetResolver = NodeTargetResolver(elementFinder, privacyToolGate, substitutor)
-    if (perms.isToolEnabled(TypeAppendTextTool.TOOL_NAME)) {
-        TypeAppendTextTool(
+    if (perms.isToolEnabled(EditTextTool.TOOL_NAME)) {
+        EditTextTool(
             treeParser,
             actionExecutor,
             accessibilityServiceProvider,
             nodeCache,
             privacyToolGate,
             substitutor,
-            targetResolver,
-            serverLogRepository,
-        ).register(registrar, toolNamePrefix)
-    }
-    if (perms.isToolEnabled(TypeInsertTextTool.TOOL_NAME)) {
-        TypeInsertTextTool(
-            treeParser,
-            actionExecutor,
-            accessibilityServiceProvider,
-            nodeCache,
-            privacyToolGate,
-            substitutor,
-            targetResolver,
-            serverLogRepository,
-        ).register(registrar, toolNamePrefix)
-    }
-    if (perms.isToolEnabled(TypeReplaceTextTool.TOOL_NAME)) {
-        TypeReplaceTextTool(
-            treeParser,
-            actionExecutor,
-            accessibilityServiceProvider,
-            nodeCache,
-            privacyToolGate,
-            substitutor,
-            targetResolver,
-            serverLogRepository,
-        ).register(registrar, toolNamePrefix)
-    }
-    if (perms.isToolEnabled(TypeClearTextTool.TOOL_NAME)) {
-        TypeClearTextTool(
-            treeParser,
-            actionExecutor,
-            accessibilityServiceProvider,
-            nodeCache,
-            privacyToolGate,
             targetResolver,
             serverLogRepository,
         ).register(registrar, toolNamePrefix)
     }
     if (perms.isToolEnabled(PressKeyTool.TOOL_NAME)) {
-        PressKeyTool(actionExecutor, accessibilityServiceProvider).register(registrar, toolNamePrefix)
+        PressKeyTool(accessibilityServiceProvider).register(registrar, toolNamePrefix)
     }
 }
 

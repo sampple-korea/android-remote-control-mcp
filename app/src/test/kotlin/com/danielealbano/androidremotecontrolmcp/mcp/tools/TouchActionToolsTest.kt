@@ -538,17 +538,25 @@ class TouchActionToolsTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // ScrollTool
+    // scroll (screen mode)
     // ─────────────────────────────────────────────────────────────────────
 
     @Nested
-    @DisplayName("ScrollTool")
-    inner class ScrollToolTests {
-        private lateinit var tool: ScrollTool
+    @DisplayName("scroll mode=screen")
+    inner class ScrollScreenModeTests {
+        private lateinit var tool: UnifiedScrollTool
 
         @BeforeEach
         fun setUp() {
-            tool = ScrollTool(actionExecutor)
+            tool =
+                UnifiedScrollTool(
+                    mockk(relaxed = true),
+                    mockk(relaxed = true),
+                    actionExecutor,
+                    mockk(relaxed = true),
+                    mockk(relaxed = true),
+                    mockk(relaxed = true),
+                )
         }
 
         @Test

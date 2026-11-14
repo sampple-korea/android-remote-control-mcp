@@ -113,17 +113,12 @@ private val ALL_TOOL_CATEGORIES: List<ToolCategory> =
                 ToolEntry("long_click_node", R.string.mcp_tool_long_click_node),
                 ToolEntry("perform_node_action", R.string.mcp_tool_perform_node_action),
                 ToolEntry("tap_node", R.string.mcp_tool_tap_node),
-                ToolEntry("scroll_to_node", R.string.mcp_tool_scroll_to_node),
-                ToolEntry("scroll_node", R.string.mcp_tool_scroll_node),
             ),
         ),
         ToolCategory(
             R.string.mcp_tools_category_text_input,
             listOf(
-                ToolEntry("type_append_text", R.string.mcp_tool_type_append_text),
-                ToolEntry("type_insert_text", R.string.mcp_tool_type_insert_text),
-                ToolEntry("type_replace_text", R.string.mcp_tool_type_replace_text),
-                ToolEntry("type_clear_text", R.string.mcp_tool_type_clear_text),
+                ToolEntry("edit_text", R.string.mcp_tool_edit_text),
                 ToolEntry("press_key", R.string.mcp_tool_press_key),
             ),
         ),
@@ -166,7 +161,6 @@ private val ALL_TOOL_CATEGORIES: List<ToolCategory> =
                 ToolEntry("list_camera_photo_resolutions", R.string.mcp_tool_list_camera_photo_resolutions),
                 ToolEntry("list_camera_video_resolutions", R.string.mcp_tool_list_camera_video_resolutions),
                 ToolEntry("take_camera_photo", R.string.mcp_tool_take_camera_photo),
-                ToolEntry("save_camera_photo", R.string.mcp_tool_save_camera_photo),
                 ToolEntry(
                     "save_camera_video",
                     R.string.mcp_tool_save_camera_video,

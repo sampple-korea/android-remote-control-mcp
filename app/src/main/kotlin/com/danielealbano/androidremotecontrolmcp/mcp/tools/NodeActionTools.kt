@@ -19,6 +19,7 @@ import com.danielealbano.androidremotecontrolmcp.services.accessibility.ElementF
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.FindBy
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.MultiWindowResult
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.NodeActionLabels
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScrollAmount
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScrollDirection
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.WebViewNodeMerger
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.WindowData
@@ -510,7 +511,8 @@ class TapNodeTool
     }
 
 /**
- * MCP tool: scroll_to_node
+ * The scroll-until-visible engine behind [UnifiedScrollTool]'s `until` mode (formerly the
+ * scroll_to_node tool).
  *
  * Scrolls the nearest scrollable container of the specified node in the given direction until the node is
  * visible, up to [MAX_SCROLL_ATTEMPTS] scrolls; stops early when the container does not scroll any further.
@@ -757,7 +759,7 @@ class ScrollToNodeTool
             McpToolException.ActionFailed(
                 "$count nodes in its container look like node '${tracked.originalNodeId}' (same resource id, class, " +
                     "text and description), so it cannot be told apart (a selector cannot either): scroll with " +
-                    "scroll_node, read the screen again and act on the node ID you pick",
+                    "scroll (mode=node), read the screen again and act on the node ID you pick",
             )
 
         /**
@@ -894,59 +896,95 @@ class ScrollToNodeTool
             return false
         }
 
-        fun register(
-            registrar: LoggedToolRegistrar,
-            toolNamePrefix: String,
-        ) {
-            registrar.addTool(
-                toolName = TOOL_NAME,
-                name = "$toolNamePrefix$TOOL_NAME",
-                description =
-                    "Scroll the nearest scrollable container of the specified node in the given direction until " +
-                        "the node is visible (up to $MAX_SCROLL_ATTEMPTS scrolls; stops early when the container " +
-                        "does not scroll any further). Target by node ID or by a selector (by + value, the single " +
-                        "matching node on or off screen). Node IDs change when a node moves: the result names the " +
-                        "node's current ID.",
-                inputSchema =
-                    ToolSchema(
-                        properties =
-                            buildJsonObject {
-                                putNodeTargetProperties(toolNamePrefix, "node (on or off screen)")
-                                putScrollDirectionProperty(
-                                    "Direction to scroll the node's container: down/right scroll forward, " +
-                                        "up/left backward",
-                                )
-                            },
-                        required = listOf(PARAM_SCROLL_DIRECTION),
-                    ),
-            ) { request -> execute(request.arguments) }
-        }
-
         companion object {
             private const val TAG = "MCP:ScrollToNodeTool"
-            const val TOOL_NAME = "scroll_to_node"
             private const val MAX_SCROLL_ATTEMPTS = 5
             private const val SCROLL_SETTLE_DELAY_MS = 300L
         }
     }
 
 /**
- * MCP tool: scroll_node
+ * MCP tool: scroll
  *
- * Scrolls the specified scrollable node once in a direction, with the accessibility scroll action on the node
- * itself (up/left scroll backward, down/right forward). Nothing else is searched or retried: the node must be
- * scrollable.
+ * The one scroll tool, with a `mode` parameter (it replaces the former scroll, scroll_node and
+ * scroll_to_node tools):
+ * - `screen` (default): a gesture scroll of the whole screen in `direction`, with `amount`
+ *   (small | medium | large) and optional random `variance` for natural-looking gestures.
+ * - `node`: scrolls the target scrollable node once in `direction`, with the node's own
+ *   accessibility scroll action (up/left scroll backward, down/right forward). The node must be
+ *   scrollable; nothing else is searched or retried.
+ * - `until`: scrolls the nearest scrollable container of the target node in `direction` until
+ *   the node is visible (see [ScrollToNodeTool] for the tracking rules).
  */
-class ScrollNodeTool
+class UnifiedScrollTool
     @Inject
     constructor(
         private val treeParser: AccessibilityTreeParser,
+        private val elementFinder: ElementFinder,
         private val actionExecutor: ActionExecutor,
         private val accessibilityServiceProvider: AccessibilityServiceProvider,
         private val nodeCache: AccessibilityNodeCache,
         private val targetResolver: NodeTargetResolver,
     ) {
         suspend fun execute(arguments: JsonObject?): CallToolResult {
+            val mode = McpToolUtils.optionalString(arguments, PARAM_MODE, MODE_SCREEN).lowercase()
+            return when (mode) {
+                MODE_SCREEN -> executeScreenScroll(arguments)
+                MODE_NODE -> executeNodeScroll(arguments)
+                MODE_UNTIL ->
+                    ScrollToNodeTool(
+                        treeParser,
+                        elementFinder,
+                        actionExecutor,
+                        accessibilityServiceProvider,
+                        nodeCache,
+                        targetResolver,
+                    ).execute(arguments)
+
+                else ->
+                    throw McpToolException.InvalidParams(
+                        "Parameter '$PARAM_MODE' must be one of: $MODE_SCREEN, $MODE_NODE, $MODE_UNTIL. Got: '$mode'",
+                    )
+            }
+        }
+
+        /** Mode `screen`: the former `scroll` tool — a gesture scroll of the whole screen. */
+        @Suppress("ThrowsCount")
+        private suspend fun executeScreenScroll(arguments: JsonObject?): CallToolResult {
+            val direction = requireScrollDirection(arguments)
+            val amountStr = McpToolUtils.optionalString(arguments, "amount", "medium")
+            val variance = McpToolUtils.optionalFloat(arguments, "variance", DEFAULT_VARIANCE)
+
+            val amount =
+                when (amountStr.lowercase()) {
+                    "small" -> ScrollAmount.SMALL
+                    "medium" -> ScrollAmount.MEDIUM
+                    "large" -> ScrollAmount.LARGE
+                    else ->
+                        throw McpToolException.InvalidParams(
+                            "Parameter 'amount' must be one of: small, medium, large. Got: '$amountStr'",
+                        )
+                }
+
+            McpToolUtils.validateNonNegative(variance, "variance")
+            if (variance > MAX_VARIANCE) {
+                throw McpToolException.InvalidParams(
+                    "Parameter 'variance' must be between 0 and ${MAX_VARIANCE.toInt()}, got: $variance",
+                )
+            }
+
+            val variancePercent = variance / PERCENT_DIVISOR
+
+            Log.d(TAG, "Executing scroll ${direction.name} with amount ${amount.name}, variance $variance%")
+            val result = actionExecutor.scroll(direction, amount, variancePercent)
+            return McpToolUtils.handleActionResult(
+                result,
+                "Scroll ${direction.name.lowercase()} (${amountStr.lowercase()}) executed",
+            )
+        }
+
+        /** Mode `node`: the former `scroll_node` tool — one accessibility scroll of the target node. */
+        private suspend fun executeNodeScroll(arguments: JsonObject?): CallToolResult {
             val target = targetResolver.parse(arguments)
             val direction = requireScrollDirection(arguments)
             val directionName = direction.name.lowercase()
@@ -961,10 +999,11 @@ class ScrollNodeTool
             val result = actionExecutor.scrollNode(nodeId, direction, multiWindowResult.windows)
             result.onFailure { e -> mapNodeActionException(e, nodeId) }
 
-            Log.d(TAG, "scroll_node: nodeId=$nodeId direction=$directionName succeeded")
+            Log.d(TAG, "scroll (node): nodeId=$nodeId direction=$directionName succeeded")
             return McpToolUtils.textResult("Scrolled node '$nodeId' $directionName")
         }
 
+        @Suppress("LongMethod")
         fun register(
             registrar: LoggedToolRegistrar,
             toolNamePrefix: String,
@@ -973,17 +1012,61 @@ class ScrollNodeTool
                 toolName = TOOL_NAME,
                 name = "$toolNamePrefix$TOOL_NAME",
                 description =
-                    "Scroll a scrollable node (a list, a carousel, a scroll view) once in the given direction, by " +
-                        "node ID or by a selector (by + value, the single on-screen match). Uses the node's own " +
-                        "accessibility scroll action: up/left scroll backward, down/right forward. " +
-                        "Returns once the scroll has started: the content may still be animating, use " +
-                        "${toolNamePrefix}wait_for_idle before reading the screen again if needed.",
+                    "Scroll, chosen by mode: 'screen' (default) performs a gesture scroll of the whole " +
+                        "screen in the given direction, with amount small|medium|large and random " +
+                        "variance for natural-looking gestures. 'node' scrolls the target scrollable " +
+                        "node once with its own accessibility scroll action (up/left backward, " +
+                        "down/right forward); the content may still be animating afterwards, use " +
+                        "${toolNamePrefix}wait_for_idle before reading the screen again if needed. " +
+                        "'until' scrolls the nearest scrollable container of the target node until " +
+                        "the node is visible (up to 5 scrolls; stops early when the container does " +
+                        "not scroll any further); node IDs change when a node moves, so the result " +
+                        "names the node's current ID. Modes 'node' and 'until' take a node target " +
+                        "(node ID or selector); 'until' also matches off-screen nodes.",
                 inputSchema =
                     ToolSchema(
                         properties =
                             buildJsonObject {
-                                putNodeTargetProperties(toolNamePrefix)
+                                putJsonObject(PARAM_MODE) {
+                                    put("type", "string")
+                                    put(
+                                        "enum",
+                                        buildJsonArray {
+                                            add(JsonPrimitive(MODE_SCREEN))
+                                            add(JsonPrimitive(MODE_NODE))
+                                            add(JsonPrimitive(MODE_UNTIL))
+                                        },
+                                    )
+                                    put("description", "Scroll mode: screen | node | until")
+                                    put("default", MODE_SCREEN)
+                                }
                                 putScrollDirectionProperty("Scroll direction")
+                                putJsonObject("amount") {
+                                    put("type", "string")
+                                    put(
+                                        "enum",
+                                        buildJsonArray {
+                                            add(JsonPrimitive("small"))
+                                            add(JsonPrimitive("medium"))
+                                            add(JsonPrimitive("large"))
+                                        },
+                                    )
+                                    put("description", "Mode 'screen' only: scroll distance")
+                                    put("default", "medium")
+                                }
+                                putJsonObject("variance") {
+                                    put("type", "number")
+                                    put(
+                                        "description",
+                                        "Mode 'screen' only: random variance percentage " +
+                                            "(0-${MAX_VARIANCE.toInt()}). Applied as ±variance% to " +
+                                            "scroll distance and center point.",
+                                    )
+                                    put("default", DEFAULT_VARIANCE.toInt())
+                                    put("minimum", 0)
+                                    put("maximum", MAX_VARIANCE.toInt())
+                                }
+                                putNodeTargetProperties(toolNamePrefix)
                             },
                         required = listOf(PARAM_SCROLL_DIRECTION),
                     ),
@@ -991,8 +1074,15 @@ class ScrollNodeTool
         }
 
         companion object {
-            private const val TAG = "MCP:ScrollNodeTool"
-            const val TOOL_NAME = "scroll_node"
+            const val TOOL_NAME = "scroll"
+            private const val TAG = "MCP:UnifiedScrollTool"
+            internal const val PARAM_MODE = "mode"
+            internal const val MODE_SCREEN = "screen"
+            internal const val MODE_NODE = "node"
+            internal const val MODE_UNTIL = "until"
+            private const val PERCENT_DIVISOR = 100f
+            private val DEFAULT_VARIANCE = ActionExecutor.DEFAULT_SCROLL_VARIANCE_PERCENT * PERCENT_DIVISOR
+            private val MAX_VARIANCE = ActionExecutor.MAX_SCROLL_VARIANCE_PERCENT * PERCENT_DIVISOR
         }
     }
 
@@ -1298,8 +1388,8 @@ fun registerNodeActionTools(
         TapNodeTool(treeParser, elementFinder, actionExecutor, accessibilityServiceProvider, nodeCache, targetResolver)
             .register(registrar, toolNamePrefix)
     }
-    if (perms.isToolEnabled(ScrollToNodeTool.TOOL_NAME)) {
-        ScrollToNodeTool(
+    if (perms.isToolEnabled(UnifiedScrollTool.TOOL_NAME)) {
+        UnifiedScrollTool(
             treeParser,
             elementFinder,
             actionExecutor,
@@ -1308,10 +1398,7 @@ fun registerNodeActionTools(
             targetResolver,
         ).register(registrar, toolNamePrefix)
     }
-    if (perms.isToolEnabled(ScrollNodeTool.TOOL_NAME)) {
-        ScrollNodeTool(treeParser, actionExecutor, accessibilityServiceProvider, nodeCache, targetResolver)
-            .register(registrar, toolNamePrefix)
-    }
+
 }
 
 /**

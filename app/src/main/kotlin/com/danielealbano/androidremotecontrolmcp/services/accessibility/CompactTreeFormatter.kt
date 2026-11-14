@@ -11,7 +11,7 @@ import javax.inject.Inject
  * - Line 2: `note:certain elements are custom and will not be properly reported, ...`
  * - Line 3: `note:flags: on=onscreen off=offscreen clk=clickable lclk=longClickable
  *   foc=focusable scr=scrollable edt=editable ena=enabled pwd=password`
- * - Line 4: `note:offscreen items require scroll_to_node before interaction`
+ * - Line 4: `note:offscreen items require scroll (mode=until) before interaction`
  * - Line 5: `app:<package> activity:<activity>`
  * - Line 6: `screen:<w>x<h> density:<dpi> orientation:<orientation>`
  * - Line 7: TSV header: `node_id\tclass\ttext\tdesc\tres_id\tbounds\tflags`
@@ -349,7 +349,7 @@ class CompactTreeFormatter
                 "note:flags: on=onscreen off=offscreen clk=clickable lclk=longClickable " +
                     "foc=focusable scr=scrollable edt=editable ena=enabled pwd=password"
             const val NOTE_LINE_OFFSCREEN_HINT =
-                "note:offscreen items require scroll_to_node before interaction"
+                "note:offscreen items require scroll (mode=until) before interaction"
             const val NOTE_LINE_OFFSCREEN_OMITTED =
                 "note:offscreen nodes are not listed (include_offscreen=false); " +
                     "call without it, or scroll, to see them"

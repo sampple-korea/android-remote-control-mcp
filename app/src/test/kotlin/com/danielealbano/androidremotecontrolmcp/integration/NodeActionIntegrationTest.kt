@@ -202,7 +202,7 @@ class NodeActionIntegrationTest {
         }
 
     @Test
-    fun `node tools accept node_id or a selector, and scroll_node is listed`() =
+    fun `node tools accept node_id or a selector, and scroll is listed`() =
         runTest {
             val deps = McpIntegrationTestHelper.createMockDependencies()
 
@@ -213,13 +213,9 @@ class NodeActionIntegrationTest {
                         "click_node",
                         "long_click_node",
                         "tap_node",
-                        "scroll_to_node",
-                        "scroll_node",
+                        "scroll",
                         "perform_node_action",
-                        "type_append_text",
-                        "type_insert_text",
-                        "type_replace_text",
-                        "type_clear_text",
+                        "edit_text",
                     )
                 for (name in nodeTools) {
                     val tool = tools.getValue("android_$name")
@@ -244,8 +240,7 @@ class NodeActionIntegrationTest {
                             .inputSchema.properties!!
                             .keys,
                 )
-                assertEquals(listOf("direction"), tools.getValue("android_scroll_node").inputSchema.required)
-                assertEquals(listOf("direction"), tools.getValue("android_scroll_to_node").inputSchema.required)
+                assertEquals(listOf("direction"), tools.getValue("android_scroll").inputSchema.required)
                 assertEquals(listOf("action"), tools.getValue("android_perform_node_action").inputSchema.required)
             }
         }
@@ -332,7 +327,7 @@ class NodeActionIntegrationTest {
         }
 
     @Test
-    fun `scroll_node scrolls the node once in the given direction`() =
+    fun `scroll mode node scrolls the node once in the given direction`() =
         runTest {
             val deps = McpIntegrationTestHelper.createMockDependencies()
             McpIntegrationTestHelper.setupMultiWindowMock(deps, sampleTree, sampleScreenInfo)
@@ -343,8 +338,8 @@ class NodeActionIntegrationTest {
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_scroll_node",
-                        arguments = mapOf("node_id" to "node_root", "direction" to "down"),
+                        name = "android_scroll",
+                        arguments = mapOf("mode" to "node", "node_id" to "node_root", "direction" to "down"),
                     )
                 assertNotEquals(true, result.isError)
                 assertEquals("Scrolled node 'node_root' down", (result.content[0] as TextContent).text)
@@ -353,7 +348,7 @@ class NodeActionIntegrationTest {
         }
 
     @Test
-    fun `scroll_to_node with a selector resolves the match`() =
+    fun `scroll mode until with a selector resolves the match`() =
         runTest {
             val deps = McpIntegrationTestHelper.createMockDependencies()
             McpIntegrationTestHelper.setupMultiWindowMock(deps, sampleTree, sampleScreenInfo)
@@ -366,9 +361,9 @@ class NodeActionIntegrationTest {
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_scroll_to_node",
+                        name = "android_scroll",
                         arguments =
-                            mapOf("by" to "text", "value" to "OK", "exact_match" to true, "direction" to "down"),
+                            mapOf("mode" to "until", "by" to "text", "value" to "OK", "exact_match" to true, "direction" to "down"),
                     )
                 assertNotEquals(true, result.isError)
                 assertEquals("Node 'node_btn' is already visible", (result.content[0] as TextContent).text)

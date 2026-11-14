@@ -82,12 +82,7 @@
     <string name="mcp_tool_long_click_node">Long Click Node</string>
     <string name="mcp_tool_perform_node_action">Perform Node Action</string>
     <string name="mcp_tool_tap_node">Tap Node</string>
-    <string name="mcp_tool_scroll_to_node">Scroll to Node</string>
-    <string name="mcp_tool_scroll_node">Scroll Node</string>
-    <string name="mcp_tool_type_append_text">Type Append Text</string>
-    <string name="mcp_tool_type_insert_text">Type Insert Text</string>
-    <string name="mcp_tool_type_replace_text">Type Replace Text</string>
-    <string name="mcp_tool_type_clear_text">Type Clear Text</string>
+    <string name="mcp_tool_edit_text">Edit Text</string>
     <string name="mcp_tool_press_key">Press Key</string>
     <string name="mcp_tool_get_clipboard">Get Clipboard</string>
     <string name="mcp_tool_set_clipboard">Set Clipboard</string>
@@ -110,7 +105,6 @@
     <string name="mcp_tool_list_camera_photo_resolutions">List Camera Photo Resolutions</string>
     <string name="mcp_tool_list_camera_video_resolutions">List Camera Video Resolutions</string>
     <string name="mcp_tool_take_camera_photo">Take Camera Photo</string>
-    <string name="mcp_tool_save_camera_photo">Save Camera Photo</string>
     <string name="mcp_tool_send_intent">Send Intent</string>
     <string name="mcp_tool_open_uri">Open URI</string>
     <string name="mcp_tool_notification_list">Notification List</string>

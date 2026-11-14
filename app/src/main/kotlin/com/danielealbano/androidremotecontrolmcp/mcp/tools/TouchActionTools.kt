@@ -6,8 +6,6 @@ import android.util.Log
 import com.danielealbano.androidremotecontrolmcp.data.model.ToolPermissionsConfig
 import com.danielealbano.androidremotecontrolmcp.mcp.McpToolException
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ActionExecutor
-import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScrollAmount
-import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScrollDirection
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
@@ -309,135 +307,6 @@ class SwipeTool
 // scroll
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * MCP tool handler for `scroll`.
- *
- * Scrolls the screen in a specified direction.
- *
- * **Input**: `{ "direction": "up"|"down"|"left"|"right", "amount": "small"|"medium"|"large" }`
- * **Output**: `{ "content": [{ "type": "text", "text": "Scroll down (medium) executed" }] }`
- */
-class ScrollTool
-    @Inject
-    constructor(
-        private val actionExecutor: ActionExecutor,
-    ) {
-        @Suppress("ThrowsCount")
-        suspend fun execute(arguments: JsonObject?): CallToolResult {
-            val directionStr = McpToolUtils.requireString(arguments, "direction")
-            val amountStr = McpToolUtils.optionalString(arguments, "amount", "medium")
-            val variance = McpToolUtils.optionalFloat(arguments, "variance", DEFAULT_VARIANCE)
-
-            val direction =
-                when (directionStr.lowercase()) {
-                    "up" -> ScrollDirection.UP
-
-                    "down" -> ScrollDirection.DOWN
-
-                    "left" -> ScrollDirection.LEFT
-
-                    "right" -> ScrollDirection.RIGHT
-
-                    else -> throw McpToolException.InvalidParams(
-                        "Parameter 'direction' must be one of: up, down, left, right. Got: '$directionStr'",
-                    )
-                }
-
-            val amount =
-                when (amountStr.lowercase()) {
-                    "small" -> ScrollAmount.SMALL
-
-                    "medium" -> ScrollAmount.MEDIUM
-
-                    "large" -> ScrollAmount.LARGE
-
-                    else -> throw McpToolException.InvalidParams(
-                        "Parameter 'amount' must be one of: small, medium, large. Got: '$amountStr'",
-                    )
-                }
-
-            McpToolUtils.validateNonNegative(variance, "variance")
-            if (variance > MAX_VARIANCE) {
-                throw McpToolException.InvalidParams(
-                    "Parameter 'variance' must be between 0 and ${MAX_VARIANCE.toInt()}, got: $variance",
-                )
-            }
-
-            val variancePercent = variance / PERCENT_DIVISOR
-
-            Log.d(TAG, "Executing scroll ${direction.name} with amount ${amount.name}, variance $variance%")
-            val result = actionExecutor.scroll(direction, amount, variancePercent)
-            return McpToolUtils.handleActionResult(
-                result,
-                "Scroll ${directionStr.lowercase()} (${amountStr.lowercase()}) executed",
-            )
-        }
-
-        fun register(
-            registrar: LoggedToolRegistrar,
-            toolNamePrefix: String,
-        ) {
-            registrar.addTool(
-                toolName = TOOL_NAME,
-                name = "$toolNamePrefix$TOOL_NAME",
-                description =
-                    "Scrolls in the specified direction. Applies random variance to " +
-                        "scroll distance and center point for more natural-looking gestures. " +
-                        "Returns after the gesture completes.",
-                inputSchema =
-                    ToolSchema(
-                        properties =
-                            buildJsonObject {
-                                putJsonObject("direction") {
-                                    put("type", "string")
-                                    put(
-                                        "enum",
-                                        buildJsonArray {
-                                            add(JsonPrimitive("up"))
-                                            add(JsonPrimitive("down"))
-                                            add(JsonPrimitive("left"))
-                                            add(JsonPrimitive("right"))
-                                        },
-                                    )
-                                }
-                                putJsonObject("amount") {
-                                    put("type", "string")
-                                    put(
-                                        "enum",
-                                        buildJsonArray {
-                                            add(JsonPrimitive("small"))
-                                            add(JsonPrimitive("medium"))
-                                            add(JsonPrimitive("large"))
-                                        },
-                                    )
-                                    put("default", "medium")
-                                }
-                                putJsonObject("variance") {
-                                    put("type", "number")
-                                    put(
-                                        "description",
-                                        "Random variance percentage (0-${MAX_VARIANCE.toInt()}). " +
-                                            "Applied as ±variance% to scroll distance and center point.",
-                                    )
-                                    put("default", DEFAULT_VARIANCE.toInt())
-                                    put("minimum", 0)
-                                    put("maximum", MAX_VARIANCE.toInt())
-                                }
-                            },
-                        required = listOf("direction"),
-                    ),
-            ) { request -> execute(request.arguments) }
-        }
-
-        companion object {
-            const val TOOL_NAME = "scroll"
-            private const val TAG = "MCP:ScrollTool"
-            private const val PERCENT_DIVISOR = 100f
-            private val DEFAULT_VARIANCE = ActionExecutor.DEFAULT_SCROLL_VARIANCE_PERCENT * PERCENT_DIVISOR
-            private val MAX_VARIANCE = ActionExecutor.MAX_SCROLL_VARIANCE_PERCENT * PERCENT_DIVISOR
-        }
-    }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Registration function
 // ─────────────────────────────────────────────────────────────────────────────
@@ -455,5 +324,4 @@ fun registerTouchActionTools(
     if (perms.isToolEnabled(LongPressTool.TOOL_NAME)) LongPressTool(actionExecutor).register(registrar, toolNamePrefix)
     if (perms.isToolEnabled(DoubleTapTool.TOOL_NAME)) DoubleTapTool(actionExecutor).register(registrar, toolNamePrefix)
     if (perms.isToolEnabled(SwipeTool.TOOL_NAME)) SwipeTool(actionExecutor).register(registrar, toolNamePrefix)
-    if (perms.isToolEnabled(ScrollTool.TOOL_NAME)) ScrollTool(actionExecutor).register(registrar, toolNamePrefix)
 }

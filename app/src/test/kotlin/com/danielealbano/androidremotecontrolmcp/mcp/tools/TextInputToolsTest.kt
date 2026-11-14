@@ -81,7 +81,7 @@ class TextInputToolsTest {
         )
 
     private fun appendTool() =
-        TypeAppendTextTool(
+        EditTextTool(
             mockTreeParser,
             mockActionExecutor,
             mockAccessibilityServiceProvider,
@@ -93,7 +93,7 @@ class TextInputToolsTest {
         )
 
     private fun insertTool() =
-        TypeInsertTextTool(
+        EditTextTool(
             mockTreeParser,
             mockActionExecutor,
             mockAccessibilityServiceProvider,
@@ -105,7 +105,7 @@ class TextInputToolsTest {
         )
 
     private fun replaceTool() =
-        TypeReplaceTextTool(
+        EditTextTool(
             mockTreeParser,
             mockActionExecutor,
             mockAccessibilityServiceProvider,
@@ -117,12 +117,13 @@ class TextInputToolsTest {
         )
 
     private fun clearTool() =
-        TypeClearTextTool(
+        EditTextTool(
             mockTreeParser,
             mockActionExecutor,
             mockAccessibilityServiceProvider,
             mockNodeCache,
             PrivacyToolTestDoubles.passthroughGate(),
+            PrivacyToolTestDoubles.identitySubstitutor(),
             targetResolver,
             serverLog,
         )
@@ -302,14 +303,14 @@ class TextInputToolsTest {
             runTest {
                 val e =
                     assertThrows<McpToolException.ActionFailed> {
-                        guardedTextEdit("type_append_text", serverLog) {
+                        guardedTextEdit("edit_text", serverLog) {
                             throw IllegalStateException("framework exploded")
                         }
                     }
                 assertTrue(e.message!!.contains("Unexpected error"), e.message)
                 val entries = serverLog.ofType(ServerLogEntry.Type.TOOL_CALL)
                 assertEquals(1, entries.size)
-                assertEquals("type_append_text", entries[0].toolName)
+                assertEquals("edit_text", entries[0].toolName)
                 assertTrue(entries[0].message.contains("framework exploded"), entries[0].message)
             }
 
@@ -324,8 +325,8 @@ class TextInputToolsTest {
     }
 
     @Nested
-    @DisplayName("type_append_text")
-    inner class TypeAppendTextToolTests {
+    @DisplayName("edit_text append")
+    inner class EditTextAppendTests {
         @Test
         fun `appends the computed text in one set without clicking the field`() =
             runTest {
@@ -339,6 +340,7 @@ class TextInputToolsTest {
                 val result =
                     appendTool().execute(
                         buildJsonObject {
+                            put("mode", "append")
                             put("node_id", "node_edit")
                             put("text", " World")
                         },
@@ -360,6 +362,7 @@ class TextInputToolsTest {
                 val result =
                     appendTool().execute(
                         buildJsonObject {
+                            put("mode", "append")
                             put("node_id", "node_edit")
                             put("text", "abc")
                         },
@@ -398,6 +401,7 @@ class TextInputToolsTest {
 
                 appendTool().execute(
                     buildJsonObject {
+                        put("mode", "append")
                         put("node_id", "node_wrapper")
                         put("text", "!")
                     },
@@ -433,6 +437,7 @@ class TextInputToolsTest {
                     assertThrows<McpToolException.ActionFailed> {
                         appendTool().execute(
                             buildJsonObject {
+                                put("mode", "append")
                                 put("node_id", "node_label")
                                 put("text", "x")
                             },
@@ -448,6 +453,7 @@ class TextInputToolsTest {
                 assertThrows<McpToolException.NodeNotFound> {
                     appendTool().execute(
                         buildJsonObject {
+                            put("mode", "append")
                             put("node_id", "node_missing")
                             put("text", "x")
                         },
@@ -465,6 +471,7 @@ class TextInputToolsTest {
                     assertThrows<McpToolException.ActionFailed> {
                         appendTool().execute(
                             buildJsonObject {
+                                put("mode", "append")
                                 put("node_id", "node_edit")
                                 put("text", "x")
                             },
@@ -489,6 +496,7 @@ class TextInputToolsTest {
                 val result =
                     appendTool().execute(
                         buildJsonObject {
+                            put("mode", "append")
                             put("by", "class_name")
                             put("value", "android.widget.EditText")
                             put("exact_match", true)
@@ -506,6 +514,7 @@ class TextInputToolsTest {
                 assertThrows<McpToolException.InvalidParams> {
                     appendTool().execute(
                         buildJsonObject {
+                            put("mode", "append")
                             put("node_id", "node_edit")
                             put("text", "")
                         },
@@ -514,6 +523,7 @@ class TextInputToolsTest {
                 assertThrows<McpToolException.InvalidParams> {
                     appendTool().execute(
                         buildJsonObject {
+                            put("mode", "append")
                             put("node_id", "node_edit")
                             put("text", "x".repeat(2001))
                         },
@@ -522,6 +532,7 @@ class TextInputToolsTest {
                 assertThrows<McpToolException.InvalidParams> {
                     appendTool().execute(
                         buildJsonObject {
+                            put("mode", "append")
                             put("node_id", "node_edit")
                             put("text", "x")
                             put("typing_speed", 5)
@@ -540,6 +551,7 @@ class TextInputToolsTest {
                     assertThrows<McpToolException.ActionFailed> {
                         appendTool().execute(
                             buildJsonObject {
+                                put("mode", "append")
                                 put("node_id", "node_edit")
                                 put("text", "x")
                             },
@@ -548,13 +560,13 @@ class TextInputToolsTest {
                 assertTrue(e.message!!.contains("Unexpected error"), e.message)
                 val entries = serverLog.ofType(ServerLogEntry.Type.TOOL_CALL)
                 assertEquals(1, entries.size)
-                assertEquals("type_append_text", entries[0].toolName)
+                assertEquals("edit_text", entries[0].toolName)
             }
     }
 
     @Nested
-    @DisplayName("type_insert_text")
-    inner class TypeInsertTextToolTests {
+    @DisplayName("edit_text insert")
+    inner class EditTextInsertTests {
         @Test
         fun `inserts the computed text at the offset`() =
             runTest {
@@ -563,6 +575,7 @@ class TextInputToolsTest {
                 val result =
                     insertTool().execute(
                         buildJsonObject {
+                            put("mode", "insert")
                             put("node_id", "node_edit")
                             put("text", " World")
                             put("offset", 3)
@@ -582,6 +595,7 @@ class TextInputToolsTest {
                 fieldText = "mid"
                 insertTool().execute(
                     buildJsonObject {
+                        put("mode", "insert")
                         put("node_id", "node_edit")
                         put("text", "pre-")
                         put("offset", 0)
@@ -591,6 +605,7 @@ class TextInputToolsTest {
 
                 insertTool().execute(
                     buildJsonObject {
+                        put("mode", "insert")
                         put("node_id", "node_edit")
                         put("text", "-post")
                         put("offset", 7)
@@ -608,6 +623,7 @@ class TextInputToolsTest {
                     assertThrows<McpToolException.InvalidParams> {
                         insertTool().execute(
                             buildJsonObject {
+                                put("mode", "insert")
                                 put("node_id", "node_edit")
                                 put("text", "x")
                                 put("offset", 6)
@@ -624,6 +640,7 @@ class TextInputToolsTest {
                 assertThrows<McpToolException.InvalidParams> {
                     insertTool().execute(
                         buildJsonObject {
+                            put("mode", "insert")
                             put("node_id", "node_edit")
                             put("text", "x")
                             put("offset", -1)
@@ -634,8 +651,8 @@ class TextInputToolsTest {
     }
 
     @Nested
-    @DisplayName("type_replace_text")
-    inner class TypeReplaceTextToolTests {
+    @DisplayName("edit_text replace")
+    inner class EditTextReplaceTests {
         @Test
         fun `replaces the first occurrence with the computed text`() =
             runTest {
@@ -644,6 +661,7 @@ class TextInputToolsTest {
                 val result =
                     replaceTool().execute(
                         buildJsonObject {
+                            put("mode", "replace")
                             put("node_id", "node_edit")
                             put("search", "foo")
                             put("new_text", "baz")
@@ -666,6 +684,7 @@ class TextInputToolsTest {
 
                 replaceTool().execute(
                     buildJsonObject {
+                        put("mode", "replace")
                         put("node_id", "node_edit")
                         put("search", "1202")
                         put("new_text", "120")
@@ -682,6 +701,7 @@ class TextInputToolsTest {
 
                 replaceTool().execute(
                     buildJsonObject {
+                        put("mode", "replace")
                         put("node_id", "node_edit")
                         put("search", "Hello")
                         put("new_text", "")
@@ -700,6 +720,7 @@ class TextInputToolsTest {
                     assertThrows<McpToolException.NodeNotFound> {
                         replaceTool().execute(
                             buildJsonObject {
+                                put("mode", "replace")
                                 put("node_id", "node_edit")
                                 put("search", "NotFound")
                                 put("new_text", "X")
@@ -716,6 +737,7 @@ class TextInputToolsTest {
                 assertThrows<McpToolException.InvalidParams> {
                     replaceTool().execute(
                         buildJsonObject {
+                            put("mode", "replace")
                             put("node_id", "node_edit")
                             put("search", "")
                             put("new_text", "X")
@@ -725,6 +747,7 @@ class TextInputToolsTest {
                 assertThrows<McpToolException.InvalidParams> {
                     replaceTool().execute(
                         buildJsonObject {
+                            put("mode", "replace")
                             put("node_id", "node_edit")
                             put("search", "a")
                             put("new_text", "x".repeat(2001))
@@ -735,8 +758,8 @@ class TextInputToolsTest {
     }
 
     @Nested
-    @DisplayName("type_clear_text")
-    inner class TypeClearTextToolTests {
+    @DisplayName("edit_text clear")
+    inner class EditTextClearTests {
         @Test
         fun `clears the field with one empty set`() =
             runTest {
@@ -797,16 +820,14 @@ class TextInputToolsTest {
     @Nested
     @DisplayName("press_key")
     inner class PressKeyToolTests {
-        private fun pressKeyTool() = PressKeyTool(mockActionExecutor, mockAccessibilityServiceProvider)
+        private fun pressKeyTool() = PressKeyTool(mockAccessibilityServiceProvider)
 
         @Test
-        fun `BACK delegates to the action executor`() =
+        fun `BACK is rejected - the dedicated press_back tool handles it`() =
             runTest {
-                coEvery { mockActionExecutor.pressBack() } returns Result.success(Unit)
-
-                val result = pressKeyTool().execute(buildJsonObject { put("key", "BACK") })
-
-                assertTrue(extractTextContent(result).contains("BACK"))
+                assertThrows<McpToolException.InvalidParams> {
+                    pressKeyTool().execute(buildJsonObject { put("key", "BACK") })
+                }
             }
 
         @Test

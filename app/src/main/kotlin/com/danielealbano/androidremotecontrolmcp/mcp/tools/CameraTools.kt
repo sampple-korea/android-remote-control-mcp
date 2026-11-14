@@ -11,6 +11,8 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -223,6 +225,7 @@ class TakeCameraPhotoHandler
     @Inject
     constructor(
         private val cameraProvider: CameraProvider,
+        private val fileOperationProvider: FileOperationProvider,
     ) {
         @Suppress("CyclomaticComplexMethod")
         suspend fun execute(arguments: JsonObject?): CallToolResult {
@@ -250,6 +253,37 @@ class TakeCameraPhotoHandler
                     "resolution=${resolution?.first}x${resolution?.second}, " +
                     "quality=$quality, flash=$flashMode",
             )
+
+            val locationId = arguments?.get("location_id")?.jsonPrimitive?.contentOrNull
+            val savePath = arguments?.get("path")?.jsonPrimitive?.contentOrNull
+            if ((locationId == null) != (savePath == null)) {
+                throw McpToolException.InvalidParams(
+                    "Parameters 'location_id' and 'path' must be given together to save the photo, " +
+                        "or both omitted to return it",
+                )
+            }
+            if (locationId != null && savePath != null) {
+                val outputUri = fileOperationProvider.createFileUri(locationId, savePath, "image/jpeg")
+                val fileSizeBytes =
+                    try {
+                        cameraProvider.savePhoto(
+                            cameraId = cameraId,
+                            outputUri = outputUri,
+                            width = resolution?.first,
+                            height = resolution?.second,
+                            quality = quality,
+                            flashMode = flashMode,
+                        )
+                    } catch (e: McpToolException) {
+                        throw e
+                    } catch (e: CancellationException) {
+                        throw McpToolException.Timeout(
+                            "Camera photo save timed out: ${e.message}",
+                            e,
+                        )
+                    }
+                return McpToolUtils.textResult("Photo saved successfully: $savePath ($fileSizeBytes bytes)")
+            }
 
             val result =
                 try {
@@ -283,8 +317,9 @@ class TakeCameraPhotoHandler
                     "Captures a photo from the specified camera and returns it as a " +
                         "base64-encoded JPEG image. Default resolution is 720p (closest " +
                         "available match). Maximum resolution is capped at 1920x1080 to " +
-                        "prevent excessively large responses. Use save_camera_photo for " +
-                        "higher resolutions.",
+                        "prevent excessively large responses. To save the photo to a storage " +
+                        "location instead (higher resolutions included), give both " +
+                        "location_id and path.",
                 inputSchema =
                     ToolSchema(
                         properties =
@@ -312,6 +347,22 @@ class TakeCameraPhotoHandler
                                         "Flash mode: 'off', 'on', or 'auto'. Default: 'auto'.",
                                     )
                                 }
+                                putJsonObject("location_id") {
+                                    put("type", "string")
+                                    put(
+                                        "description",
+                                        "Storage location identifier. With 'path', saves the photo " +
+                                            "there instead of returning it.",
+                                    )
+                                }
+                                putJsonObject("path") {
+                                    put("type", "string")
+                                    put(
+                                        "description",
+                                        "Relative file path (e.g., 'photos/photo.jpg'). With " +
+                                            "'location_id', saves the photo there instead of returning it.",
+                                    )
+                                }
                             },
                         required = listOf("camera_id"),
                     ),
@@ -321,127 +372,6 @@ class TakeCameraPhotoHandler
         companion object {
             const val TOOL_NAME = "take_camera_photo"
             private const val TAG = "MCP:TakeCameraPhotoHandler"
-        }
-    }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// save_camera_photo
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * MCP tool handler for `save_camera_photo`.
- *
- * Captures a photo from the specified camera and saves it to a storage location.
- */
-class SaveCameraPhotoHandler
-    @Inject
-    constructor(
-        private val cameraProvider: CameraProvider,
-        private val fileOperationProvider: FileOperationProvider,
-    ) {
-        @Suppress("CyclomaticComplexMethod")
-        suspend fun execute(arguments: JsonObject?): CallToolResult {
-            val cameraId = McpToolUtils.requireString(arguments, "camera_id")
-            val locationId = McpToolUtils.requireString(arguments, "location_id")
-            val path = McpToolUtils.requireString(arguments, "path")
-            val resolution = parseOptionalResolution(arguments, "resolution")
-            val quality =
-                McpToolUtils.optionalInt(
-                    arguments,
-                    "quality",
-                    CameraProvider.DEFAULT_QUALITY,
-                )
-            val flashMode =
-                McpToolUtils.optionalString(
-                    arguments,
-                    "flash_mode",
-                    CameraProvider.DEFAULT_FLASH_MODE,
-                )
-
-            validateQuality(quality)
-            validateFlashMode(flashMode)
-
-            Log.d(TAG, "Executing save_camera_photo: camera=$cameraId, location=$locationId, path=$path")
-
-            val outputUri = fileOperationProvider.createFileUri(locationId, path, "image/jpeg")
-            val fileSizeBytes =
-                try {
-                    cameraProvider.savePhoto(
-                        cameraId = cameraId,
-                        outputUri = outputUri,
-                        width = resolution?.first,
-                        height = resolution?.second,
-                        quality = quality,
-                        flashMode = flashMode,
-                    )
-                } catch (e: McpToolException) {
-                    throw e
-                } catch (e: CancellationException) {
-                    throw McpToolException.Timeout(
-                        "Camera photo save timed out: ${e.message}",
-                        e,
-                    )
-                }
-
-            return McpToolUtils.textResult("Photo saved successfully: $path ($fileSizeBytes bytes)")
-        }
-
-        @Suppress("LongMethod")
-        fun register(
-            registrar: LoggedToolRegistrar,
-            toolNamePrefix: String,
-        ) {
-            registrar.addTool(
-                toolName = TOOL_NAME,
-                name = "$toolNamePrefix$TOOL_NAME",
-                description =
-                    "Captures a photo from the specified camera and saves it to a storage " +
-                        "location. Requires write permission on the storage location. " +
-                        "Default resolution is 720p (closest available match).",
-                inputSchema =
-                    ToolSchema(
-                        properties =
-                            buildJsonObject {
-                                putJsonObject("camera_id") {
-                                    put("type", "string")
-                                    put("description", "Camera identifier from list_cameras")
-                                }
-                                putJsonObject("location_id") {
-                                    put("type", "string")
-                                    put("description", "Storage location identifier")
-                                }
-                                putJsonObject("path") {
-                                    put("type", "string")
-                                    put("description", "Relative file path (e.g., 'photos/photo.jpg')")
-                                }
-                                putJsonObject("resolution") {
-                                    put("type", "string")
-                                    put(
-                                        "description",
-                                        "Resolution as WIDTHxHEIGHT (e.g., '1280x720'). " +
-                                            "Default: 720p closest match.",
-                                    )
-                                }
-                                putJsonObject("quality") {
-                                    put("type", "integer")
-                                    put("description", "JPEG quality (1-100). Default: 80.")
-                                }
-                                putJsonObject("flash_mode") {
-                                    put("type", "string")
-                                    put(
-                                        "description",
-                                        "Flash mode: 'off', 'on', or 'auto'. Default: 'auto'.",
-                                    )
-                                }
-                            },
-                        required = listOf("camera_id", "location_id", "path"),
-                    ),
-            ) { request -> execute(request.arguments) }
-        }
-
-        companion object {
-            const val TOOL_NAME = "save_camera_photo"
-            private const val TAG = "MCP:SaveCameraPhotoHandler"
         }
     }
 
@@ -706,10 +636,7 @@ fun registerCameraTools(
         ListCameraVideoResolutionsHandler(cameraProvider).register(registrar, toolNamePrefix)
     }
     if (perms.isToolEnabled(TakeCameraPhotoHandler.TOOL_NAME)) {
-        TakeCameraPhotoHandler(cameraProvider).register(registrar, toolNamePrefix)
-    }
-    if (perms.isToolEnabled(SaveCameraPhotoHandler.TOOL_NAME)) {
-        SaveCameraPhotoHandler(cameraProvider, fileOperationProvider).register(registrar, toolNamePrefix)
+        TakeCameraPhotoHandler(cameraProvider, fileOperationProvider).register(registrar, toolNamePrefix)
     }
     if (perms.isToolEnabled(SaveCameraVideoHandler.TOOL_NAME)) {
         SaveCameraVideoHandler(cameraProvider, fileOperationProvider).register(
