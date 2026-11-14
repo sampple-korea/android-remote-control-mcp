@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -120,16 +119,7 @@ fun TunnelSettingsScreen(
 
             // Tunnel Enable/Disable Toggle
             Row(
-                modifier =
-                    Modifier.fillMaxWidth().toggleable(
-                        value = serverConfig.tunnelEnabled,
-                        enabled = isEnabled,
-                        role = Role.Switch,
-                        onValueChange = { on ->
-                            viewModel.updateTunnelEnabled(on)
-                            if (on && arcSelected) arcViewModel.requestEnrollment()
-                        },
-                    ),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -139,7 +129,10 @@ fun TunnelSettingsScreen(
                 )
                 Switch(
                     checked = serverConfig.tunnelEnabled,
-                    onCheckedChange = null,
+                    onCheckedChange = { on ->
+                        viewModel.updateTunnelEnabled(on)
+                        if (on && arcSelected) arcViewModel.requestEnrollment()
+                    },
                     enabled = isEnabled,
                     modifier = Modifier.minimumInteractiveComponentSize(),
                 )

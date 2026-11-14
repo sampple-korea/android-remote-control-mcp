@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -53,7 +52,6 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
@@ -294,12 +292,6 @@ private fun UpdateSettingsSection(
     Spacer(Modifier.height(8.dp))
 
     Row(
-        modifier =
-            Modifier.toggleable(
-                value = autoCheckEnabled,
-                role = Role.Switch,
-                onValueChange = viewModel::setAutoCheckEnabled,
-            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -309,7 +301,7 @@ private fun UpdateSettingsSection(
         )
         Switch(
             checked = autoCheckEnabled,
-            onCheckedChange = null,
+            onCheckedChange = viewModel::setAutoCheckEnabled,
             modifier = Modifier.minimumInteractiveComponentSize(),
         )
     }

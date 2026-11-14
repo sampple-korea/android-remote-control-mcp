@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -50,7 +49,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
@@ -282,12 +280,7 @@ fun StorageSettingsScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
-                    modifier =
-                        Modifier.fillMaxWidth().toggleable(
-                            value = serverConfig.allowHttpDownloads,
-                            role = Role.Switch,
-                            onValueChange = viewModel::updateAllowHttpDownloads,
-                        ),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -303,7 +296,7 @@ fun StorageSettingsScreen(
                     }
                     Switch(
                         checked = serverConfig.allowHttpDownloads,
-                        onCheckedChange = null,
+                        onCheckedChange = viewModel::updateAllowHttpDownloads,
                         modifier = Modifier.minimumInteractiveComponentSize(),
                     )
                 }
@@ -311,12 +304,7 @@ fun StorageSettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
-                    modifier =
-                        Modifier.fillMaxWidth().toggleable(
-                            value = serverConfig.allowUnverifiedHttpsCerts,
-                            role = Role.Switch,
-                            onValueChange = viewModel::updateAllowUnverifiedHttpsCerts,
-                        ),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -332,7 +320,7 @@ fun StorageSettingsScreen(
                     }
                     Switch(
                         checked = serverConfig.allowUnverifiedHttpsCerts,
-                        onCheckedChange = null,
+                        onCheckedChange = viewModel::updateAllowUnverifiedHttpsCerts,
                         modifier = Modifier.minimumInteractiveComponentSize(),
                     )
                 }
@@ -340,12 +328,7 @@ fun StorageSettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
-                    modifier =
-                        Modifier.fillMaxWidth().toggleable(
-                            value = serverConfig.blockLocalNetworkDownloads,
-                            role = Role.Switch,
-                            onValueChange = viewModel::updateBlockLocalNetworkDownloads,
-                        ),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -361,7 +344,7 @@ fun StorageSettingsScreen(
                     }
                     Switch(
                         checked = serverConfig.blockLocalNetworkDownloads,
-                        onCheckedChange = null,
+                        onCheckedChange = viewModel::updateBlockLocalNetworkDownloads,
                         modifier = Modifier.minimumInteractiveComponentSize(),
                     )
                 }
@@ -603,49 +586,37 @@ private fun StorageLocationRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Spoken with the location's name, on the label (the row reads it): rows of several locations look alike
+            // Spoken with the location's name, on the switch: rows of several locations look alike
             val allowWriteOn = stringResource(R.string.storage_location_allow_write_on, location.name)
             Row(
-                modifier =
-                    Modifier.toggleable(
-                        value = location.allowWrite,
-                        role = Role.Switch,
-                        onValueChange = onAllowWriteChange,
-                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = stringResource(R.string.storage_location_allow_write_label),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.semantics { contentDescription = allowWriteOn },
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Switch(
                     checked = location.allowWrite,
-                    onCheckedChange = null,
+                    onCheckedChange = onAllowWriteChange,
+                    modifier = Modifier.semantics { contentDescription = allowWriteOn },
                 )
             }
             val allowDeleteOn = stringResource(R.string.storage_location_allow_delete_on, location.name)
             Row(
-                modifier =
-                    Modifier.toggleable(
-                        value = location.allowDelete,
-                        role = Role.Switch,
-                        onValueChange = onAllowDeleteChange,
-                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = stringResource(R.string.storage_location_allow_delete_label),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.semantics { contentDescription = allowDeleteOn },
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Switch(
                     checked = location.allowDelete,
-                    onCheckedChange = null,
+                    onCheckedChange = onAllowDeleteChange,
+                    modifier = Modifier.semantics { contentDescription = allowDeleteOn },
                 )
             }
         }
@@ -687,49 +658,37 @@ private fun BuiltinStorageLocationRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Spoken with the location's name, on the label (the row reads it): rows of several locations look alike
+            // Spoken with the location's name, on the switch: rows of several locations look alike
             val allowWriteOn = stringResource(R.string.storage_location_allow_write_on, location.name)
             Row(
-                modifier =
-                    Modifier.toggleable(
-                        value = location.allowWrite,
-                        role = Role.Switch,
-                        onValueChange = onAllowWriteChange,
-                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = stringResource(R.string.storage_location_allow_write_label),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.semantics { contentDescription = allowWriteOn },
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Switch(
                     checked = location.allowWrite,
-                    onCheckedChange = null,
+                    onCheckedChange = onAllowWriteChange,
+                    modifier = Modifier.semantics { contentDescription = allowWriteOn },
                 )
             }
             val allowDeleteOn = stringResource(R.string.storage_location_allow_delete_on, location.name)
             Row(
-                modifier =
-                    Modifier.toggleable(
-                        value = location.allowDelete,
-                        role = Role.Switch,
-                        onValueChange = onAllowDeleteChange,
-                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = stringResource(R.string.storage_location_allow_delete_label),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.semantics { contentDescription = allowDeleteOn },
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Switch(
                     checked = location.allowDelete,
-                    onCheckedChange = null,
+                    onCheckedChange = onAllowDeleteChange,
+                    modifier = Modifier.semantics { contentDescription = allowDeleteOn },
                 )
             }
         }

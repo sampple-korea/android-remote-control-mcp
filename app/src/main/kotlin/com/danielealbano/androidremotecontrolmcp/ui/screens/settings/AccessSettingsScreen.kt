@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -44,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -119,12 +117,7 @@ fun AccessSettingsScreen(
 
             // OAuth toggle
             Row(
-                modifier =
-                    Modifier.fillMaxWidth().toggleable(
-                        value = serverConfig.oauthEnabled,
-                        role = Role.Switch,
-                        onValueChange = viewModel::requestSetOauthEnabled,
-                    ),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -137,7 +130,7 @@ fun AccessSettingsScreen(
                 }
                 Switch(
                     checked = serverConfig.oauthEnabled,
-                    onCheckedChange = null,
+                    onCheckedChange = viewModel::requestSetOauthEnabled,
                     modifier = Modifier.minimumInteractiveComponentSize(),
                 )
             }
@@ -160,12 +153,7 @@ fun AccessSettingsScreen(
 
             // Bearer toggle
             Row(
-                modifier =
-                    Modifier.fillMaxWidth().toggleable(
-                        value = serverConfig.bearerTokenEnabled,
-                        role = Role.Switch,
-                        onValueChange = viewModel::requestSetBearerTokenEnabled,
-                    ),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -175,7 +163,7 @@ fun AccessSettingsScreen(
                 )
                 Switch(
                     checked = serverConfig.bearerTokenEnabled,
-                    onCheckedChange = null,
+                    onCheckedChange = viewModel::requestSetBearerTokenEnabled,
                     modifier = Modifier.minimumInteractiveComponentSize(),
                 )
             }

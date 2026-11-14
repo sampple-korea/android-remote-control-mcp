@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -42,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
@@ -155,18 +153,12 @@ fun ChannelSettingsScreen(
             }
             item {
                 ListItem(
-                    modifier =
-                        Modifier.toggleable(
-                            value = config.enabled,
-                            role = Role.Switch,
-                            onValueChange = { viewModel.updateChannelEnabled(it) },
-                        ),
                     headlineContent = { Text(stringResource(R.string.channel_auto_start_label)) },
                     supportingContent = { Text(stringResource(R.string.channel_auto_start_description)) },
                     trailingContent = {
                         Switch(
                             checked = config.enabled,
-                            onCheckedChange = null,
+                            onCheckedChange = { viewModel.updateChannelEnabled(it) },
                             modifier = Modifier.minimumInteractiveComponentSize(),
                         )
                     },

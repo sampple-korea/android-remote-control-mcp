@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -386,18 +384,11 @@ private fun ToolRow(
 ) {
     val toolEnabled = perms.isToolEnabled(tool.toolName)
     ListItem(
-        modifier =
-            Modifier.toggleable(
-                value = toolEnabled,
-                enabled = controlsEnabled && categoryGranted,
-                role = Role.Switch,
-                onValueChange = { onToolToggle(tool.toolName, it) },
-            ),
         headlineContent = { Text(stringResource(tool.displayName)) },
         trailingContent = {
             Switch(
                 checked = toolEnabled,
-                onCheckedChange = null,
+                onCheckedChange = { onToolToggle(tool.toolName, it) },
                 enabled = controlsEnabled && categoryGranted,
                 modifier = Modifier.minimumInteractiveComponentSize(),
             )
@@ -458,24 +449,19 @@ private fun ToolParamRow(
     ListItem(
         headlineContent = { Text(paramName) },
         // Without its permission the row opens the permission settings and the switch stands alone, named after the
-        // row; otherwise the whole row toggles
+        // row; otherwise only the switch itself toggles
         modifier =
             if (showParamNote) {
                 Modifier.padding(start = 32.dp).clickable(onClickLabel = openPermissions) { onNavigateToPermissions() }
             } else {
-                Modifier.padding(start = 32.dp).toggleable(
-                    value = paramEnabled,
-                    enabled = switchEnabled,
-                    role = Role.Switch,
-                    onValueChange = onToggle,
-                )
+                Modifier.padding(start = 32.dp)
             },
         leadingContent = leadingIcon,
         supportingContent = supportingNote,
         trailingContent = {
             Switch(
                 checked = paramEnabled,
-                onCheckedChange = if (showParamNote) onToggle else null,
+                onCheckedChange = onToggle,
                 enabled = switchEnabled,
                 modifier =
                     if (showParamNote) {

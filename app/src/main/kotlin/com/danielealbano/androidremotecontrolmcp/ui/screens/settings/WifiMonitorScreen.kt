@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -30,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
@@ -95,18 +93,12 @@ fun WifiMonitorScreen(
             }
             item {
                 ListItem(
-                    modifier =
-                        Modifier.toggleable(
-                            value = config.wifi.notifyOnDiscovered,
-                            role = Role.Switch,
-                            onValueChange = { viewModel.updateWifiNotifyOnDiscovered(it) },
-                        ),
                     headlineContent = { Text(stringResource(R.string.wifi_monitor_notify_discovered)) },
                     supportingContent = { Text(stringResource(R.string.wifi_monitor_scan_based)) },
                     trailingContent = {
                         Switch(
                             checked = config.wifi.notifyOnDiscovered,
-                            onCheckedChange = null,
+                            onCheckedChange = { viewModel.updateWifiNotifyOnDiscovered(it) },
                             modifier = Modifier.minimumInteractiveComponentSize(),
                         )
                     },
@@ -114,18 +106,12 @@ fun WifiMonitorScreen(
             }
             item {
                 ListItem(
-                    modifier =
-                        Modifier.toggleable(
-                            value = config.wifi.notifyOnLost,
-                            role = Role.Switch,
-                            onValueChange = { viewModel.updateWifiNotifyOnLost(it) },
-                        ),
                     headlineContent = { Text(stringResource(R.string.wifi_monitor_notify_lost)) },
                     supportingContent = { Text(stringResource(R.string.wifi_monitor_scan_based)) },
                     trailingContent = {
                         Switch(
                             checked = config.wifi.notifyOnLost,
-                            onCheckedChange = null,
+                            onCheckedChange = { viewModel.updateWifiNotifyOnLost(it) },
                             modifier = Modifier.minimumInteractiveComponentSize(),
                         )
                     },
@@ -133,18 +119,12 @@ fun WifiMonitorScreen(
             }
             item {
                 ListItem(
-                    modifier =
-                        Modifier.toggleable(
-                            value = config.wifi.notifyOnConnected,
-                            role = Role.Switch,
-                            onValueChange = { viewModel.updateWifiNotifyOnConnected(it) },
-                        ),
                     headlineContent = { Text(stringResource(R.string.wifi_monitor_notify_connected)) },
                     supportingContent = { Text(stringResource(R.string.wifi_monitor_real_time)) },
                     trailingContent = {
                         Switch(
                             checked = config.wifi.notifyOnConnected,
-                            onCheckedChange = null,
+                            onCheckedChange = { viewModel.updateWifiNotifyOnConnected(it) },
                             modifier = Modifier.minimumInteractiveComponentSize(),
                         )
                     },
@@ -152,18 +132,12 @@ fun WifiMonitorScreen(
             }
             item {
                 ListItem(
-                    modifier =
-                        Modifier.toggleable(
-                            value = config.wifi.notifyOnDisconnected,
-                            role = Role.Switch,
-                            onValueChange = { viewModel.updateWifiNotifyOnDisconnected(it) },
-                        ),
                     headlineContent = { Text(stringResource(R.string.wifi_monitor_notify_disconnected)) },
                     supportingContent = { Text(stringResource(R.string.wifi_monitor_real_time)) },
                     trailingContent = {
                         Switch(
                             checked = config.wifi.notifyOnDisconnected,
-                            onCheckedChange = null,
+                            onCheckedChange = { viewModel.updateWifiNotifyOnDisconnected(it) },
                             modifier = Modifier.minimumInteractiveComponentSize(),
                         )
                     },

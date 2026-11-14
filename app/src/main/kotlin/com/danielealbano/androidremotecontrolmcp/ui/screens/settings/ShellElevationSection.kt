@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
@@ -30,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.danielealbano.androidremotecontrolmcp.R
@@ -132,8 +130,10 @@ private fun ShellSwitchRow(
     checked: Boolean,
     onChange: (Boolean) -> Unit,
 ) {
+    // Only the switch itself toggles: a whole-row toggleable flipped these safety switches when a touch
+    // merely grazed the row (e.g. while scrolling the Shell settings), which silently turned elevation off.
     Row(
-        modifier = Modifier.fillMaxWidth().toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -144,7 +144,7 @@ private fun ShellSwitchRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(checked = checked, onCheckedChange = null, modifier = Modifier.minimumInteractiveComponentSize())
+        Switch(checked = checked, onCheckedChange = onChange, modifier = Modifier.minimumInteractiveComponentSize())
     }
 }
 

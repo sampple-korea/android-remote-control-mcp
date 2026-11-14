@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -95,19 +94,7 @@ fun PrivacySettingsScreen(
         ) {
             // 1. Master enable toggle
             Row(
-                modifier =
-                    Modifier.fillMaxWidth().toggleable(
-                        value = config.enabled,
-                        enabled = !downloadInProgress && !enableInProgress,
-                        role = Role.Switch,
-                        onValueChange = { requested ->
-                            if (requested) {
-                                viewModel.requestEnablePrivacyMode()
-                            } else {
-                                viewModel.disablePrivacyMode()
-                            }
-                        },
-                    ),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -117,7 +104,13 @@ fun PrivacySettingsScreen(
                 )
                 Switch(
                     checked = config.enabled,
-                    onCheckedChange = null,
+                    onCheckedChange = { requested ->
+                        if (requested) {
+                            viewModel.requestEnablePrivacyMode()
+                        } else {
+                            viewModel.disablePrivacyMode()
+                        }
+                    },
                     // Disabled through the WHOLE enable window (request -> download -> warm-up), not
                     // just while DownloadState reports progress; stays usable during the benchmark,
                     // which finishes and stores its result even if Privacy Mode is toggled off.
@@ -149,12 +142,7 @@ fun PrivacySettingsScreen(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .toggleable(
-                                value = config.isCategoryEnabled(category),
-                                enabled = config.enabled && !downloadInProgress && !enableInProgress,
-                                role = Role.Switch,
-                                onValueChange = { viewModel.updatePrivacyCategoryEnabled(category, it) },
-                            ).padding(vertical = 4.dp),
+                            .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -164,7 +152,7 @@ fun PrivacySettingsScreen(
                     )
                     Switch(
                         checked = config.isCategoryEnabled(category),
-                        onCheckedChange = null,
+                        onCheckedChange = { viewModel.updatePrivacyCategoryEnabled(category, it) },
                         // Categories are only editable while Privacy Mode is ON and not mid-enable:
                         // toggling them while disabled or during the download would silently change
                         // what gets protected once the mode comes up.
