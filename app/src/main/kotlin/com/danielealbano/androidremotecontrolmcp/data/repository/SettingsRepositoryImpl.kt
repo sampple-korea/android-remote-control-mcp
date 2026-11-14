@@ -359,7 +359,7 @@ class SettingsRepositoryImpl
             dataStore.edit { prefs ->
                 val old = prefs[key] ?: default
                 prefs[key] = newValue
-                settingsChangeLogger.submit(coalesceKey, old.toString(), newValue.toString(), render)
+                settingsChangeLogger.submit(coalesceKey, old.toString(), newValue.toString(), render = render)
             }
         }
 
