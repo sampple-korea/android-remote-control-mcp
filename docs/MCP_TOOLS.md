@@ -44,12 +44,12 @@ The MCP server exposes 74 tools via the JSON-RPC 2.0 protocol, organized into 16
 | System Actions | `android_press_back`, `android_press_home`, `android_press_recents`, `android_open_notifications`, `android_open_quick_settings`, `android_dismiss_keyboard` | 6 |
 | Touch Actions | `android_tap`, `android_long_press`, `android_double_tap`, `android_swipe`, `android_scroll` | 8 |
 | Gestures | `android_pinch`, `android_custom_gesture` | 8 |
-| Node Actions | `android_find_nodes`, `android_click_node`, `android_long_click_node`, `android_perform_node_action`, `android_tap_node`, `android_scroll_to_node`, `android_scroll_node` | 9, 35, 69 |
-| Text Input | `android_type_append_text`, `android_type_insert_text`, `android_type_replace_text`, `android_type_clear_text`, `android_press_key` | 9, 22 |
+| Node Actions | `android_find_nodes`, `android_click_node`, `android_long_click_node`, `android_perform_node_action`, `android_tap_node`, `android_scroll` (modes: screen/node/until) | 9, 35, 69 |
+| Text Input | `android_edit_text`, `android_press_key` | 9, 22 |
 | Utilities | `android_get_clipboard`, `android_set_clipboard`, `android_wait_for_node`, `android_wait_for_idle`, `android_get_node_details` | 9, 15 |
 | File Operations | `android_list_storage_locations`, `android_list_files`, `android_read_file`, `android_write_file`, `android_append_file`, `android_file_replace`, `android_download_from_url`, `android_delete_file` | - |
 | App Management | `android_open_app`, `android_list_apps`, `android_close_app` | - |
-| Camera | `android_list_cameras`, `android_list_camera_photo_resolutions`, `android_list_camera_video_resolutions`, `android_take_camera_photo`, `android_save_camera_photo`, `android_save_camera_video` | 27 |
+| Camera | `android_list_cameras`, `android_list_camera_photo_resolutions`, `android_list_camera_video_resolutions`, `android_take_camera_photo`, `android_save_camera_video` | 27 |
 | Intent | `android_send_intent`, `android_open_uri` | 31 |
 | Notification | `android_notification_list`, `android_notification_open`, `android_notification_dismiss`, `android_notification_snooze`, `android_notification_action`, `android_notification_reply` | 32 |
 | Location | `android_get_location` | 43 |
@@ -308,7 +308,7 @@ Replaces the previous `get_accessibility_tree`, `capture_screenshot`, `get_curre
     "content": [
       {
         "type": "text",
-        "text": "note:structural-only nodes are omitted from the tree\nnote:certain elements are custom and will not be properly reported, if needed or if tools are not working as expected set include_screenshot=true to see the screen and take what you see into account\nnote:flags: on=onscreen off=offscreen clk=clickable lclk=longClickable foc=focusable scr=scrollable edt=editable ena=enabled pwd=password\nnote:offscreen items require scroll_to_node before interaction\nscreen:1080x2400 density:420 orientation:portrait\n--- window:42 type:APPLICATION pkg:com.android.calculator2 title:Calculator activity:.Calculator layer:0 focused:true ---\nnode_id\tclass\ttext\tdesc\tres_id\tbounds\tflags\nnode_a1b2\tTextView\tCalculator\t-\tcom.android.calculator2:id/title\t100,50,500,120\ton,ena\nnode_c3d4\tButton\t7\t-\tcom.android.calculator2:id/digit_7\t50,800,270,1000\ton,clk,ena\nhierarchy:\nnode_a1b2\nnode_c3d4"
+        "text": "note:structural-only nodes are omitted from the tree\nnote:certain elements are custom and will not be properly reported, if needed or if tools are not working as expected set include_screenshot=true to see the screen and take what you see into account\nnote:flags: on=onscreen off=offscreen clk=clickable lclk=longClickable foc=focusable scr=scrollable edt=editable ena=enabled pwd=password\nnote:offscreen items require scroll (mode=until) before interaction\nscreen:1080x2400 density:420 orientation:portrait\n--- window:42 type:APPLICATION pkg:com.android.calculator2 title:Calculator activity:.Calculator layer:0 focused:true ---\nnode_id\tclass\ttext\tdesc\tres_id\tbounds\tflags\nnode_a1b2\tTextView\tCalculator\t-\tcom.android.calculator2:id/title\t100,50,500,120\ton,ena\nnode_c3d4\tButton\t7\t-\tcom.android.calculator2:id/digit_7\t50,800,270,1000\ton,clk,ena\nhierarchy:\nnode_a1b2\nnode_c3d4"
       }
     ]
   }
@@ -345,7 +345,7 @@ The text output is a multi-window compact flat TSV (tab-separated values) format
    - `note:structural-only nodes are omitted from the tree`
    - `note:certain elements are custom and will not be properly reported...`
    - `note:flags: on=onscreen off=offscreen clk=clickable lclk=longClickable foc=focusable scr=scrollable edt=editable ena=enabled pwd=password`
-   - `note:offscreen items require scroll_to_node before interaction`; with `include_offscreen=false` it is replaced by `note:offscreen nodes are not listed (include_offscreen=false); call without it, or scroll, to see them`
+   - `note:offscreen items require scroll (mode=until) before interaction`; with `include_offscreen=false` it is replaced by `note:offscreen nodes are not listed (include_offscreen=false); call without it, or scroll, to see them`
 3. **Screen line** (global): `screen:<width>x<height> density:<dpi> orientation:<orientation>`
 4. **Per-window sections** (repeated for each window):
    - **Window header**: `--- window:<id> type:<TYPE> pkg:<package> title:<title> [activity:<activity>] layer:<N> focused:<bool> ---`
@@ -431,7 +431,7 @@ When `include_screenshot` is `true`, a low-resolution JPEG screenshot (max 700px
 
 When all four `crop_*` bounds are given, the screenshot shows only that region of the screen (in real device pixels), enlarged so its longer side reaches 700px; the response text gains a `note:` line naming the region. Grid lines are drawn at the region's edges and at every 200 px multiple inside it, labelled with real device coordinates, and only elements intersecting the region are boxed. Cropping happens after Privacy Mode masking, so flagged regions stay covered.
 
-Off-screen nodes (marked with `off` flag in the TSV) do not have bounding boxes on the screenshot. Use the `scroll_to_node` tool to bring them into view first.
+Off-screen nodes (marked with `off` flag in the TSV) do not have bounding boxes on the screenshot. Use the `scroll` tool with `mode: "until"` to bring them into view first.
 
 Only request the screenshot when the node list alone is not sufficient to understand the screen layout.
 
@@ -1044,16 +1044,39 @@ Performs a swipe gesture from one point to another.
 
 ### `android_scroll`
 
-Scrolls the screen in the specified direction. Calculates scroll distance as a percentage of screen dimension based on the amount parameter. Applies random variance to scroll distance and center point for more natural-looking gestures.
+Scroll, chosen by `mode` (this one tool replaces the former `android_scroll`, `android_scroll_node` and `android_scroll_to_node` tools):
+
+- **`screen`** (default): a gesture scroll of the whole screen in the given direction. Applies random variance to the scroll distance and center point for more natural-looking gestures. Returns after the gesture completes.
+- **`node`**: scrolls the target scrollable node (a list, a carousel, a scroll view) once in the given direction, using the node's own accessibility scroll action (up/left scroll backward, down/right forward). The node must be scrollable. Returns once the scroll has started; the content may still be animating, use `android_wait_for_idle` before reading the screen again if needed.
+- **`until`**: scrolls the nearest scrollable container of the target node in the given direction until the node is visible (up to 5 scrolls; stops early when the container does not scroll any further). The target may be off-screen. Node IDs change when a node moves, so the result names the node's current ID.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `mode` | string | No | `screen` (default), `node` or `until` |
+| `direction` | string | Yes | `up`, `down`, `left` or `right` |
+| `amount` | string | No | Mode `screen` only: `small`, `medium` (default) or `large` |
+| `variance` | number | No | Mode `screen` only: random variance percentage (0-100), applied as ±variance% to scroll distance and center point |
+| node target | — | Modes `node`/`until` | `node_id`, or a selector (`by` + `value`, optional `exact_match`) — see [Targeting a node](#targeting-a-node) |
 
 **Input Schema**:
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `direction` | string | Yes | - | Direction: "up", "down", "left", "right" |
-| `amount` | string | No | "medium" | Amount: "small" (25%), "medium" (50%), "large" (75%) |
-| `variance` | number | No | 5 | Random variance percentage (0-20). Applied as ±variance% to scroll distance and center point. |
+```json
+{
+  "type": "object",
+  "properties": {
+    "mode": { "type": "string", "enum": ["screen", "node", "until"], "default": "screen" },
+    "direction": { "type": "string", "enum": ["up", "down", "left", "right"] },
+    "amount": { "type": "string", "enum": ["small", "medium", "large"], "default": "medium" },
+    "variance": { "type": "number", "minimum": 0, "maximum": 100 },
+    "node_id": { "type": "string" },
+    "by": { "type": "string", "enum": ["text", "content_desc", "resource_id", "class_name"] },
+    "value": { "type": "string" },
+    "exact_match": { "type": "boolean" }
+  },
+  "required": ["direction"]
+}
+```
 
-**Example Request**:
+**Example Request** (scroll a list until an item shows):
 ```json
 {
   "jsonrpc": "2.0",
@@ -1061,37 +1084,10 @@ Scrolls the screen in the specified direction. Calculates scroll distance as a p
   "method": "tools/call",
   "params": {
     "name": "android_scroll",
-    "arguments": {
-      "direction": "down",
-      "amount": "large",
-      "variance": 10
-    }
+    "arguments": { "mode": "until", "node_id": "node_abc", "direction": "down" }
   }
 }
 ```
-
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Scroll down (large) executed"
-      }
-    ]
-  }
-}
-```
-
-**Error Cases** (returned as `CallToolResult(isError = true)`):
-- **Invalid params**: Invalid direction (not one of up/down/left/right), invalid amount (not one of small/medium/large), or invalid variance (negative or exceeding 20)
-- **Permission denied**: Accessibility service not enabled
-- **Action failed**: Scroll gesture execution failed (e.g., no root node available for screen dimensions)
-
----
 
 ## 4. Gesture Tools
 
@@ -1244,12 +1240,12 @@ Each path is an array of point objects:
 
 ### Targeting a node
 
-The node tools (`click_node`, `long_click_node`, `perform_node_action`, `tap_node`, `scroll_to_node`, `scroll_node`) and the text input tools (`type_append_text`, `type_insert_text`, `type_replace_text`, `type_clear_text`) take their target in one of two forms, exactly one of them:
+The node tools (`click_node`, `long_click_node`, `perform_node_action`, `tap_node`, and `scroll` in its `node`/`until` modes) and the text input tool (`edit_text`) take their target in one of two forms, exactly one of them:
 
 - `node_id`: a node ID from `get_screen_state` or `find_nodes`.
-- A selector: `by` (`text`, `content_desc`, `resource_id`, `class_name`) + `value`, with optional `exact_match` (default `false`: case-insensitive contains), the same semantics as `find_nodes`. The selector is matched in the tool's own fresh read of the screen, among **on-screen** nodes (`scroll_to_node` also matches off-screen nodes). With Privacy Mode on, pseudonym placeholders in `value` are matched against the real text.
+- A selector: `by` (`text`, `content_desc`, `resource_id`, `class_name`) + `value`, with optional `exact_match` (default `false`: case-insensitive contains), the same semantics as `find_nodes`. The selector is matched in the tool's own fresh read of the screen, among **on-screen** nodes (`scroll` mode `until` also matches off-screen nodes). With Privacy Mode on, pseudonym placeholders in `value` are matched against the real text.
 
-A selector never guesses: no match is a **Node not found** error; more than one match is an error (`isError = true`) whose first line is the untrusted-content warning, followed by `Ambiguous selector: N on-screen nodes match by=<by>...` (`N nodes match` for `scroll_to_node`, whose selector also matches off-screen nodes) and a `{"nodes":[...]}` JSON list of the first 5 candidates (same shape as `find_nodes`, with Privacy Mode applied and texts longer than 100 characters shortened like in `get_screen_state`). Retry with `node_id` set to one of them or with a more specific selector.
+A selector never guesses: no match is a **Node not found** error; more than one match is an error (`isError = true`) whose first line is the untrusted-content warning, followed by `Ambiguous selector: N on-screen nodes match by=<by>...` (`N nodes match` for `scroll` mode `until`, whose selector also matches off-screen nodes) and a `{"nodes":[...]}` JSON list of the first 5 candidates (same shape as `find_nodes`, with Privacy Mode applied and texts longer than 100 characters shortened like in `get_screen_state`). Retry with `node_id` set to one of them or with a more specific selector.
 
 Node IDs hash the node's bounds, so a node's ID changes when it moves (e.g. after a scroll); a selector stays valid.
 
@@ -1496,92 +1492,6 @@ curl -X POST http://localhost:8080/mcp \
 
 ---
 
-### `android_scroll_to_node`
-
-Scroll the nearest scrollable container of the specified node in the given `direction` until the node is visible: up to 5 scrolls, stopping early when the container does not scroll any further that way (e.g. it reached the end of its content). The direction is never guessed. The target is given by node ID or by a selector (see [Targeting a node](#targeting-a-node)); here the selector also matches **off-screen** nodes, which is the usual case.
-
-Node IDs hash the node's bounds, so the IDs of the target and of its container change as soon as they move. After each scroll the container is located again by its place in its window, and the target is found again: when given by ID, inside that container by its resource ID, class, text and content description; when given by a selector, by matching the selector again across all windows. More than one candidate is an error, never a guess. The result names the node's **current** ID.
-
-A target given by ID is never confused with a look-alike: its attributes must tell it apart in its container from the first read (otherwise the tool fails before any scroll), and once it drops out of its container (e.g. a list that unloads the rows scrolled past, when scrolling the wrong way) the tool stops instead of taking another node that looks like it.
-
-**Input Schema**:
-```json
-{
-  "type": "object",
-  "properties": {
-    "node_id": { "type": "string", "description": "Node ID from android_get_screen_state or android_find_nodes. Use either this or a selector (by + value)." },
-    "by": { "type": "string", "enum": ["text", "content_desc", "resource_id", "class_name"], "description": "Selector criteria (with value), instead of node_id: the target is the single node (on or off screen) that matches; more than one match is an error listing the candidates." },
-    "value": { "type": "string", "description": "Selector value (with by)" },
-    "exact_match": { "type": "boolean", "default": false, "description": "Selector: if true, match exactly. If false, match contains (case-insensitive)" },
-    "direction": { "type": "string", "enum": ["up", "down", "left", "right"], "description": "Direction to scroll the node's container: down/right scroll forward, up/left backward" }
-  },
-  "required": ["direction"]
-}
-```
-
-**Output**: `"Scrolled to node '<current node_id>' (N scroll(s))"` or `"Node '<node_id>' is already visible"`
-
-**Example**:
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0", "id": 1, "method": "tools/call",
-    "params": { "name": "android_scroll_to_node", "arguments": { "by": "text", "value": "Privacy", "exact_match": true, "direction": "down" } }
-  }'
-```
-
-**Error Cases** (returned as `CallToolResult(isError = true)`):
-- **Invalid params**: Missing or unknown `direction`; neither `node_id` nor a selector, both, an incomplete or invalid selector, or an empty `node_id`
-- **Permission denied**: Accessibility service not enabled
-- **Node not found**: Node not found, or no node in the current screen matches the selector (a list that has not loaded the item yet: scroll it with `scroll_node` and retry), or the container left the live tree between the read and the scroll
-- **Ambiguous selector**: More than one node matches the selector, before or after a scroll
-- **Action failed**: No scrollable container found; the container did not scroll further (`"Node '<node_id>' not visible after N scroll(s) <direction>: its container did not scroll further (...)"`); the container is no longer at its place in its window (gone, moved or no longer scrollable) or cannot be scrolled; node not visible after 5 scrolls; or, for a node given by ID: several nodes in its container look like it, at the first read or after a scroll (they cannot be told apart, not even by a selector: scroll with `scroll_node`, read the screen again and act on the node ID you pick), or it dropped out of its container (`"Node '<node_id>' is no longer in its container after N scroll(s) <direction> (...): scrolling <direction> cannot bring it back; scroll the other way, or read the screen again"`)
-
----
-
-### `android_scroll_node`
-
-Scroll a scrollable node (a list, a carousel, a scroll view) once in the given direction, using the node's own accessibility scroll action: `up`/`left` scroll backward, `down`/`right` forward. The target is given by node ID or by a selector (see [Targeting a node](#targeting-a-node)) and must itself be scrollable; nothing else is searched or retried. Unlike `android_scroll` (a swipe from the screen centre), this scrolls exactly the container you name.
-
-**Input Schema**:
-```json
-{
-  "type": "object",
-  "properties": {
-    "node_id": { "type": "string", "description": "Node ID from android_get_screen_state or android_find_nodes. Use either this or a selector (by + value)." },
-    "by": { "type": "string", "enum": ["text", "content_desc", "resource_id", "class_name"], "description": "Selector criteria (with value), instead of node_id: the target is the single on-screen node that matches; more than one match is an error listing the candidates." },
-    "value": { "type": "string", "description": "Selector value (with by)" },
-    "exact_match": { "type": "boolean", "default": false, "description": "Selector: if true, match exactly. If false, match contains (case-insensitive)" },
-    "direction": { "type": "string", "enum": ["up", "down", "left", "right"], "description": "Scroll direction" }
-  },
-  "required": ["direction"]
-}
-```
-
-**Output**: `"Scrolled node '<node_id>' <direction>"`. The tool returns once the scroll has started; the content may still be animating (use `android_wait_for_idle` before reading the screen again if needed).
-
-**Example**:
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0", "id": 1, "method": "tools/call",
-    "params": { "name": "android_scroll_node", "arguments": { "by": "resource_id", "value": "com.example:id/list", "direction": "down" } }
-  }'
-```
-
-**Error Cases** (returned as `CallToolResult(isError = true)`):
-- **Invalid params**: Missing or unknown `direction`; neither `node_id` nor a selector, both, an incomplete or invalid selector, or an empty `node_id`
-- **Permission denied**: Accessibility service not enabled
-- **Node not found**: Node not found, or no on-screen node matches the selector
-- **Ambiguous selector**: More than one on-screen node matches
-- **Action failed**: The node is not scrollable or the scroll action failed
-
----
-
 ## 6. Text Input Tools
 
 Text input tools that set a field's text directly. All type tools take their target as `node_id` or as a selector (`by` + `value`, optional `exact_match`; see [Targeting a node](#targeting-a-node)) and return the field content after the operation for verification.
@@ -1592,241 +1502,66 @@ The `typing_speed` and `typing_speed_variance` parameters are still accepted and
 
 All text operations are serialized via a Mutex — concurrent MCP requests are queued, not interleaved.
 
-### `android_type_append_text`
+### `android_edit_text`
 
-Append text to the end of a text field: the field's new content is computed and set in one operation. For text longer than 2000 characters, call this tool multiple times — each call appends to the field's current end.
+Edit a text field, chosen by `mode` (this one tool replaces the former `android_type_append_text`, `android_type_insert_text`, `android_type_replace_text` and `android_type_clear_text` tools):
+
+- **`append`**: append `text` at the end of the field.
+- **`insert`**: insert `text` at the character `offset` (0-based, UTF-16 code units; must be within [0, current text length]).
+- **`replace`**: replace the first occurrence of `search` with `new_text` (an empty `new_text` just deletes the found text). Errors when `search` is not found.
+- **`set`**: replace the whole field content with `text`.
+- **`clear`**: empty the field, then read it back and fail if it reads back unchanged. Succeeds without any action when the field is already empty.
+
+Every mode reads the field's current text from a fresh accessibility read, computes the new content and sets it in one operation (accessibility ACTION_SET_TEXT): no key events are sent, the field is not clicked and the soft keyboard is not shown, so the value cannot be mangled by keyboard autocomplete or glide typing. The response returns the field content after the operation for verification. The target is the node itself when it is editable, else the first editable node inside it.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `mode` | string | Yes | `append`, `insert`, `replace`, `set` or `clear` |
+| node target | — | Yes | `node_id`, or a selector (`by` + `value`, optional `exact_match`) — see [Targeting a node](#targeting-a-node) |
+| `text` | string | Modes append/insert/set | Text to add or set (max 2000 characters; must be non-empty for append/insert). For longer text, call mode `append` repeatedly — each call appends to the field's current end |
+| `offset` | integer | Mode insert | 0-based character offset (UTF-16 code units) for the insertion position |
+| `search` | string | Mode replace | Text to find in the field (first occurrence, max 10000 characters) |
+| `new_text` | string | Mode replace | Replacement text (max 2000 characters); can be empty to just delete the found text |
+| `typing_speed` | integer | No | Deprecated and ignored: the text is set in one operation, not typed. Still validated |
+| `typing_speed_variance` | integer | No | Deprecated and ignored, like `typing_speed` |
 
 **Input Schema**:
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `node_id` | string | One of node_id / selector | - | Target node ID to type into |
-| `by` | string | One of node_id / selector | - | Selector criteria (with `value`): `text`, `content_desc`, `resource_id`, `class_name`; the single on-screen match is the target |
-| `value` | string | With `by` | - | Selector value |
-| `exact_match` | boolean | No | false | Selector: if true, match exactly. If false, match contains (case-insensitive) |
-| `text` | string | Yes | - | Text to type (must be non-empty, max 2000 characters) |
-| `typing_speed` | integer | No | 250 | Deprecated, ignored (still validated: min: 10, max: 5000) |
-| `typing_speed_variance` | integer | No | 50 | Deprecated, ignored (still validated: >= 0) |
+```json
+{
+  "type": "object",
+  "properties": {
+    "mode": { "type": "string", "enum": ["append", "insert", "replace", "set", "clear"] },
+    "node_id": { "type": "string" },
+    "by": { "type": "string", "enum": ["text", "content_desc", "resource_id", "class_name"] },
+    "value": { "type": "string" },
+    "exact_match": { "type": "boolean" },
+    "text": { "type": "string" },
+    "offset": { "type": "integer" },
+    "search": { "type": "string" },
+    "new_text": { "type": "string" },
+    "typing_speed": { "type": "integer" },
+    "typing_speed_variance": { "type": "integer" }
+  },
+  "required": ["mode"]
+}
+```
 
-**Output**: `"Appended N characters at end of node '<node_id>'.\nField content: <content>"`
-
-**Request Example**:
+**Example Request**:
 ```json
 {
   "jsonrpc": "2.0",
   "id": 1,
   "method": "tools/call",
   "params": {
-    "name": "android_type_append_text",
-    "arguments": {
-      "node_id": "node_abc123",
-      "text": "Hello World"
-    }
+    "name": "android_edit_text",
+    "arguments": { "mode": "append", "node_id": "node_abc", "text": "Hello" }
   }
 }
 ```
-
-**Response Example**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Appended 11 characters at end of node 'node_abc123'.\nField content: Hello World"
-      }
-    ]
-  }
-}
-```
-
-**Error Cases** (returned as `CallToolResult(isError = true)`):
-- **Invalid params**: Neither `node_id` nor a selector, both, an incomplete or invalid selector, an empty `node_id`, missing or empty `text`, text exceeds 2000 characters, `typing_speed` out of range (10-5000), `typing_speed_variance` negative
-- **Permission denied**: Accessibility service not enabled
-- **Node not found**: Node not found in accessibility tree, or no on-screen node matches the selector
-- **Ambiguous selector**: More than one on-screen node matches (untrusted candidate list, see [Targeting a node](#targeting-a-node))
-- **Action failed**: The target node is not an editable text field and contains no editable field, or the set-text action failed on the node
-
----
-
-### `android_type_insert_text`
-
-Insert text at a specific position in a text field: the field's new content is computed and set in one operation.
-
-**Input Schema**:
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `node_id` | string | One of node_id / selector | - | Target node ID to type into |
-| `by` | string | One of node_id / selector | - | Selector criteria (with `value`): `text`, `content_desc`, `resource_id`, `class_name`; the single on-screen match is the target |
-| `value` | string | With `by` | - | Selector value |
-| `exact_match` | boolean | No | false | Selector: if true, match exactly. If false, match contains (case-insensitive) |
-| `text` | string | Yes | - | Text to type (must be non-empty, max 2000 characters) |
-| `offset` | integer | Yes | - | 0-based character offset for cursor position. Must be within [0, current text length] |
-| `typing_speed` | integer | No | 250 | Deprecated, ignored (still validated: min: 10, max: 5000) |
-| `typing_speed_variance` | integer | No | 50 | Deprecated, ignored (still validated: >= 0) |
-
-**Output**: `"Inserted N characters at offset M in node '<node_id>'.\nField content: <content>"`
-
-**Request Example**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "android_type_insert_text",
-    "arguments": {
-      "node_id": "node_abc123",
-      "text": "inserted ",
-      "offset": 5
-    }
-  }
-}
-```
-
-**Response Example**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Inserted 9 characters at offset 5 in node 'node_abc123'.\nField content: Helloinserted  World"
-      }
-    ]
-  }
-}
-```
-
-**Error Cases** (returned as `CallToolResult(isError = true)`):
-- **Invalid params**: Neither `node_id` nor a selector, both, an incomplete or invalid selector, an empty `node_id`, missing or empty `text`, text exceeds 2000 characters, missing `offset`, `offset` negative, `offset` exceeds current text length, `typing_speed` out of range (10-5000), `typing_speed_variance` negative
-- **Permission denied**: Accessibility service not enabled
-- **Node not found**: Node not found in accessibility tree, or no on-screen node matches the selector
-- **Ambiguous selector**: More than one on-screen node matches
-- **Action failed**: The target node is not an editable text field and contains no editable field, or the set-text action failed on the node
-
----
-
-### `android_type_replace_text`
-
-Find and replace text in a field. Finds the first occurrence of search text and sets the field to the computed result in one operation. If `new_text` is empty, only deletes the found text (delete-only mode).
-
-**Input Schema**:
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `node_id` | string | One of node_id / selector | - | Target node ID |
-| `by` | string | One of node_id / selector | - | Selector criteria (with `value`): `text`, `content_desc`, `resource_id`, `class_name`; the single on-screen match is the target |
-| `value` | string | With `by` | - | Selector value |
-| `exact_match` | boolean | No | false | Selector: if true, match exactly. If false, match contains (case-insensitive) |
-| `search` | string | Yes | - | Text to find in the field (first occurrence, max 10000 characters) |
-| `new_text` | string | Yes | - | Replacement text to type (max 2000 characters). Can be empty to just delete the found text |
-| `typing_speed` | integer | No | 250 | Deprecated, ignored (still validated: min: 10, max: 5000) |
-| `typing_speed_variance` | integer | No | 50 | Deprecated, ignored (still validated: >= 0) |
-
-**Output**: `"Replaced N characters with M characters in node '<node_id>'.\nField content: <content>"`
-
-**Request Example**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "android_type_replace_text",
-    "arguments": {
-      "node_id": "node_abc123",
-      "search": "World",
-      "new_text": "Android"
-    }
-  }
-}
-```
-
-**Response Example**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Replaced 5 characters with 7 characters in node 'node_abc123'.\nField content: Hello Android"
-      }
-    ]
-  }
-}
-```
-
-**Error Cases** (returned as `CallToolResult(isError = true)`):
-- **Invalid params**: Neither `node_id` nor a selector, both, an incomplete or invalid selector, an empty `node_id`, missing or empty `search`, `search` exceeds 10000 characters, `new_text` exceeds 2000 characters, `typing_speed` out of range (10-5000), `typing_speed_variance` negative
-- **Permission denied**: Accessibility service not enabled
-- **Node not found**: Node not found in accessibility tree, no on-screen node matches the selector, or search text not found in the field
-- **Ambiguous selector**: More than one on-screen node matches
-- **Action failed**: The target node is not an editable text field and contains no editable field, or the set-text action failed on the node
-
----
-
-### `android_type_clear_text`
-
-Clear all text from a field by setting its content to empty in one operation, then read the field back and fail when it reads back unchanged (a field that fills itself again right after the clear counts as cleared; the field content shows its new text). If the field is already empty, returns success without performing any action.
-
-**Input Schema**:
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `node_id` | string | One of node_id / selector | - | Target node ID to clear |
-| `by` | string | One of node_id / selector | - | Selector criteria (with `value`): `text`, `content_desc`, `resource_id`, `class_name`; the single on-screen match is the target |
-| `value` | string | With `by` | - | Selector value |
-| `exact_match` | boolean | No | false | Selector: if true, match exactly. If false, match contains (case-insensitive) |
-
-**Output**: `"Text cleared from node '<node_id>'.\nField content: <content>"`
-
-**Request Example**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "android_type_clear_text",
-    "arguments": {
-      "node_id": "node_abc123"
-    }
-  }
-}
-```
-
-**Response Example**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Text cleared from node 'node_abc123'.\nField content: "
-      }
-    ]
-  }
-}
-```
-
-**Error Cases** (returned as `CallToolResult(isError = true)`):
-- **Invalid params**: Neither `node_id` nor a selector, both, an incomplete or invalid selector, or an empty `node_id`
-- **Permission denied**: Accessibility service not enabled
-- **Node not found**: Node not found in accessibility tree, or no on-screen node matches the selector
-- **Ambiguous selector**: More than one on-screen node matches
-- **Action failed**: Click failed, input connection not ready, input focus not on the target node or a field inside it, unable to read text from the node, select-all failed, deletion failed (input connection lost, or the field reads back unchanged)
-
----
 
 ### `android_press_key`
 
-Press a specific key. Supported keys: ENTER, BACK, DEL, HOME, TAB, SPACE.
+Press a specific key. Supported keys: ENTER, DEL, TAB, SPACE. (For the back and home buttons use `android_press_back` / `android_press_home`.)
 
 **Input Schema**:
 ```json
@@ -1835,7 +1570,7 @@ Press a specific key. Supported keys: ENTER, BACK, DEL, HOME, TAB, SPACE.
   "properties": {
     "key": {
       "type": "string",
-      "enum": ["ENTER", "BACK", "DEL", "HOME", "TAB", "SPACE"],
+      "enum": ["ENTER", "DEL", "TAB", "SPACE"],
       "description": "Key to press"
     }
   },
@@ -2931,7 +2666,7 @@ Lists supported video resolutions for a specific camera.
 
 ### `android_take_camera_photo`
 
-Captures a photo from the specified camera and returns it as a base64-encoded JPEG image. Default resolution is 720p (closest available match). Maximum resolution is capped at 1920x1080 to prevent excessively large responses. Use `save_camera_photo` for higher resolutions.
+Captures a photo from the specified camera and returns it as a base64-encoded JPEG image. Default resolution is 720p (closest available match). Maximum resolution is capped at 1920x1080 to prevent excessively large responses. To save the photo to a storage location instead (higher resolutions included), give both `location_id` and `path`.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -2939,6 +2674,8 @@ Captures a photo from the specified camera and returns it as a base64-encoded JP
 | `resolution` | string | No | Resolution as WIDTHxHEIGHT (e.g., "1280x720"). Default: 720p closest match. Max: 1920x1080 |
 | `quality` | integer | No | JPEG quality (1-100). Default: 80 |
 | `flash_mode` | string | No | Flash mode: "off", "on", or "auto". Default: "auto" |
+| `location_id` | string | No | Storage location identifier. With `path`, saves the photo there instead of returning it |
+| `path` | string | No | Relative file path (e.g., "photos/photo.jpg"). With `location_id`, saves the photo there instead of returning it |
 
 **Input Schema**:
 ```json
@@ -2989,75 +2726,6 @@ Captures a photo from the specified camera and returns it as a base64-encoded JP
 - **Permission denied**: CAMERA permission not granted
 - **Action failed**: Camera not found, capture failed
 
-### `android_save_camera_photo`
-
-Captures a photo from the specified camera and saves it to a storage location. Requires write permission on the storage location. Default resolution is 720p (closest available match).
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `camera_id` | string | Yes | Camera identifier from `list_cameras` |
-| `location_id` | string | Yes | Storage location identifier |
-| `path` | string | Yes | Relative file path (e.g., "photos/photo.jpg") |
-| `resolution` | string | No | Resolution as WIDTHxHEIGHT (e.g., "1280x720"). Default: 720p closest match |
-| `quality` | integer | No | JPEG quality (1-100). Default: 80 |
-| `flash_mode` | string | No | Flash mode: "off", "on", or "auto". Default: "auto" |
-
-**Input Schema**:
-```json
-{
-  "type": "object",
-  "properties": {
-    "camera_id": { "type": "string", "description": "Camera identifier from list_cameras" },
-    "location_id": { "type": "string", "description": "Storage location identifier" },
-    "path": { "type": "string", "description": "Relative file path (e.g., 'photos/photo.jpg')" },
-    "resolution": { "type": "string", "description": "Resolution as WIDTHxHEIGHT (e.g., '1280x720'). Default: 720p closest match." },
-    "quality": { "type": "integer", "description": "JPEG quality (1-100). Default: 80." },
-    "flash_mode": { "type": "string", "description": "Flash mode: 'off', 'on', or 'auto'. Default: 'auto'." }
-  },
-  "required": ["camera_id", "location_id", "path"]
-}
-```
-
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "android_save_camera_photo",
-    "arguments": {
-      "camera_id": "0",
-      "location_id": "com.android.externalstorage.documents/primary:DCIM",
-      "path": "photos/photo_001.jpg",
-      "resolution": "1920x1080"
-    }
-  }
-}
-```
-
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Photo saved successfully: photos/photo_001.jpg (245760 bytes)"
-      }
-    ]
-  }
-}
-```
-
-**Error Cases** (returned as `CallToolResult(isError = true)`):
-- **Invalid params**: Missing `camera_id`, `location_id`, or `path`; invalid resolution format; quality out of range; invalid flash mode
-- **Invalid params**: File MIME type not accepted by the built-in storage location (e.g. saving a photo to `builtin:music`; error lists the accepted types)
-- **Permission denied**: CAMERA permission not granted; storage location not authorized; write not permitted
-- **Action failed**: Camera not found, capture failed
-
 ### `android_save_camera_video`
 
 Records a video from the specified camera and saves it to a storage location. Maximum duration is 30 seconds. Includes audio by default. Requires write permission on the storage location. Returns a thumbnail of the first frame. Default resolution is 720p (closest available match).
@@ -3071,6 +2739,8 @@ Records a video from the specified camera and saves it to a storage location. Ma
 | `resolution` | string | No | Resolution as WIDTHxHEIGHT (e.g., "1280x720"). Default: 720p closest match |
 | `audio` | boolean | No | Whether to record audio. Default: true. Requires RECORD_AUDIO permission |
 | `flash_mode` | string | No | Flash mode: "off", "on", or "auto". Default: "auto" |
+| `location_id` | string | No | Storage location identifier. With `path`, saves the photo there instead of returning it |
+| `path` | string | No | Relative file path (e.g., "photos/photo.jpg"). With `location_id`, saves the photo there instead of returning it |
 
 **Input Schema**:
 ```json
@@ -4284,8 +3954,8 @@ Report whether a file exists at any absolute path, and if so its `size` in bytes
 
 - Touch actions: `tap`, `long_press`, `double_tap`, `swipe`, `scroll`
 - Gestures: `pinch`, `custom_gesture`
-- Node actions: `click_node`, `long_click_node`, `perform_node_action`, `tap_node`, `scroll_to_node`, `scroll_node`
-- Text input: `type_append_text`, `type_insert_text`, `type_replace_text`, `type_clear_text`, `press_key`
+- Node actions: `click_node`, `long_click_node`, `perform_node_action`, `tap_node`, `scroll`
+- Text input: `edit_text`, `press_key`
 - System actions: `press_back`, `press_home`, `press_recents`, `open_notifications`, `open_quick_settings`, `dismiss_keyboard`
 - Utilities: `wait_for_node`, `wait_for_idle`, `set_clipboard`
 - App management: `open_app`
