@@ -10,6 +10,7 @@ import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerAppManagement
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerBatchActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerCameraTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerFileTools
+import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerFileTransferTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerGestureTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerIntentTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerLocationTools
@@ -94,6 +95,12 @@ class McpToolRegistration
                 registrar,
                 shellContext,
                 serverLogRepository,
+                toolNamePrefix,
+                perms,
+            )
+            registerFileTransferTools(
+                registrar,
+                shellContext,
                 toolNamePrefix,
                 perms,
             )

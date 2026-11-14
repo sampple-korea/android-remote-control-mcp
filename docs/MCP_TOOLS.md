@@ -36,7 +36,7 @@ This document provides a comprehensive reference for all MCP tools available in 
 
 ## Overview
 
-The MCP server exposes 71 tools via the JSON-RPC 2.0 protocol, organized into 16 categories:
+The MCP server exposes 74 tools via the JSON-RPC 2.0 protocol, organized into 16 categories:
 
 | Category | Tools | Plan |
 |----------|-------|------|
@@ -54,7 +54,7 @@ The MCP server exposes 71 tools via the JSON-RPC 2.0 protocol, organized into 16
 | Notification | `android_notification_list`, `android_notification_open`, `android_notification_dismiss`, `android_notification_snooze`, `android_notification_action`, `android_notification_reply` | 32 |
 | Location | `android_get_location` | 43 |
 | Sharing | `android_get_shared_content`, `android_share_file_via_web` | 48 |
-| Shell | `android_shell_exec`, `android_shell_start`, `android_shell_output`, `android_shell_kill`, `android_shell_list`, `android_install_apk`, `android_uninstall_app`, `android_reboot_device`, `android_read_logcat`, `android_read_root_file` | 68 |
+| Shell | `android_shell_exec`, `android_shell_start`, `android_shell_output`, `android_shell_kill`, `android_shell_list`, `android_install_apk`, `android_uninstall_app`, `android_reboot_device`, `android_read_logcat`, `android_read_root_file`, `android_write_file_chunk`, `android_read_file_chunk`, `android_file_info` | 68 |
 | Batch | `android_batch_actions` | - |
 
 ## Tool Naming Convention
@@ -4202,6 +4202,38 @@ Read a text file at any absolute path, running as root — including app-private
 | `offset` | integer | No | 1 | 1-based line number to start reading from |
 | `limit` | integer | No | 200 | Maximum number of lines to return (max 200) |
 | `justification` | string | Yes | - | Why the file is needed |
+
+### `android_write_file_chunk`
+
+Write one chunk of a binary file at any absolute path, running as root through the same elevation authorization as an elevated shell command. The chunk is base64-encoded and written at `offset` without touching other bytes; pass `truncate: true` on the first chunk to create/replace the file. Upload a whole file as a sequence of chunks, then verify it with `android_file_info`. Per-call cap: 131,072 raw bytes (~175K base64 characters), so a single call always stays well below transport payload limits. Returns JSON: `path`, `offset`, `bytes_written`, `file_size`.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `path` | string | Yes | - | Absolute path of the file to write |
+| `offset` | integer | No | 0 | Byte offset to write at (0-based) |
+| `data_base64` | string | Yes | - | The chunk bytes, base64-encoded (max 131,072 raw bytes) |
+| `truncate` | boolean | No | false | Truncate the file to zero length before writing |
+| `justification` | string | Yes | - | Why the transfer is needed |
+
+### `android_read_file_chunk`
+
+Read one chunk of a binary file at any absolute path, running as root through the same elevation authorization. Returns JSON with the chunk as `data_base64`, plus `file_size`, `bytes_returned` and `eof`. `length` defaults to 24,576 and is clamped server-side to 131,072 raw bytes per call. Download a whole file as a sequence of chunks until `eof`, then verify it with `android_file_info`.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `path` | string | Yes | - | Absolute path of the file to read |
+| `offset` | integer | No | 0 | Byte offset to read from (0-based) |
+| `length` | integer | No | 24576 | Bytes to read (clamped to 131,072) |
+| `justification` | string | Yes | - | Why the transfer is needed |
+
+### `android_file_info`
+
+Report whether a file exists at any absolute path, and if so its `size` in bytes and `sha256` hash — in a single call, running as root through the same elevation authorization. Use before and after chunked transfers to verify integrity.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `path` | string | Yes | - | Absolute path of the file to inspect |
+| `justification` | string | Yes | - | Why the inspection is needed |
 
 ### Security Considerations
 
