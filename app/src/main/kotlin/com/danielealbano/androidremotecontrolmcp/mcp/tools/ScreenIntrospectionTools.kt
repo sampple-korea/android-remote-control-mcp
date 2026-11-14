@@ -46,6 +46,10 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.max
+import kotlin.math.roundToInt
 import javax.inject.Inject
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,10 +85,22 @@ class GetScreenStateHandler
 
         private val screenSettler = ScreenSettler(accessibilityServiceProvider)
 
+        /** A screenshot crop region in real device pixels (right/bottom exclusive). */
+        internal data class CropRegion(
+            val left: Int,
+            val top: Int,
+            val right: Int,
+            val bottom: Int,
+        ) {
+            val width: Int get() = right - left
+            val height: Int get() = bottom - top
+        }
+
         suspend fun execute(arguments: JsonObject?): CallToolResult {
             val includeScreenshot = parseIncludeScreenshot(arguments)
             // Validated with a cursor too, although the cursor's page keeps the options of its fresh capture
             val annotate = parseAnnotate(arguments)
+            val cropRegion = parseCropRegion(arguments)
             val formatOptions = parseFormatOptions(arguments)
             // Validated with a cursor too, although both only take effect on a fresh capture
             val diff = McpToolUtils.optionalBoolean(arguments, PARAM_DIFF, false)
@@ -99,7 +115,7 @@ class GetScreenStateHandler
                     cursorElement is JsonNull ||
                     ((cursorElement as? JsonPrimitive)?.contentOrNull?.isBlank() == true)
             return if (isFresh) {
-                handleFreshRequest(includeScreenshot, annotate, formatOptions, diff, settle, settleTimeoutMs)
+                handleFreshRequest(includeScreenshot, annotate, cropRegion, formatOptions, diff, settle, settleTimeoutMs)
             } else {
                 McpToolUtils.untrustedTextResult(buildPagedText(cursorElement, includeScreenshot))
             }
@@ -128,6 +144,49 @@ class GetScreenStateHandler
         private fun parseAnnotate(arguments: JsonObject?): Boolean =
             !includeScreenshotEnabled || McpToolUtils.optionalBoolean(arguments, PARAM_ANNOTATE, true)
 
+        /**
+         * The crop region: all four bounds together or none of them; only exists while
+         * `include_screenshot` does. Bounds are validated for shape here (non-negative,
+         * right > left, bottom > top) and clamped to the actual screen at capture time.
+         */
+        @Suppress("ThrowsCount")
+        private fun parseCropRegion(arguments: JsonObject?): CropRegion? {
+            if (!includeScreenshotEnabled) return null
+            val names = listOf(PARAM_CROP_LEFT, PARAM_CROP_TOP, PARAM_CROP_RIGHT, PARAM_CROP_BOTTOM)
+            val present = names.filter { name -> arguments?.get(name)?.let { it !is JsonNull } == true }
+            if (present.isEmpty()) return null
+            if (present.size != names.size) {
+                throw McpToolException.InvalidParams(
+                    "Crop parameters must be given together (${names.joinToString(", ")}); " +
+                        "missing: ${(names - present.toSet()).joinToString(", ")}",
+                )
+            }
+            val region =
+                CropRegion(
+                    left = McpToolUtils.optionalInt(arguments, PARAM_CROP_LEFT, 0),
+                    top = McpToolUtils.optionalInt(arguments, PARAM_CROP_TOP, 0),
+                    right = McpToolUtils.optionalInt(arguments, PARAM_CROP_RIGHT, 0),
+                    bottom = McpToolUtils.optionalInt(arguments, PARAM_CROP_BOTTOM, 0),
+                )
+            if (region.left < 0 || region.top < 0 || region.right < 0 || region.bottom < 0) {
+                throw McpToolException.InvalidParams(
+                    "Crop bounds must not be negative, got " +
+                        "(${region.left}, ${region.top})-(${region.right}, ${region.bottom})",
+                )
+            }
+            if (region.right <= region.left) {
+                throw McpToolException.InvalidParams(
+                    "'$PARAM_CROP_RIGHT' (${region.right}) must be greater than '$PARAM_CROP_LEFT' (${region.left})",
+                )
+            }
+            if (region.bottom <= region.top) {
+                throw McpToolException.InvalidParams(
+                    "'$PARAM_CROP_BOTTOM' (${region.bottom}) must be greater than '$PARAM_CROP_TOP' (${region.top})",
+                )
+            }
+            return region
+        }
+
         private fun parseFormatOptions(arguments: JsonObject?): ScreenStateFormatOptions =
             ScreenStateFormatOptions(
                 includeOffscreen = McpToolUtils.optionalBoolean(arguments, PARAM_INCLUDE_OFFSCREEN, true),
@@ -139,6 +198,7 @@ class GetScreenStateHandler
         private suspend fun handleFreshRequest(
             includeScreenshot: Boolean,
             annotate: Boolean,
+            cropRegion: CropRegion?,
             options: ScreenStateFormatOptions,
             diff: Boolean,
             settle: Boolean,
@@ -180,12 +240,13 @@ class GetScreenStateHandler
             Log.d(
                 TAG,
                 "get_screen_state: includeScreenshot=$includeScreenshot annotate=$annotate " +
+                    "crop=${cropRegion?.let { "(${it.left},${it.top})-(${it.right},${it.bottom})" } ?: "none"} " +
                     "includeOffscreen=${options.includeOffscreen} includeHierarchy=${options.includeHierarchy} " +
                     "interactiveOnly=${options.interactiveOnly} " +
                     "diff=${diffText != null} settle=$settle pages=$totalPages",
             )
             return if (includeScreenshot) {
-                buildScreenshotResult(result, screenInfo, compactOutput, processed.flaggedBounds, annotate)
+                buildScreenshotResult(result, screenInfo, compactOutput, processed.flaggedBounds, annotate, cropRegion)
             } else {
                 McpToolUtils.untrustedTextResult(compactOutput)
             }
@@ -278,6 +339,7 @@ class GetScreenStateHandler
             compactOutput: String,
             flaggedBounds: List<BoundsData>,
             annotate: Boolean,
+            cropRegion: CropRegion?,
         ): CallToolResult {
             if (!screenCaptureProvider.isScreenCaptureAvailable()) {
                 throw McpToolException.PermissionDenied(
@@ -302,29 +364,55 @@ class GetScreenStateHandler
             // Paint opaque boxes over flagged node bounds BEFORE annotation so PII never reaches the pixels.
             val maskedBitmap =
                 screenshotRedactor.mask(resizedBitmap, flaggedBounds, screenInfo.width, screenInfo.height)
+            // Crop (and enlarge) AFTER masking: the mask is painted in full-screen coordinates,
+            // so flagged content stays covered inside the region view too.
+            var clampedCrop: CropRegion? = null
+            var cropBitmap: Bitmap? = null
+            if (cropRegion != null) {
+                clampedCrop = clampCropToScreen(cropRegion, screenInfo.width, screenInfo.height)
+                cropBitmap = cropAndEnlarge(maskedBitmap, clampedCrop, screenInfo.width, screenInfo.height)
+            }
+            val baseBitmap = cropBitmap ?: maskedBitmap
             var annotatedBitmap: Bitmap? = null
             try {
                 // Annotate the (masked) screenshot with the bounding boxes of on-screen elements from ALL
                 // windows' trees, unless the caller asked for the plain (still masked) screenshot.
                 if (annotate) {
                     annotatedBitmap =
-                        screenshotAnnotator.annotate(
-                            maskedBitmap,
-                            collectOnScreenElements(result.windows),
-                            screenInfo.width,
-                            screenInfo.height,
-                        )
+                        if (clampedCrop != null) {
+                            screenshotAnnotator.annotateRegion(
+                                baseBitmap,
+                                collectOnScreenElements(result.windows),
+                                clampedCrop.left,
+                                clampedCrop.top,
+                                clampedCrop.width,
+                                clampedCrop.height,
+                            )
+                        } else {
+                            screenshotAnnotator.annotate(
+                                baseBitmap,
+                                collectOnScreenElements(result.windows),
+                                screenInfo.width,
+                                screenInfo.height,
+                            )
+                        }
                 }
 
                 // Encode the screenshot to base64 JPEG
                 val screenshotData =
                     screenshotEncoder.bitmapToScreenshotData(
-                        annotatedBitmap ?: maskedBitmap,
+                        annotatedBitmap ?: baseBitmap,
                         ScreenCaptureProvider.DEFAULT_QUALITY,
                     )
 
+                val outputText =
+                    if (clampedCrop != null) {
+                        compactOutput + "\n" + cropNote(clampedCrop, screenInfo.width, screenInfo.height)
+                    } else {
+                        compactOutput
+                    }
                 return McpToolUtils.untrustedTextAndImageResult(
-                    compactOutput,
+                    outputText,
                     screenshotData.data,
                     "image/jpeg",
                 )
@@ -336,10 +424,76 @@ class GetScreenStateHandler
                 throw McpToolException.ActionFailed(failure)
             } finally {
                 annotatedBitmap?.recycle()
+                cropBitmap?.recycle()
                 if (maskedBitmap !== resizedBitmap) maskedBitmap.recycle()
                 resizedBitmap.recycle()
             }
         }
+
+        /** Clamps [region] to the screen; a region lying fully outside the screen is rejected. */
+        private fun clampCropToScreen(
+            region: CropRegion,
+            screenWidth: Int,
+            screenHeight: Int,
+        ): CropRegion {
+            val clamped =
+                CropRegion(
+                    left = region.left.coerceIn(0, screenWidth),
+                    top = region.top.coerceIn(0, screenHeight),
+                    right = region.right.coerceIn(0, screenWidth),
+                    bottom = region.bottom.coerceIn(0, screenHeight),
+                )
+            if (clamped.width <= 0 || clamped.height <= 0) {
+                throw McpToolException.InvalidParams(
+                    "Crop region (${region.left}, ${region.top})-(${region.right}, ${region.bottom}) " +
+                        "lies outside the ${screenWidth}x$screenHeight screen",
+                )
+            }
+            return clamped
+        }
+
+        /**
+         * Cuts [region] (real device pixels) out of the already-downscaled [source] screenshot and
+         * enlarges it so its longer side reaches [SCREENSHOT_MAX_SIZE] — the size a full screenshot
+         * gets — so densely packed elements and their labels stay distinguishable. A region already
+         * at or above that size is returned unscaled. The caller owns the returned bitmap.
+         */
+        private fun cropAndEnlarge(
+            source: Bitmap,
+            region: CropRegion,
+            screenWidth: Int,
+            screenHeight: Int,
+        ): Bitmap {
+            val scaleX = source.width.toFloat() / screenWidth.toFloat()
+            val scaleY = source.height.toFloat() / screenHeight.toFloat()
+            val bx = floor(region.left * scaleX).toInt().coerceIn(0, source.width - 1)
+            val by = floor(region.top * scaleY).toInt().coerceIn(0, source.height - 1)
+            val br = ceil(region.right * scaleX).toInt().coerceIn(bx + 1, source.width)
+            val bb = ceil(region.bottom * scaleY).toInt().coerceIn(by + 1, source.height)
+            val cropped = Bitmap.createBitmap(source, bx, by, br - bx, bb - by)
+            val longest = max(cropped.width, cropped.height)
+            if (longest >= SCREENSHOT_MAX_SIZE) return cropped
+            val factor = SCREENSHOT_MAX_SIZE.toFloat() / longest.toFloat()
+            val enlarged =
+                Bitmap.createScaledBitmap(
+                    cropped,
+                    (cropped.width * factor).roundToInt().coerceAtLeast(1),
+                    (cropped.height * factor).roundToInt().coerceAtLeast(1),
+                    true,
+                )
+            if (enlarged !== cropped) cropped.recycle()
+            return enlarged
+        }
+
+        /** The note appended to the text output when the screenshot shows a cropped region. */
+        private fun cropNote(
+            region: CropRegion,
+            screenWidth: Int,
+            screenHeight: Int,
+        ): String =
+            "note:the screenshot shows only region (${region.left}, ${region.top})-(${region.right}, ${region.bottom}) " +
+                "of the full ${screenWidth}x$screenHeight screen, enlarged; grid lines and coordinate " +
+                "chips keep real device coordinates."
 
         /**
          * Collects elements from all windows that should be annotated on the screenshot:
@@ -400,7 +554,11 @@ class GetScreenStateHandler
                         "or a change covering most of the screen, returns the full state. " +
                         "Set settle=true to wait for the UI to stop changing (up to " +
                         "settle_timeout_ms) before capturing, e.g. right after an action; a " +
-                        "settle timeout still returns the current state.",
+                        "settle timeout still returns the current state. " +
+                        "With a screenshot, set crop_left, crop_top, crop_right and crop_bottom " +
+                        "(real device pixels, all four together) to receive only that screen " +
+                        "region, enlarged to full screenshot size — for densely packed areas " +
+                        "where labels would overlap; grid and boxes keep real coordinates.",
                 inputSchema =
                     ToolSchema(
                         properties = getScreenStateProperties(includeScreenshotParamEnabled),
@@ -415,6 +573,10 @@ class GetScreenStateHandler
             private const val TAG = "MCP:ScreenIntrospection"
             internal const val CURSOR_RADIX = 36
             internal const val PARAM_ANNOTATE = "annotate"
+            internal const val PARAM_CROP_LEFT = "crop_left"
+            internal const val PARAM_CROP_TOP = "crop_top"
+            internal const val PARAM_CROP_RIGHT = "crop_right"
+            internal const val PARAM_CROP_BOTTOM = "crop_bottom"
             internal const val PARAM_INCLUDE_OFFSCREEN = "include_offscreen"
             internal const val PARAM_INCLUDE_HIERARCHY = "include_hierarchy"
             internal const val PARAM_INTERACTIVE_ONLY = "interactive_only"
@@ -538,6 +700,30 @@ private fun getScreenStateProperties(includeScreenshotParamEnabled: Boolean): Js
                         "backgrounds. Set false for the plain screenshot.",
                 )
                 put("default", true)
+            }
+            putJsonObject(GetScreenStateHandler.PARAM_CROP_LEFT) {
+                put("type", "integer")
+                put(
+                    "description",
+                    "With include_screenshot=true: return only this screen region, enlarged to full " +
+                        "screenshot size, instead of the whole screen. Give all four bounds " +
+                        "(crop_left, crop_top, crop_right, crop_bottom) in real device pixels; the " +
+                        "grid and boxes keep real device coordinates. Use it where elements are " +
+                        "densely packed and labels would overlap in the full-screen view. " +
+                        "This property is the region's left edge (x).",
+                )
+            }
+            putJsonObject(GetScreenStateHandler.PARAM_CROP_TOP) {
+                put("type", "integer")
+                put("description", "Crop region top edge (y), in real device pixels. See crop_left.")
+            }
+            putJsonObject(GetScreenStateHandler.PARAM_CROP_RIGHT) {
+                put("type", "integer")
+                put("description", "Crop region right edge (x, exclusive), in real device pixels. See crop_left.")
+            }
+            putJsonObject(GetScreenStateHandler.PARAM_CROP_BOTTOM) {
+                put("type", "integer")
+                put("description", "Crop region bottom edge (y, exclusive), in real device pixels. See crop_left.")
             }
         }
         putJsonObject("cursor") {

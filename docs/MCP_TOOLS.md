@@ -193,7 +193,7 @@ Protocol-level errors (parse errors, invalid requests) are handled automatically
 
 ### `android_get_screen_state`
 
-Returns the consolidated current screen state: screen dimensions and a compact filtered flat TSV list of UI nodes from **all on-screen windows** (including system dialogs, permission popups, and IME keyboards). Optionally includes a low-resolution screenshot, annotated with a real-coordinate grid (200 px steps with axis numbers), element bounding boxes (red family = clickable, amber = other) and text/description labels unless `annotate=false`; annotation colors adapt to the sampled background luminance for contrast on any background.
+Returns the consolidated current screen state: screen dimensions and a compact filtered flat TSV list of UI nodes from **all on-screen windows** (including system dialogs, permission popups, and IME keyboards). Optionally includes a low-resolution screenshot, annotated with a real-coordinate grid (200 px steps with axis numbers), element bounding boxes (red family = clickable, amber = other) and text/description labels unless `annotate=false`; annotation colors adapt to the sampled background luminance for contrast on any background. With the four `crop_*` bounds, the screenshot instead shows only that screen region, enlarged to full screenshot size — for densely packed areas where labels would overlap in the full-screen view; grid and boxes keep real device coordinates.
 
 Uses Android's multi-window accessibility API (`getWindows()`) to enumerate all interactive windows. Falls back to single-window mode via `rootInActiveWindow` when the multi-window API is unavailable (degraded mode).
 
@@ -213,6 +213,22 @@ Replaces the previous `get_accessibility_tree`, `capture_screenshot`, `get_curre
       "type": "boolean",
       "description": "With include_screenshot=true: draw the node bounding boxes and ids on the screenshot. Set false for the plain screenshot.",
       "default": true
+    },
+    "crop_left": {
+      "type": "integer",
+      "description": "With include_screenshot=true: return only this screen region, enlarged to full screenshot size, instead of the whole screen. Give all four bounds (crop_left, crop_top, crop_right, crop_bottom) in real device pixels; the grid and boxes keep real device coordinates. Use it where elements are densely packed and labels would overlap in the full-screen view. This property is the region's left edge (x)."
+    },
+    "crop_top": {
+      "type": "integer",
+      "description": "Crop region top edge (y), in real device pixels. See crop_left."
+    },
+    "crop_right": {
+      "type": "integer",
+      "description": "Crop region right edge (x, exclusive), in real device pixels. See crop_left."
+    },
+    "crop_bottom": {
+      "type": "integer",
+      "description": "Crop region bottom edge (y, exclusive), in real device pixels. See crop_left."
     },
     "cursor": {
       "type": "string",
@@ -253,7 +269,7 @@ Replaces the previous `get_accessibility_tree`, `capture_screenshot`, `get_curre
 }
 ```
 
-`include_screenshot` and `annotate` are listed only while the `include_screenshot` parameter is enabled in the tool permissions. `include_offscreen`, `include_hierarchy`, and `interactive_only` are fixed by the fresh capture (no `cursor`); the cursor pages of that capture keep them, and values passed with a `cursor` are type-checked but otherwise ignored. `diff`, `settle`, and `settle_timeout_ms` likewise apply to a fresh capture only. Every fresh capture (with or without `diff`) becomes the baseline the next `diff=true` call compares against; nodes are matched by node id, and a node also counts as changed when only its labelled accessibility actions changed.
+`include_screenshot`, `annotate` and the `crop_*` bounds are listed only while the `include_screenshot` parameter is enabled in the tool permissions. The `crop_*` bounds apply to a fresh capture only (a region partially outside the screen is clamped; a region fully outside is an error) and only affect the screenshot — the node list always covers the full screen. `include_offscreen`, `include_hierarchy`, and `interactive_only` are fixed by the fresh capture (no `cursor`); the cursor pages of that capture keep them, and values passed with a `cursor` are type-checked but otherwise ignored. `diff`, `settle`, and `settle_timeout_ms` likewise apply to a fresh capture only. Every fresh capture (with or without `diff`) becomes the baseline the next `diff=true` call compares against; nodes are matched by node id, and a node also counts as changed when only its labelled accessibility actions changed.
 
 **Request Example** (text only):
 ```json
@@ -412,6 +428,8 @@ Both `text` and `desc` columns are truncated to **100 characters**. If truncated
 When `include_screenshot` is `true`, a low-resolution JPEG screenshot (max 700px in either dimension, quality 80) is included as a second content item (`ImageContent`). With Privacy Mode on, the regions of flagged nodes are masked first. Unless `annotate` is `false` (plain screenshot, still masked), the screenshot is annotated with:
 - **Red dashed bounding boxes** (2px) around each on-screen node that appears in the TSV
 - **Semi-transparent red pill labels** with white bold text showing the node ID hash (e.g., `a3f2` for `node_a3f2`) at the top-left of each bounding box
+
+When all four `crop_*` bounds are given, the screenshot shows only that region of the screen (in real device pixels), enlarged so its longer side reaches 700px; the response text gains a `note:` line naming the region. Grid lines are drawn at the region's edges and at every 200 px multiple inside it, labelled with real device coordinates, and only elements intersecting the region are boxed. Cropping happens after Privacy Mode masking, so flagged regions stay covered.
 
 Off-screen nodes (marked with `off` flag in the TSV) do not have bounding boxes on the screenshot. Use the `scroll_to_node` tool to bring them into view first.
 

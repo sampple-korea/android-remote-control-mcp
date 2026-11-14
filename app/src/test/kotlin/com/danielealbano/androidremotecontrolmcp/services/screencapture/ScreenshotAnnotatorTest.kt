@@ -132,6 +132,59 @@ class ScreenshotAnnotatorTest {
             val result = annotator.computeScaledBounds(element, 0.5f, 0.5f, 540, 1200)
             assertNull(result)
         }
+
+        @Test
+        fun `shifts bounds by the view origin for a cropped region`() {
+            // Region view starting at (200, 400); the bitmap shows the region at scale 1
+            val element = makeNode(bounds = BoundsData(300, 500, 500, 700))
+            val result = annotator.computeScaledBounds(element, 1f, 1f, 400, 400, originX = 200, originY = 400)
+            assertNotNull(result)
+            assertEquals(100f, result!!.left)
+            assertEquals(100f, result.top)
+            assertEquals(300f, result.right)
+            assertEquals(300f, result.bottom)
+        }
+
+        @Test
+        fun `returns null for element fully outside the view`() {
+            val element = makeNode(bounds = BoundsData(0, 0, 100, 100))
+            val result = annotator.computeScaledBounds(element, 1f, 1f, 400, 400, originX = 200, originY = 400)
+            assertNull(result)
+        }
+
+        @Test
+        fun `clamps element straddling the view edge`() {
+            val element = makeNode(bounds = BoundsData(100, 300, 300, 500))
+            val result = annotator.computeScaledBounds(element, 1f, 1f, 400, 400, originX = 200, originY = 400)
+            assertNotNull(result)
+            assertEquals(0f, result!!.left)
+            assertEquals(0f, result.top)
+            assertEquals(100f, result.right)
+            assertEquals(100f, result.bottom)
+        }
+    }
+
+    @Nested
+    @DisplayName("gridPositions")
+    inner class GridPositionsTests {
+        @Test
+        fun `full screen range starts at zero and appends the far edge`() {
+            assertEquals(
+                listOf(0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1768),
+                annotator.gridPositions(0, 1768),
+            )
+        }
+
+        @Test
+        fun `range edges are kept and interior multiples use real coordinates`() {
+            assertEquals(listOf(100, 200, 400, 600), annotator.gridPositions(100, 600))
+            assertEquals(listOf(200, 400, 600, 800), annotator.gridPositions(200, 800))
+        }
+
+        @Test
+        fun `range smaller than one step has only its two edges`() {
+            assertEquals(listOf(50, 150), annotator.gridPositions(50, 150))
+        }
     }
 
     @Nested
@@ -215,6 +268,49 @@ class ScreenshotAnnotatorTest {
             verify(atLeast = 1) {
                 anyConstructed<Canvas>().drawText(match { it.contains("Second") }, any(), any(), any())
             }
+        }
+
+        @Test
+        fun `region view labels in-region elements and skips out-of-region ones`() {
+            // The bitmap (540x1200 in setup) shows region (1000, 2000)-(2080, 4400) of the screen
+            val inside =
+                makeNode(id = "node_in", text = "Inside", bounds = BoundsData(1100, 2200, 1300, 2400), visible = true)
+            val outside =
+                makeNode(id = "node_out", text = "Outside", bounds = BoundsData(0, 0, 100, 100), visible = true)
+            val result = annotator.annotateRegion(mockBitmap, listOf(inside, outside), 1000, 2000, 1080, 2400)
+            assertEquals(mockCopy, result)
+            verify(atLeast = 1) {
+                anyConstructed<Canvas>().drawText(match { it.contains("Inside") }, any(), any(), any())
+            }
+            verify(exactly = 0) {
+                anyConstructed<Canvas>().drawText(match { it.contains("Outside") }, any(), any(), any())
+            }
+            // The grid keeps real coordinates: the region's left edge appears as an X chip
+            verify(atLeast = 1) {
+                anyConstructed<Canvas>().drawText("1000", any(), any(), any())
+            }
+        }
+
+        @Test
+        fun `region view rejects a negative origin`() {
+            var thrown = false
+            try {
+                annotator.annotateRegion(mockBitmap, emptyList(), -1, 0, 100, 100)
+            } catch (_: IllegalArgumentException) {
+                thrown = true
+            }
+            assertTrue(thrown, "Should have thrown IllegalArgumentException")
+        }
+
+        @Test
+        fun `region view rejects a non-positive size`() {
+            var thrown = false
+            try {
+                annotator.annotateRegion(mockBitmap, emptyList(), 0, 0, 0, 100)
+            } catch (_: IllegalArgumentException) {
+                thrown = true
+            }
+            assertTrue(thrown, "Should have thrown IllegalArgumentException")
         }
 
         @Test

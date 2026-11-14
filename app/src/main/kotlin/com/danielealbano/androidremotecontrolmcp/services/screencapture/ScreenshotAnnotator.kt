@@ -78,15 +78,50 @@ class ScreenshotAnnotator
          * @throws IllegalStateException if the bitmap cannot be copied.
          * @throws IllegalArgumentException if [screenWidth] or [screenHeight] is not positive.
          */
-        @Suppress("LongMethod", "TooGenericExceptionCaught")
         fun annotate(
             bitmap: Bitmap,
             elements: List<AccessibilityNodeData>,
             screenWidth: Int,
             screenHeight: Int,
+        ): Bitmap = annotateView(bitmap, elements, 0, 0, screenWidth, screenHeight)
+
+        /**
+         * Annotates a cropped, already-enlarged view of one screen region: [bitmap] shows ONLY the
+         * region (viewLeft, viewTop, viewWidth, viewHeight) of the full screen, rendered at the
+         * bitmap's own resolution. Grid lines keep their REAL device coordinates (the regular
+         * [GRID_STEP_PX] multiples inside the region, plus boundary lines at the region edges),
+         * element boxes are intersected with the region, and elements fully outside it are skipped.
+         * Because the region is enlarged, labels that would overlap in the full-screen view stay
+         * distinguishable.
+         *
+         * Same ownership/luminance contract as [annotate].
+         *
+         * @throws IllegalArgumentException if the view origin is negative or its size is not positive.
+         */
+        @Suppress("LongParameterList")
+        fun annotateRegion(
+            bitmap: Bitmap,
+            elements: List<AccessibilityNodeData>,
+            viewLeft: Int,
+            viewTop: Int,
+            viewWidth: Int,
+            viewHeight: Int,
         ): Bitmap {
-            require(screenWidth > 0) { "screenWidth must be positive, was $screenWidth" }
-            require(screenHeight > 0) { "screenHeight must be positive, was $screenHeight" }
+            require(viewLeft >= 0 && viewTop >= 0) { "view origin must not be negative, was ($viewLeft, $viewTop)" }
+            return annotateView(bitmap, elements, viewLeft, viewTop, viewWidth, viewHeight)
+        }
+
+        @Suppress("LongParameterList", "LongMethod", "TooGenericExceptionCaught")
+        private fun annotateView(
+            bitmap: Bitmap,
+            elements: List<AccessibilityNodeData>,
+            viewLeft: Int,
+            viewTop: Int,
+            viewWidth: Int,
+            viewHeight: Int,
+        ): Bitmap {
+            require(viewWidth > 0) { "viewWidth must be positive, was $viewWidth" }
+            require(viewHeight > 0) { "viewHeight must be positive, was $viewHeight" }
 
             // Always use ARGB_8888 for the mutable copy -- HARDWARE bitmaps cannot be mutable
             val copy =
@@ -110,12 +145,12 @@ class ScreenshotAnnotator
                     }
                 sampleSource = sampling
                 val canvas = Canvas(copy)
-                val scaleX = copy.width.toFloat() / screenWidth.toFloat()
-                val scaleY = copy.height.toFloat() / screenHeight.toFloat()
+                val scaleX = copy.width.toFloat() / viewWidth.toFloat()
+                val scaleY = copy.height.toFloat() / viewHeight.toFloat()
                 val density = copy.width.toFloat() / REFERENCE_WIDTH_DP
 
-                drawGrid(canvas, sampling, screenWidth, screenHeight, scaleX, scaleY, density)
-                drawElements(canvas, sampling, elements, copy.width, copy.height, scaleX, scaleY, density)
+                drawGrid(canvas, sampling, viewLeft, viewTop, viewWidth, viewHeight, scaleX, scaleY, density)
+                drawElements(canvas, sampling, elements, copy.width, copy.height, viewLeft, viewTop, scaleX, scaleY, density)
 
                 return copy
             } catch (e: Exception) {
@@ -132,8 +167,10 @@ class ScreenshotAnnotator
         private fun drawGrid(
             canvas: Canvas,
             source: Bitmap,
-            screenWidth: Int,
-            screenHeight: Int,
+            viewLeft: Int,
+            viewTop: Int,
+            viewWidth: Int,
+            viewHeight: Int,
             scaleX: Float,
             scaleY: Float,
             density: Float,
@@ -150,15 +187,15 @@ class ScreenshotAnnotator
                     typeface = Typeface.DEFAULT_BOLD
                 }
 
-            val verticalXs = gridPositions(screenWidth)
-            val horizontalYs = gridPositions(screenHeight)
+            val verticalXs = gridPositions(viewLeft, viewLeft + viewWidth)
+            val horizontalYs = gridPositions(viewTop, viewTop + viewHeight)
 
             // Vertical lines, one adaptive decision per grid cell segment.
             for (realX in verticalXs) {
-                val x = realX * scaleX
+                val x = (realX - viewLeft) * scaleX
                 for (i in 0 until horizontalYs.size - 1) {
-                    val y0 = horizontalYs[i] * scaleY
-                    val y1 = horizontalYs[i + 1] * scaleY
+                    val y0 = (horizontalYs[i] - viewTop) * scaleY
+                    val y1 = (horizontalYs[i + 1] - viewTop) * scaleY
                     val lum =
                         sampleRectLuminance(
                             source,
@@ -175,10 +212,10 @@ class ScreenshotAnnotator
             }
             // Horizontal lines, one adaptive decision per grid cell segment.
             for (realY in horizontalYs) {
-                val y = realY * scaleY
+                val y = (realY - viewTop) * scaleY
                 for (i in 0 until verticalXs.size - 1) {
-                    val x0 = verticalXs[i] * scaleX
-                    val x1 = verticalXs[i + 1] * scaleX
+                    val x0 = (verticalXs[i] - viewLeft) * scaleX
+                    val x1 = (verticalXs[i + 1] - viewLeft) * scaleX
                     val lum =
                         sampleRectLuminance(
                             source,
@@ -200,7 +237,7 @@ class ScreenshotAnnotator
                     source,
                     textPaint,
                     realX.toString(),
-                    centerX = realX * scaleX,
+                    centerX = (realX - viewLeft) * scaleX,
                     centerY = null,
                     bitmapWidth = source.width,
                     bitmapHeight = source.height,
@@ -215,7 +252,7 @@ class ScreenshotAnnotator
                     textPaint,
                     realY.toString(),
                     centerX = null,
-                    centerY = realY * scaleY,
+                    centerY = (realY - viewTop) * scaleY,
                     bitmapWidth = source.width,
                     bitmapHeight = source.height,
                     density = density,
@@ -224,15 +261,22 @@ class ScreenshotAnnotator
             }
         }
 
-        /** Grid line positions in real coordinates: 0, STEP, 2*STEP, …, plus the far edge. */
-        private fun gridPositions(extent: Int): List<Int> {
-            val positions = mutableListOf(0)
-            var value = GRID_STEP_PX
-            while (value < extent) {
+        /**
+         * Grid line positions in real coordinates for the range [start, end]: the range start,
+         * every [GRID_STEP_PX] multiple strictly inside the range, and the range end. For a
+         * full-screen range (start = 0) this is 0, STEP, 2*STEP, …, plus the far edge.
+         */
+        internal fun gridPositions(
+            start: Int,
+            end: Int,
+        ): List<Int> {
+            val positions = mutableListOf(start)
+            var value = (start / GRID_STEP_PX + 1) * GRID_STEP_PX
+            while (value < end) {
                 positions.add(value)
                 value += GRID_STEP_PX
             }
-            if (positions.last() != extent) positions.add(extent)
+            if (positions.last() != end) positions.add(end)
             return positions
         }
 
@@ -245,6 +289,8 @@ class ScreenshotAnnotator
             elements: List<AccessibilityNodeData>,
             bitmapWidth: Int,
             bitmapHeight: Int,
+            viewLeft: Int,
+            viewTop: Int,
             scaleX: Float,
             scaleY: Float,
             density: Float,
@@ -263,7 +309,8 @@ class ScreenshotAnnotator
                 }
 
             for (element in elements) {
-                val scaled = computeScaledBounds(element, scaleX, scaleY, bitmapWidth, bitmapHeight) ?: continue
+                val scaled =
+                    computeScaledBounds(element, scaleX, scaleY, bitmapWidth, bitmapHeight, viewLeft, viewTop) ?: continue
                 val rect = RectF(scaled.left, scaled.top, scaled.right, scaled.bottom)
                 val lum =
                     sampleRectLuminance(
@@ -495,7 +542,10 @@ class ScreenshotAnnotator
          * Computes the scaled bounding rectangle for an element on the bitmap.
          *
          * Returns a pure-Kotlin [ScaledBounds] (not [RectF]) so this method is
-         * fully testable on JVM without Android framework stubs.
+         * fully testable on JVM without Android framework stubs. [originX]/[originY] are the
+         * real device coordinates of the bitmap's top-left corner (0, 0 for a full-screen
+         * screenshot, the region origin for a cropped view): element bounds are shifted by
+         * the origin before scaling, then clamped to the bitmap.
          *
          * @return Scaled [ScaledBounds] clamped to bitmap bounds, or null if fully outside.
          */
@@ -505,12 +555,14 @@ class ScreenshotAnnotator
             scaleY: Float,
             bitmapWidth: Int,
             bitmapHeight: Int,
+            originX: Int = 0,
+            originY: Int = 0,
         ): ScaledBounds? {
             val bounds = element.bounds
-            val left = (bounds.left * scaleX).coerceIn(0f, bitmapWidth.toFloat())
-            val top = (bounds.top * scaleY).coerceIn(0f, bitmapHeight.toFloat())
-            val right = (bounds.right * scaleX).coerceIn(0f, bitmapWidth.toFloat())
-            val bottom = (bounds.bottom * scaleY).coerceIn(0f, bitmapHeight.toFloat())
+            val left = ((bounds.left - originX) * scaleX).coerceIn(0f, bitmapWidth.toFloat())
+            val top = ((bounds.top - originY) * scaleY).coerceIn(0f, bitmapHeight.toFloat())
+            val right = ((bounds.right - originX) * scaleX).coerceIn(0f, bitmapWidth.toFloat())
+            val bottom = ((bounds.bottom - originY) * scaleY).coerceIn(0f, bitmapHeight.toFloat())
 
             // Skip if fully collapsed after clamping
             if (right <= left || bottom <= top) return null
