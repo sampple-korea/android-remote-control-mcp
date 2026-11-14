@@ -16,6 +16,7 @@ import com.danielealbano.androidremotecontrolmcp.services.shell.ShellProcessPage
 import com.danielealbano.androidremotecontrolmcp.services.shell.ShellProcessSnapshot
 import com.danielealbano.androidremotecontrolmcp.services.shell.ShellProcessState
 import com.danielealbano.androidremotecontrolmcp.testutil.RecordingServerLogRepository
+import io.mockk.CapturingSlot
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -80,7 +81,7 @@ class RootToolsTest {
     private fun CallToolResult.text(): String = (content.single() as TextContent).text
 
     /** Stubs a granted authorization and a process returning [output]; returns the launch slot. */
-    private fun stubGrantedRun(output: String): io.mockk.Slot<ShellLaunch> {
+    private fun stubGrantedRun(output: String): CapturingSlot<ShellLaunch> {
         val launch = slot<ShellLaunch>()
         coEvery { authorizer.authorize(any(), any(), any()) } returns ElevationGrant.AUTO_ALLOWED
         coEvery { processManager.startAndAwait(capture(launch), any(), any(), any()) } returns page(output)
