@@ -542,7 +542,7 @@ class ScreenIntrospectionToolsTest {
 
                 handler.execute(buildJsonObject { put("include_screenshot", true) })
 
-                assertEquals(emptyList(), annotated.captured)
+                assertEquals(emptyList<AccessibilityNodeData>(), annotated.captured)
             }
 
         @Test
@@ -559,7 +559,7 @@ class ScreenIntrospectionToolsTest {
 
                 handler.execute(buildJsonObject { put("include_screenshot", true) })
 
-                assertEquals(emptyList(), annotated.captured)
+                assertEquals(emptyList<AccessibilityNodeData>(), annotated.captured)
             }
 
         @Test
