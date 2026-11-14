@@ -251,6 +251,10 @@ jobs:
             - **`android_batch_actions`** — new tool that runs a sequence of UI actions in a single MCP call (allowlist of 29 action tools; stops at the first failure unless `continue_on_error` is set).
             - **`interactive_only` snapshot filter** — opt-in `android_get_screen_state` filter that keeps only interactive elements (clickable, long-clickable, editable, scrollable, or carrying accessibility actions); composes with diff mode.
 
+            ### v1.13.6
+
+            - **Annotated screen-state screenshots** — `android_get_screen_state` now composites annotations onto the returned screenshot by default: a grid in real device coordinates (200 px spacing, coordinate labels along the top and left edges) and accessibility element boxes (red for clickable elements, amber for the rest; labels only on nodes carrying text or a content description). Pass `annotate=false` to get the clean original image, byte-identical to earlier releases. Annotation ink is chosen per segment from the sampled luminance of the underlying pixels and drawn with a counter-tone halo, so grid lines, boxes and labels stay readable on photos, gradients and screens mixing bright and dark regions — there is no fixed dark/light mode branch. The node text listing and all other arguments are unchanged.
+
             ### v1.13.5
 
             - **File transfer speedup** — the v1.13.4 chunk tools carried each chunk inside the elevated shell command line (`printf '<base64>' | base64 -d | dd bs=1`), which capped a chunk at ~96 KB and cost a full shell round trip per small chunk (a 4 MiB file took ~2.3 minutes per direction). Chunks now move entirely inside the server: decoded in-process and written directly when the app can reach the path, otherwise staged in the shell scratch directory and placed by one short root `dd` (paths and numbers only — the data never appears on a command line). The per-call cap rises to 1,048,576 raw bytes (~1.4M base64 characters), so a 4 MiB file moves in 4 calls per direction. Tool names, arguments and result JSON are unchanged.
