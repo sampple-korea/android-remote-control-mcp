@@ -140,7 +140,7 @@ private fun ShellProcessPage.outputOrFailure(toolAction: String): String {
  * Installs (or reinstalls/updates) the APK file at a path on the device with `pm install -r`,
  * run as root through the standard elevation authorization.
  */
-class InstallApkHandler(
+internal class InstallApkHandler(
     private val runner: ElevatedCommandRunner,
 ) {
     suspend fun execute(arguments: JsonObject?): CallToolResult {
@@ -194,7 +194,7 @@ class InstallApkHandler(
  * Uninstalls an app by package id with `pm uninstall`, run as root through the standard elevation
  * authorization.
  */
-class UninstallAppHandler(
+internal class UninstallAppHandler(
     private val runner: ElevatedCommandRunner,
 ) {
     suspend fun execute(arguments: JsonObject?): CallToolResult {
@@ -249,7 +249,7 @@ class UninstallAppHandler(
  * request is written to the server log before the command runs, so the log keeps the reason even
  * though the reboot takes the server down with the device.
  */
-class RebootDeviceHandler(
+internal class RebootDeviceHandler(
     private val runner: ElevatedCommandRunner,
     private val serverLogRepository: ServerLogRepository,
 ) {
@@ -304,7 +304,7 @@ class RebootDeviceHandler(
  * authorization (logcat as root also sees other processes' logs). For diagnosing failures on the
  * device itself.
  */
-class ReadLogcatHandler(
+internal class ReadLogcatHandler(
     private val runner: ElevatedCommandRunner,
 ) {
     suspend fun execute(arguments: JsonObject?): CallToolResult {
@@ -399,7 +399,7 @@ class ReadLogcatHandler(
  * lines per call, and the content decoded as UTF-8 text (binary content decodes with replacement
  * characters, as in read_file).
  */
-class ReadRootFileHandler(
+internal class ReadRootFileHandler(
     private val runner: ElevatedCommandRunner,
 ) {
     suspend fun execute(arguments: JsonObject?): CallToolResult {

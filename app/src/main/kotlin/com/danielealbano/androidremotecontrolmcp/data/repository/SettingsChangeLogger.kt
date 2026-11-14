@@ -50,8 +50,8 @@ class SettingsChangeLogger internal constructor(
         key: String,
         oldValue: String,
         newValue: String,
-        immediate: Boolean = false,
         render: (old: String, new: String) -> String,
+        immediate: Boolean = false,
     ) {
         if (immediate) {
             // Supersede any coalesced entry still pending for this key: it must not flush a second,
@@ -130,7 +130,11 @@ internal fun SettingsChangeLogger.submitToggle(
     offWord: String = "disabled",
     immediate: Boolean = false,
 ) {
-    submit(key, oldValue.toString(), newValue.toString(), immediate) { _, n ->
-        "$subject ${if (n.toBoolean()) onWord else offWord}"
-    }
+    submit(
+        key,
+        oldValue.toString(),
+        newValue.toString(),
+        render = { _, n -> "$subject ${if (n.toBoolean()) onWord else offWord}" },
+        immediate = immediate,
+    )
 }
