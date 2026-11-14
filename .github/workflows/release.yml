@@ -251,6 +251,10 @@ jobs:
             - **`android_batch_actions`** — new tool that runs a sequence of UI actions in a single MCP call (allowlist of 29 action tools; stops at the first failure unless `continue_on_error` is set).
             - **`interactive_only` snapshot filter** — opt-in `android_get_screen_state` filter that keeps only interactive elements (clickable, long-clickable, editable, scrollable, or carrying accessibility actions); composes with diff mode.
 
+            ### v1.13.4
+
+            - **Chunked binary file transfer (74 tools total)** — `android_write_file_chunk` writes a base64 chunk at a byte offset (optional truncate on the first chunk), `android_read_file_chunk` reads a chunk back as base64 with the total file size and an eof flag, and `android_file_info` reports existence, size and SHA-256 in one call. Files of any size move as a sequence of independent chunks — a failed chunk retries on its own — and every call is capped server-side at 131,072 raw bytes (~175K base64 characters), so a single MCP call stays well below the Cloudflare tunnel / JSON-RPC payload limits. Like the other root tools, each runs one fixed command through the existing elevation authorization with a mandatory justification; paths are absolute, so app-private and system files work too.
+
             ### v1.13.3
 
             - **Text input tools set text directly** — `type_append_text` / `type_insert_text` / `type_replace_text` / `type_clear_text` now compute the field's new content and set it in one `ACTION_SET_TEXT` operation instead of simulating key events through the IME input connection, which let keyboard features (glide typing, autocomplete) corrupt values — e.g. replacing "1202" with "120" produced "120022222022000502022". The field is never clicked, so the soft keyboard is never shown; `typing_speed` / `typing_speed_variance` are still accepted but ignored. Unexpected failures inside a text tool are logged and returned as tool errors instead of propagating.
