@@ -342,6 +342,9 @@ class ToolPermissionsIntegrationTest {
                 "reboot_device",
                 "read_logcat",
                 "read_root_file",
+                "write_file_chunk",
+                "read_file_chunk",
+                "file_info",
                 "batch_actions",
             )
     }
