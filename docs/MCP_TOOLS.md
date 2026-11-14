@@ -193,7 +193,7 @@ Protocol-level errors (parse errors, invalid requests) are handled automatically
 
 ### `android_get_screen_state`
 
-Returns the consolidated current screen state: screen dimensions and a compact filtered flat TSV list of UI nodes from **all on-screen windows** (including system dialogs, permission popups, and IME keyboards). Optionally includes a low-resolution screenshot, annotated with bounding boxes and node ID labels unless `annotate=false`.
+Returns the consolidated current screen state: screen dimensions and a compact filtered flat TSV list of UI nodes from **all on-screen windows** (including system dialogs, permission popups, and IME keyboards). Optionally includes a low-resolution screenshot, annotated with a real-coordinate grid (200 px steps with axis numbers), element bounding boxes (red family = clickable, amber = other) and text/description labels unless `annotate=false`; annotation colors adapt to the sampled background luminance for contrast on any background.
 
 Uses Android's multi-window accessibility API (`getWindows()`) to enumerate all interactive windows. Falls back to single-window mode via `rootInActiveWindow` when the multi-window API is unavailable (degraded mode).
 

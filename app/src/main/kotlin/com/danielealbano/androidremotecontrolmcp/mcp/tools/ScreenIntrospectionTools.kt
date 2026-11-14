@@ -530,8 +530,12 @@ private fun getScreenStateProperties(includeScreenshotParamEnabled: Boolean): Js
                 put("type", "boolean")
                 put(
                     "description",
-                    "With include_screenshot=true: draw the node bounding boxes and ids on the screenshot. " +
-                        "Set false for the plain screenshot.",
+                    "With include_screenshot=true: overlay a real-coordinate grid (200 px steps, " +
+                        "coordinate numbers along the top/left edges) and the node bounding boxes " +
+                        "(red family = clickable, amber = other) with text/description labels on the " +
+                        "screenshot. Grid, boxes and labels adapt their colors to the sampled " +
+                        "background luminance, so they stay readable on dark, light and mixed " +
+                        "backgrounds. Set false for the plain screenshot.",
                 )
                 put("default", true)
             }

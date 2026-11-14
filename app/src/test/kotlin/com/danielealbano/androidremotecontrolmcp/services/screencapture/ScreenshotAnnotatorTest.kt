@@ -153,6 +153,7 @@ class ScreenshotAnnotatorTest {
             mockkConstructor(Canvas::class)
             every { anyConstructed<Canvas>().drawRoundRect(any(), any(), any(), any()) } just Runs
             every { anyConstructed<Canvas>().drawRect(any<RectF>(), any()) } just Runs
+            every { anyConstructed<Canvas>().drawLine(any(), any(), any(), any(), any()) } just Runs
             every { anyConstructed<Canvas>().drawText(any(), any(), any(), any()) } just Runs
         }
 
@@ -162,36 +163,55 @@ class ScreenshotAnnotatorTest {
         }
 
         @Test
-        fun `empty elements returns copy without draw calls`() {
+        fun `empty elements returns copy with grid drawn`() {
             val result = annotator.annotate(mockBitmap, emptyList(), 1080, 2400)
             assertEquals(mockCopy, result)
             verify(exactly = 0) { mockCopy.recycle() } // input not recycled
+            // The coordinate grid is part of the annotation even with no elements
+            verify(atLeast = 1) { anyConstructed<Canvas>().drawLine(any(), any(), any(), any(), any()) }
         }
 
         @Test
         fun `single element draws box and label`() {
-            val element = makeNode(id = "node_a3f2", bounds = BoundsData(100, 200, 300, 400), visible = true)
+            val element =
+                makeNode(id = "node_a3f2", text = "Settings", bounds = BoundsData(100, 200, 300, 400), visible = true)
             annotator.annotate(mockBitmap, listOf(element), 1080, 2400)
-            // Verify at least one drawRect and one drawText were called
-            verify(atLeast = 1) { anyConstructed<Canvas>().drawRect(any<RectF>(), any()) }
+            // Halo + core strokes => at least two drawRect calls for the one box
+            verify(atLeast = 2) { anyConstructed<Canvas>().drawRect(any<RectF>(), any()) }
             verify(atLeast = 1) {
-                anyConstructed<Canvas>().drawText(match { it.contains("a3f2") }, any(), any(), any())
+                anyConstructed<Canvas>().drawText(match { it.contains("Settings") }, any(), any(), any())
+            }
+        }
+
+        @Test
+        fun `element without text or description draws box but no label`() {
+            val element = makeNode(id = "node_icon", bounds = BoundsData(100, 200, 300, 400), visible = true)
+            annotator.annotate(mockBitmap, listOf(element), 1080, 2400)
+            verify(atLeast = 2) { anyConstructed<Canvas>().drawRect(any<RectF>(), any()) }
+            // Only grid axis numbers are drawn as text; no element label
+            verify(exactly = 0) {
+                anyConstructed<Canvas>().drawText(match { it.contains("icon") }, any(), any(), any())
             }
         }
 
         @Test
         fun `multiple elements draws box and label for each`() {
-            val element1 = makeNode(id = "node_a3f2", bounds = BoundsData(100, 200, 300, 400), visible = true)
-            val element2 = makeNode(id = "node_b4c5", bounds = BoundsData(500, 600, 700, 800), visible = true)
+            val element1 =
+                makeNode(id = "node_a3f2", text = "First", bounds = BoundsData(100, 200, 300, 400), visible = true)
+            val element2 =
+                makeNode(
+                    id = "node_b4c5",
+                    contentDescription = "Second",
+                    bounds = BoundsData(500, 600, 700, 800),
+                    visible = true,
+                )
             annotator.annotate(mockBitmap, listOf(element1, element2), 1080, 2400)
-            // Verify drawRect called at least twice (one box per element)
-            verify(atLeast = 2) { anyConstructed<Canvas>().drawRect(any<RectF>(), any()) }
-            // Verify both labels drawn
+            verify(atLeast = 4) { anyConstructed<Canvas>().drawRect(any<RectF>(), any()) }
             verify(atLeast = 1) {
-                anyConstructed<Canvas>().drawText(match { it.contains("a3f2") }, any(), any(), any())
+                anyConstructed<Canvas>().drawText(match { it.contains("First") }, any(), any(), any())
             }
             verify(atLeast = 1) {
-                anyConstructed<Canvas>().drawText(match { it.contains("b4c5") }, any(), any(), any())
+                anyConstructed<Canvas>().drawText(match { it.contains("Second") }, any(), any(), any())
             }
         }
 
@@ -278,6 +298,79 @@ class ScreenshotAnnotatorTest {
                     annotator.annotate(mockBitmap, emptyList(), 1080, -1)
                 }
             assertTrue(exception.message!!.contains("screenHeight must be positive"))
+        }
+    }
+
+    @Nested
+    @DisplayName("elementLabel")
+    inner class ElementLabelTests {
+        @Test
+        fun `prefers text over content description`() {
+            val node = makeNode(text = "Hello", contentDescription = "Desc")
+            assertEquals("Hello", annotator.elementLabel(node))
+        }
+
+        @Test
+        fun `falls back to content description`() {
+            val node = makeNode(text = "  ", contentDescription = "Desc")
+            assertEquals("Desc", annotator.elementLabel(node))
+        }
+
+        @Test
+        fun `null when neither text nor description`() {
+            assertNull(annotator.elementLabel(makeNode()))
+            assertNull(annotator.elementLabel(makeNode(text = "", contentDescription = " ")))
+        }
+
+        @Test
+        fun `collapses whitespace and newlines`() {
+            val node = makeNode(text = "Line one\n  Line\ttwo")
+            assertEquals("Line one Line two", annotator.elementLabel(node))
+        }
+
+        @Test
+        fun `truncates long labels with ellipsis`() {
+            val node = makeNode(text = "A very long label indeed")
+            val label = annotator.elementLabel(node)
+            assertNotNull(label)
+            assertEquals(ScreenshotAnnotator.MAX_LABEL_CHARS, label!!.length)
+            assertTrue(label.endsWith("…"))
+        }
+    }
+
+    @Nested
+    @DisplayName("luminance and ink choice")
+    inner class LuminanceTests {
+        @Test
+        fun `black has zero luminance and white is full`() {
+            assertEquals(0f, annotator.luminanceOfRgb(0, 0, 0), 0.001f)
+            assertEquals(255f, annotator.luminanceOfRgb(255, 255, 255), 0.01f)
+        }
+
+        @Test
+        fun `grey luminance equals its channel value`() {
+            assertEquals(100f, annotator.luminanceOfRgb(100, 100, 100), 0.01f)
+        }
+
+        @Test
+        fun `dark background picks the bright ink`() {
+            val choice = annotator.inkChoice(0f, brightInk = 111, darkInk = 222)
+            assertEquals(111, choice.ink)
+            assertTrue(choice.bright)
+        }
+
+        @Test
+        fun `bright background picks the dark ink`() {
+            val choice = annotator.inkChoice(255f, brightInk = 111, darkInk = 222)
+            assertEquals(222, choice.ink)
+            assertTrue(!choice.bright)
+        }
+
+        @Test
+        fun `threshold boundary counts as bright background`() {
+            val choice =
+                annotator.inkChoice(ScreenshotAnnotator.LUMINANCE_THRESHOLD, brightInk = 111, darkInk = 222)
+            assertEquals(222, choice.ink)
         }
     }
 }
