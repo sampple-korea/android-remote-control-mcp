@@ -341,6 +341,7 @@ internal class DeviceFileChunkStore(
     ): FileChunkData {
         val stage = newStageFile()
         try {
+            withContext(Dispatchers.IO) { stage.parentFile?.mkdirs() }
             val quotedPath = ShellScriptBuilder.quoteForShell(path)
             val quotedStage = ShellScriptBuilder.quoteForShell(stage.absolutePath)
             val block = transferBlockSize(offset)
