@@ -7,16 +7,16 @@ import com.danielealbano.androidremotecontrolmcp.privacy.PiiCategory
 import com.danielealbano.androidremotecontrolmcp.privacy.PrivacyModeStatus
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.AccessibilityNodeData
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.BoundsData
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.CachedNode
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ElementInfo
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenInfo
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.WindowData
-import com.danielealbano.androidremotecontrolmcp.testutil.FakeTextField
+import com.danielealbano.androidremotecontrolmcp.testutil.readNodesOf
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
-import io.mockk.verify
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
@@ -129,16 +129,45 @@ class PrivacyModeNodeContextIntegrationTest {
     }
 
     /**
-     * A focused field whose input connection holds [initial], the real characters as for a password field (see
-     * [FakeTextField]); clicks on any node succeed.
+     * Makes [deps]' tree reads hold [initial] as the text of node [fieldId] in [tree] — the real characters, as
+     * the parser reports them for a password field — and applies setTextOnNode calls to it, so a later read sees
+     * the set text like the real field would show. With [loseSets] the set reports success but the text stays,
+     * like a field that dropped the change; [refillOnClear] is the text the field fills itself with again right
+     * after an empty set. Returns the field's current text.
      */
-    private fun MockDependencies.inputFieldWith(
+    private fun MockDependencies.wireSetText(
+        tree: AccessibilityNodeData,
+        fieldId: String,
         initial: String,
-        loseDeletions: Boolean = false,
-    ): FakeTextField {
-        coEvery { actionExecutor.clickNode(any(), any<List<WindowData>>()) } returns Result.success(Unit)
-        return FakeTextField(typeInputController, initial, loseDeletions = loseDeletions)
+        loseSets: Boolean = false,
+        refillOnClear: String? = null,
+    ): () -> String {
+        var current = initial
+        every { treeParser.parseTree(any(), "root_w0", any()) } answers {
+            val withText = tree.withNodeText(fieldId, current)
+            thirdArg<MutableMap<String, CachedNode>>().putAll(readNodesOf(withText, readNodes))
+            withText
+        }
+        coEvery { actionExecutor.setTextOnNode(fieldId, any(), any()) } answers {
+            if (!loseSets) {
+                val newText = secondArg<String>()
+                current = if (newText.isEmpty() && refillOnClear != null) refillOnClear else newText
+            }
+            Result.success(Unit)
+        }
+        return { current }
     }
+
+    /** This node with the text of node [id] replaced by [newText], recursively. */
+    private fun AccessibilityNodeData.withNodeText(
+        id: String,
+        newText: String?,
+    ): AccessibilityNodeData =
+        if (this.id == id) {
+            copy(text = newText)
+        } else {
+            copy(children = children.map { it.withNodeText(id, newText) })
+        }
 
     private fun assertCredentialRedacted(
         text: String,
@@ -542,20 +571,22 @@ class PrivacyModeNodeContextIntegrationTest {
     @Test
     fun `type_append_text redacts the content of a password field`() =
         runTest {
-            val deps = privacyDeps(treeOf(passwordField(text = null)), focusedNodeId = "node_pwd")
-            val field = deps.inputFieldWith("hunter2secret")
+            val tree = treeOf(passwordField(text = "hunter2secret"))
+            val deps = privacyDeps(tree)
+            val fieldText = deps.wireSetText(tree, "node_pwd", "hunter2secret")
 
             val text = typeToolResult(deps, "android_type_append_text", mapOf("node_id" to "node_pwd", "text" to "9"))
 
-            assertEquals("hunter2secret9", field.content)
+            assertEquals("hunter2secret9", fieldText())
             assertCredentialRedacted(text, secret = "hunter2secret")
         }
 
     @Test
     fun `type_insert_text redacts the content of a password field`() =
         runTest {
-            val deps = privacyDeps(treeOf(passwordField(text = null)), focusedNodeId = "node_pwd")
-            deps.inputFieldWith("hunter2secret")
+            val tree = treeOf(passwordField(text = "hunter2secret"))
+            val deps = privacyDeps(tree)
+            deps.wireSetText(tree, "node_pwd", "hunter2secret")
 
             val text =
                 typeToolResult(
@@ -570,8 +601,9 @@ class PrivacyModeNodeContextIntegrationTest {
     @Test
     fun `type_replace_text redacts the content of a password field`() =
         runTest {
-            val deps = privacyDeps(treeOf(passwordField(text = null)), focusedNodeId = "node_pwd")
-            deps.inputFieldWith("hunter2secret")
+            val tree = treeOf(passwordField(text = "hunter2secret"))
+            val deps = privacyDeps(tree)
+            deps.wireSetText(tree, "node_pwd", "hunter2secret")
 
             val text =
                 typeToolResult(
@@ -586,9 +618,10 @@ class PrivacyModeNodeContextIntegrationTest {
     @Test
     fun `type_clear_text never returns the content of a password field it could not clear`() =
         runTest {
-            val deps = privacyDeps(treeOf(passwordField(text = null)), focusedNodeId = "node_pwd")
-            // The field loses the deletion: the tool fails, and its error carries no field content
-            deps.inputFieldWith("hunter2secret", loseDeletions = true)
+            val tree = treeOf(passwordField(text = "hunter2secret"))
+            val deps = privacyDeps(tree)
+            // The field loses the set: the tool fails, and its error carries no field content
+            deps.wireSetText(tree, "node_pwd", "hunter2secret", loseSets = true)
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
@@ -603,40 +636,40 @@ class PrivacyModeNodeContextIntegrationTest {
     @Test
     fun `type_clear_text redacts what a password field reads back after the clear`() =
         runTest {
-            val deps = privacyDeps(treeOf(passwordField(text = null)), focusedNodeId = "node_pwd")
+            val tree = treeOf(passwordField(text = "hunter2secret"))
+            val deps = privacyDeps(tree)
             // The field fills itself again right after the clear, with the real characters of a password
-            val field = deps.inputFieldWith("hunter2secret")
-            field.reformat = { it.ifEmpty { "hunter2refill" } }
+            val fieldText = deps.wireSetText(tree, "node_pwd", "hunter2secret", refillOnClear = "hunter2refill")
 
             val text = typeToolResult(deps, "android_type_clear_text", mapOf("node_id" to "node_pwd"))
 
-            assertEquals("hunter2refill", field.content)
+            assertEquals("hunter2refill", fieldText())
             assertCredentialRedacted(text, secret = "hunter2refill")
         }
 
     @Test
-    fun `type tools redact as a password when the focused editor is a password input`() =
+    fun `type tools redact a credential field from its node context`() =
         runTest {
-            // The node does not report isPassword (and has no credential context): only the editor's input type does.
-            val plainField = passwordField(text = null).copy(id = "node_plain", isPassword = false)
-            val deps = privacyDeps(treeOf(plainField), focusedNodeId = "node_plain")
-            deps.inputFieldWith("hunter2secret")
-            every { deps.typeInputController.isPasswordInput() } returns true
+            // Not a password field: only the node's context (credential resource id + editable) marks the
+            // value as a credential, exactly as for get_screen_state.
+            val tree = treeOf(apiTokenField())
+            val deps = privacyDeps(tree)
+            deps.wireSetText(tree, "node_token", API_TOKEN_VALUE)
 
             val text =
                 typeToolResult(
                     deps,
                     "android_type_append_text",
-                    mapOf("node_id" to "node_plain", "text" to "9"),
+                    mapOf("node_id" to "node_token", "text" to "9"),
                 )
 
-            assertCredentialRedacted(text, secret = "hunter2secret")
+            assertCredentialRedacted(text)
         }
 
     @Test
-    fun `type tools redact with the context of the focused field inside the target`() =
+    fun `type tools redact with the context of the field inside the target`() =
         runTest {
-            // The target is a wrapper that hands input focus to the password field inside it.
+            // The target is a wrapper around the password field the edit lands on.
             val wrapper =
                 AccessibilityNodeData(
                     id = "node_wrapper",
@@ -645,10 +678,11 @@ class PrivacyModeNodeContextIntegrationTest {
                     clickable = true,
                     enabled = true,
                     visible = true,
-                    children = listOf(passwordField(text = null)),
+                    children = listOf(passwordField(text = "hunter2secret")),
                 )
-            val deps = privacyDeps(treeOf(wrapper), focusedNodeId = "node_pwd")
-            val field = deps.inputFieldWith("hunter2secret")
+            val tree = treeOf(wrapper)
+            val deps = privacyDeps(tree)
+            val fieldText = deps.wireSetText(tree, "node_pwd", "hunter2secret")
 
             val text =
                 typeToolResult(
@@ -657,14 +691,15 @@ class PrivacyModeNodeContextIntegrationTest {
                     mapOf("node_id" to "node_wrapper", "text" to "9"),
                 )
 
-            assertEquals("hunter2secret9", field.content)
+            assertEquals("hunter2secret9", fieldText())
             assertCredentialRedacted(text, secret = "hunter2secret")
         }
 
     @Test
-    fun `type_append_text types nothing when another field keeps input focus`() =
+    fun `type_append_text edits nothing when the target is not a text field`() =
         runTest {
-            // Clicking the toggle leaves input focus on the password field next to it.
+            // The toggle next to the password field is not editable and holds no editable field: the tool
+            // must fail without touching the password field, whose content must not leak either.
             val toggle =
                 AccessibilityNodeData(
                     id = "node_toggle",
@@ -675,10 +710,9 @@ class PrivacyModeNodeContextIntegrationTest {
                     enabled = true,
                     visible = true,
                 )
-            val deps = privacyDeps(treeOf(passwordField(text = null), toggle), focusedNodeId = "node_pwd")
-            val field = deps.inputFieldWith("hunter2secret")
-            // The toggle accepts the focus request, but input focus stays on the password field.
-            coEvery { deps.actionExecutor.focusNode("node_toggle", any()) } returns Result.success(Unit)
+            val tree = treeOf(passwordField(text = "hunter2secret"), toggle)
+            val deps = privacyDeps(tree)
+            val fieldText = deps.wireSetText(tree, "node_pwd", "hunter2secret")
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
@@ -688,11 +722,11 @@ class PrivacyModeNodeContextIntegrationTest {
                     )
                 assertEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text
-                assertTrue(text.contains("Input focus is not on node 'node_toggle'"), text)
+                assertTrue(text.contains("not an editable text field"), text)
                 assertFalse(text.contains("hunter2secret"), text)
             }
-            assertEquals("hunter2secret", field.content)
-            verify(exactly = 0) { deps.typeInputController.commitText(any(), any()) }
+            assertEquals("hunter2secret", fieldText())
+            coVerify(exactly = 0) { deps.actionExecutor.setTextOnNode(any(), any(), any()) }
         }
 
     private companion object {

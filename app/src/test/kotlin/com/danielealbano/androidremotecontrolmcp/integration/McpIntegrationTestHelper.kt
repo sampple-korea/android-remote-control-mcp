@@ -349,10 +349,10 @@ object McpIntegrationTestHelper {
             deps.elementFinder,
             deps.actionExecutor,
             deps.accessibilityServiceProvider,
-            deps.typeInputController,
             deps.nodeCache,
             deps.privacyToolGate,
             deps.placeholderSubstitutor,
+            deps.serverLog,
             toolNamePrefix,
             perms,
         )

@@ -127,10 +127,10 @@ class McpToolRegistration
                 a.elementFinder,
                 a.actionExecutor,
                 a.accessibilityServiceProvider,
-                a.typeInputController,
                 a.nodeCache,
                 privacy.privacyToolGate,
                 privacy.placeholderSubstitutor,
+                serverLogRepository,
                 toolNamePrefix,
                 perms,
             )
