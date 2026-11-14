@@ -4205,30 +4205,30 @@ Read a text file at any absolute path, running as root — including app-private
 
 ### `android_write_file_chunk`
 
-Write one chunk of a binary file at any absolute path, running as root through the same elevation authorization as an elevated shell command. The chunk is base64-encoded and written at `offset` without touching other bytes; pass `truncate: true` on the first chunk to create/replace the file. Upload a whole file as a sequence of chunks, then verify it with `android_file_info`. Per-call cap: 131,072 raw bytes (~175K base64 characters), so a single call always stays well below transport payload limits. Returns JSON: `path`, `offset`, `bytes_written`, `file_size`.
+Write one chunk of a binary file at any absolute path. The chunk is base64-encoded and written at `offset` without touching other bytes; pass `truncate: true` on the first chunk to create/replace the file. Upload a whole file as a sequence of chunks, then verify it with `android_file_info`. Per-call cap: 1,048,576 raw bytes (~1.4M base64 characters), so a single call stays well below transport payload limits. The bytes are moved inside the server — written directly when the app can reach the path, otherwise staged in the shell scratch directory and placed by one short root `dd` command (paths and numbers only, never the data) through the same elevation authorization as an elevated shell command. Returns JSON: `path`, `offset`, `bytes_written`, `file_size`.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `path` | string | Yes | - | Absolute path of the file to write |
 | `offset` | integer | No | 0 | Byte offset to write at (0-based) |
-| `data_base64` | string | Yes | - | The chunk bytes, base64-encoded (max 131,072 raw bytes) |
+| `data_base64` | string | Yes | - | The chunk bytes, base64-encoded (max 1,048,576 raw bytes) |
 | `truncate` | boolean | No | false | Truncate the file to zero length before writing |
 | `justification` | string | Yes | - | Why the transfer is needed |
 
 ### `android_read_file_chunk`
 
-Read one chunk of a binary file at any absolute path, running as root through the same elevation authorization. Returns JSON with the chunk as `data_base64`, plus `file_size`, `bytes_returned` and `eof`. `length` defaults to 24,576 and is clamped server-side to 131,072 raw bytes per call. Download a whole file as a sequence of chunks until `eof`, then verify it with `android_file_info`.
+Read one chunk of a binary file at any absolute path. Returns JSON with the chunk as `data_base64`, plus `file_size`, `bytes_returned` and `eof`. `length` defaults to 24,576 and is clamped server-side to 1,048,576 raw bytes per call. The bytes are moved inside the server — read directly when the app can reach the path, otherwise copied to the shell scratch directory by one short root `dd` command (paths and numbers only, never the data) through the same elevation authorization. Download a whole file as a sequence of chunks until `eof`, then verify it with `android_file_info`.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `path` | string | Yes | - | Absolute path of the file to read |
 | `offset` | integer | No | 0 | Byte offset to read from (0-based) |
-| `length` | integer | No | 24576 | Bytes to read (clamped to 131,072) |
+| `length` | integer | No | 24576 | Bytes to read (clamped to 1,048,576) |
 | `justification` | string | Yes | - | Why the transfer is needed |
 
 ### `android_file_info`
 
-Report whether a file exists at any absolute path, and if so its `size` in bytes and `sha256` hash — in a single call, running as root through the same elevation authorization. Use before and after chunked transfers to verify integrity.
+Report whether a file exists at any absolute path, and if so its `size` in bytes and `sha256` hash — in a single call. The hash is computed inside the server when the app can reach the path, and as root through the same elevation authorization otherwise. Use before and after chunked transfers to verify integrity.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
