@@ -33,7 +33,7 @@ class OptionalToolPermissionTest {
     fun `toolsMissingPermission returns all gated tools when none granted`() {
         val missing = OptionalToolPermissions.toolsMissingPermission(emptySet())
         assertEquals(cameraTools + setOf("get_location") + notificationTools, missing)
-        assertEquals(13, missing.size)
+        assertEquals(12, missing.size)
     }
 
     @Test
@@ -42,7 +42,7 @@ class OptionalToolPermissionTest {
     }
 
     @Test
-    fun `missing camera hides only the 6 camera tools`() {
+    fun `missing camera hides only the 5 camera tools`() {
         val missing = OptionalToolPermissions.toolsMissingPermission(all - OptionalToolPermission.CAMERA)
         assertEquals(cameraTools, missing)
     }

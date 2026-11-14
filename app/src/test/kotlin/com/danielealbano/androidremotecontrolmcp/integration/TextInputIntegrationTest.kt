@@ -278,6 +278,7 @@ class TextInputIntegrationTest {
     fun `press_back works after the press_key dedup`() =
         runTest {
             val deps = McpIntegrationTestHelper.createMockDependencies()
+            every { deps.accessibilityServiceProvider.isReady() } returns true
             coEvery { deps.actionExecutor.pressBack() } returns Result.success(Unit)
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->

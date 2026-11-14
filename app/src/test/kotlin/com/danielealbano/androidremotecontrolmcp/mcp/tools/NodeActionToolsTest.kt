@@ -1359,13 +1359,13 @@ class NodeActionToolsTest {
             }
 
         @Test
-        fun `by selector a target not in the tree is node not found with the scroll_node hint`() =
+        fun `by selector a target not in the tree is node not found with the scroll hint`() =
             runTest {
                 treesInOrder(before)
 
                 val e = assertThrows<McpToolException.NodeNotFound> { tool.execute(bySelector("Row 99")) }
 
-                assertTrue(e.message!!.contains("scroll_node"), e.message)
+                assertTrue(e.message!!.contains("scroll (mode=node)"), e.message)
             }
 
         @Test

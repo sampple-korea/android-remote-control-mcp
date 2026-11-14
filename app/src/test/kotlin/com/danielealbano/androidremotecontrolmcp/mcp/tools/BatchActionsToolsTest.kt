@@ -168,14 +168,14 @@ class BatchActionsToolsTest {
     @Test
     fun `a whitelisted but unregistered tool fails its step`() =
         runTest {
-            // scroll_node is in the allowlist but no fake registered it (as when the tool is
+            // scroll is in the allowlist but no fake registered it (as when the tool is
             // disabled in the tool permissions).
-            val result = handler.execute(batchArgs("scroll_node" to null, "tap" to null))
+            val result = handler.execute(batchArgs("scroll" to null, "tap" to null))
 
             assertEquals(emptyList<String>(), calls)
             assertEquals(true, result.isError)
             val text = resultText(result)
-            assertTrue(text.contains("--- step 1/2: scroll_node — FAILED"), text)
+            assertTrue(text.contains("--- step 1/2: scroll — FAILED"), text)
             assertTrue(text.contains("not available"), text)
         }
 
