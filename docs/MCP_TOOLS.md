@@ -36,7 +36,7 @@ This document provides a comprehensive reference for all MCP tools available in 
 
 ## Overview
 
-The MCP server exposes 66 tools via the JSON-RPC 2.0 protocol, organized into 16 categories:
+The MCP server exposes 71 tools via the JSON-RPC 2.0 protocol, organized into 16 categories:
 
 | Category | Tools | Plan |
 |----------|-------|------|
@@ -54,7 +54,7 @@ The MCP server exposes 66 tools via the JSON-RPC 2.0 protocol, organized into 16
 | Notification | `android_notification_list`, `android_notification_open`, `android_notification_dismiss`, `android_notification_snooze`, `android_notification_action`, `android_notification_reply` | 32 |
 | Location | `android_get_location` | 43 |
 | Sharing | `android_get_shared_content`, `android_share_file_via_web` | 48 |
-| Shell | `android_shell_exec`, `android_shell_start`, `android_shell_output`, `android_shell_kill`, `android_shell_list` | 68 |
+| Shell | `android_shell_exec`, `android_shell_start`, `android_shell_output`, `android_shell_kill`, `android_shell_list`, `android_install_apk`, `android_uninstall_app`, `android_reboot_device`, `android_read_logcat`, `android_read_root_file` | 68 |
 | Batch | `android_batch_actions` | - |
 
 ## Tool Naming Convention
@@ -1566,15 +1566,17 @@ curl -X POST http://localhost:8080/mcp \
 
 ## 6. Text Input Tools
 
-Natural text input tools that use the Android AccessibilityService's `FLAG_INPUT_METHOD_EDITOR` + `AccessibilityInputConnection.commitText()` API (API 33+) for character-by-character typing that is indistinguishable from real IME input. All type tools take their target as `node_id` or as a selector (`by` + `value`, optional `exact_match`; see [Targeting a node](#targeting-a-node)), click the node to focus it, and return the field content after the operation for verification.
+Text input tools that set a field's text directly. All type tools take their target as `node_id` or as a selector (`by` + `value`, optional `exact_match`; see [Targeting a node](#targeting-a-node)) and return the field content after the operation for verification.
 
-A type tool types into, and reads back, the field that has input focus. After the click it waits (up to 500 ms) until input focus is on the target node or on an editable field inside it (a wrapper that hands focus to an inner field); when it is not there, it gives that field input focus and waits again, and when another field still has the focus, it fails without typing anything. It then waits until the field's input connection answers. The tools read the whole field, in 10,000-character pieces when it is longer, so positions are right on fields of any length, including Compose text fields, which do not report where their text starts. The returned field content is that focused field's content, read through the input connection, so a password field returns its real characters: with Privacy Mode on it is redacted with the focused field's own context, and as a password whenever its editor's input type is a password. When the content cannot be read it is `(unable to read field content)`.
+A type tool reads the target field's current text from a fresh accessibility read — the target node itself when it is editable, else the first editable field inside it (a wrapper around the real field) — computes the new content, and sets it in one `AccessibilityNodeInfo` `ACTION_SET_TEXT` operation. The field is never clicked and no key event is sent, so the soft keyboard is never shown and the target app's input method (autocomplete, glide typing) cannot alter the value. (Before v1.13.3 the tools typed character by character through the IME input connection, which let keyboard features mangle values — e.g. replacing "1202" with "120" produced "120022222022000502022".) The returned field content is read back from a fresh accessibility read, so a password field returns its real characters: with Privacy Mode on it is redacted with the field's own context, and as a password when the node is a password field. When the content cannot be read it is `(unable to read field content)`.
 
-All typing operations are serialized via a Mutex — concurrent MCP requests are queued, not interleaved.
+The `typing_speed` and `typing_speed_variance` parameters are still accepted and validated, but ignored: the text is set in one operation, not typed.
+
+All text operations are serialized via a Mutex — concurrent MCP requests are queued, not interleaved.
 
 ### `android_type_append_text`
 
-Type text character by character at the end of a text field. Uses natural InputConnection typing (indistinguishable from keyboard input). For text longer than 2000 characters, call this tool multiple times — subsequent calls continue typing at the current cursor position.
+Append text to the end of a text field: the field's new content is computed and set in one operation. For text longer than 2000 characters, call this tool multiple times — each call appends to the field's current end.
 
 **Input Schema**:
 | Parameter | Type | Required | Default | Description |
@@ -1584,10 +1586,10 @@ Type text character by character at the end of a text field. Uses natural InputC
 | `value` | string | With `by` | - | Selector value |
 | `exact_match` | boolean | No | false | Selector: if true, match exactly. If false, match contains (case-insensitive) |
 | `text` | string | Yes | - | Text to type (must be non-empty, max 2000 characters) |
-| `typing_speed` | integer | No | 250 | Base delay between characters in ms (min: 10, max: 5000) |
-| `typing_speed_variance` | integer | No | 50 | Random variance in ms, clamped to [0, typing_speed] |
+| `typing_speed` | integer | No | 250 | Deprecated, ignored (still validated: min: 10, max: 5000) |
+| `typing_speed_variance` | integer | No | 50 | Deprecated, ignored (still validated: >= 0) |
 
-**Output**: `"Typed N characters at end of node '<node_id>'.\nField content: <content>"`
+**Output**: `"Appended N characters at end of node '<node_id>'.\nField content: <content>"`
 
 **Request Example**:
 ```json
@@ -1614,7 +1616,7 @@ Type text character by character at the end of a text field. Uses natural InputC
     "content": [
       {
         "type": "text",
-        "text": "Typed 11 characters at end of node 'node_abc123'.\nField content: Hello World"
+        "text": "Appended 11 characters at end of node 'node_abc123'.\nField content: Hello World"
       }
     ]
   }
@@ -1626,13 +1628,13 @@ Type text character by character at the end of a text field. Uses natural InputC
 - **Permission denied**: Accessibility service not enabled
 - **Node not found**: Node not found in accessibility tree, or no on-screen node matches the selector
 - **Ambiguous selector**: More than one on-screen node matches (untrusted candidate list, see [Targeting a node](#targeting-a-node))
-- **Action failed**: Click failed, input connection not ready (node may not be editable), input focus not on the target node or a field inside it, unable to read text from the node, cursor positioning failed, typing failed (input connection lost)
+- **Action failed**: The target node is not an editable text field and contains no editable field, or the set-text action failed on the node
 
 ---
 
 ### `android_type_insert_text`
 
-Type text character by character at a specific position in a text field. Uses natural InputConnection typing (indistinguishable from keyboard input).
+Insert text at a specific position in a text field: the field's new content is computed and set in one operation.
 
 **Input Schema**:
 | Parameter | Type | Required | Default | Description |
@@ -1643,10 +1645,10 @@ Type text character by character at a specific position in a text field. Uses na
 | `exact_match` | boolean | No | false | Selector: if true, match exactly. If false, match contains (case-insensitive) |
 | `text` | string | Yes | - | Text to type (must be non-empty, max 2000 characters) |
 | `offset` | integer | Yes | - | 0-based character offset for cursor position. Must be within [0, current text length] |
-| `typing_speed` | integer | No | 250 | Base delay between characters in ms (min: 10, max: 5000) |
-| `typing_speed_variance` | integer | No | 50 | Random variance in ms, clamped to [0, typing_speed] |
+| `typing_speed` | integer | No | 250 | Deprecated, ignored (still validated: min: 10, max: 5000) |
+| `typing_speed_variance` | integer | No | 50 | Deprecated, ignored (still validated: >= 0) |
 
-**Output**: `"Typed N characters at offset M in node '<node_id>'.\nField content: <content>"`
+**Output**: `"Inserted N characters at offset M in node '<node_id>'.\nField content: <content>"`
 
 **Request Example**:
 ```json
@@ -1674,7 +1676,7 @@ Type text character by character at a specific position in a text field. Uses na
     "content": [
       {
         "type": "text",
-        "text": "Typed 9 characters at offset 5 in node 'node_abc123'.\nField content: Helloinserted  World"
+        "text": "Inserted 9 characters at offset 5 in node 'node_abc123'.\nField content: Helloinserted  World"
       }
     ]
   }
@@ -1686,13 +1688,13 @@ Type text character by character at a specific position in a text field. Uses na
 - **Permission denied**: Accessibility service not enabled
 - **Node not found**: Node not found in accessibility tree, or no on-screen node matches the selector
 - **Ambiguous selector**: More than one on-screen node matches
-- **Action failed**: Click failed, input connection not ready, input focus not on the target node or a field inside it, unable to read text from the node, cursor positioning failed, typing failed (input connection lost)
+- **Action failed**: The target node is not an editable text field and contains no editable field, or the set-text action failed on the node
 
 ---
 
 ### `android_type_replace_text`
 
-Find and replace text in a field by typing the replacement naturally. Finds the first occurrence of search text, selects and deletes it (committing empty text over the selection, then checking that the field changed), then types new_text character by character via InputConnection. If `new_text` is empty, only deletes the found text (delete-only mode).
+Find and replace text in a field. Finds the first occurrence of search text and sets the field to the computed result in one operation. If `new_text` is empty, only deletes the found text (delete-only mode).
 
 **Input Schema**:
 | Parameter | Type | Required | Default | Description |
@@ -1703,8 +1705,8 @@ Find and replace text in a field by typing the replacement naturally. Finds the 
 | `exact_match` | boolean | No | false | Selector: if true, match exactly. If false, match contains (case-insensitive) |
 | `search` | string | Yes | - | Text to find in the field (first occurrence, max 10000 characters) |
 | `new_text` | string | Yes | - | Replacement text to type (max 2000 characters). Can be empty to just delete the found text |
-| `typing_speed` | integer | No | 250 | Base delay between characters in ms (min: 10, max: 5000) |
-| `typing_speed_variance` | integer | No | 50 | Random variance in ms, clamped to [0, typing_speed] |
+| `typing_speed` | integer | No | 250 | Deprecated, ignored (still validated: min: 10, max: 5000) |
+| `typing_speed_variance` | integer | No | 50 | Deprecated, ignored (still validated: >= 0) |
 
 **Output**: `"Replaced N characters with M characters in node '<node_id>'.\nField content: <content>"`
 
@@ -1746,13 +1748,13 @@ Find and replace text in a field by typing the replacement naturally. Finds the 
 - **Permission denied**: Accessibility service not enabled
 - **Node not found**: Node not found in accessibility tree, no on-screen node matches the selector, or search text not found in the field
 - **Ambiguous selector**: More than one on-screen node matches
-- **Action failed**: Click failed, input connection not ready, input focus not on the target node or a field inside it, unable to read text from the node, text selection failed, deletion failed (input connection lost, or the field reads back unchanged), cursor positioning failed, typing failed (input connection lost)
+- **Action failed**: The target node is not an editable text field and contains no editable field, or the set-text action failed on the node
 
 ---
 
 ### `android_type_clear_text`
 
-Clear all text from a field with select-all and delete through the InputConnection, like an input method, then check that the text is gone (a field that reformats its text can read back non-empty; the field content shows it). If the field is already empty, returns success without performing any action.
+Clear all text from a field by setting its content to empty in one operation, then read the field back and fail when it reads back unchanged (a field that fills itself again right after the clear counts as cleared; the field content shows its new text). If the field is already empty, returns success without performing any action.
 
 **Input Schema**:
 | Parameter | Type | Required | Default | Description |
@@ -4143,6 +4145,63 @@ Lists the running and the kept finished processes, oldest first.
 ```
 
 **Error Cases**: None specific.
+
+### Root tools
+
+Five tools package common root operations as single calls. Each one builds one fixed command and runs it through the **same elevation authorization as an elevated shell command** — blocklist first, elevation must be enabled, then auto-allow, allowlist, or the user's approval, with the required `justification` shown and logged; there is no separate or weaker path. **File**: `app/src/main/kotlin/.../mcp/tools/RootTools.kt`.
+
+### `android_install_apk`
+
+Install an APK file that is already on the device with `pm install -r` (an existing app is updated in place), running as root.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `apk_path` | string | Yes | Absolute path of the .apk file on the device |
+| `justification` | string | Yes | Why the install is needed (see above) |
+
+**Output**: A success line with the pm output. A failed install is a tool error carrying the pm output (e.g. `Failure [INSTALL_FAILED_OLDER_SDK]`).
+
+### `android_uninstall_app`
+
+Uninstall an app by package id with `pm uninstall`, running as root.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `package_id` | string | Yes | Package id of the app to uninstall |
+| `justification` | string | Yes | Why the uninstall is needed |
+
+**Output**: A success line with the pm output. A failed uninstall is a tool error carrying the pm output.
+
+### `android_reboot_device`
+
+Reboot the device with `reboot`, running as root. The request and its justification are written to the server log (type Shell) before the command runs, so the reason survives the reboot. The MCP connection drops as the device restarts.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `justification` | string | Yes | Why the reboot is needed |
+
+### `android_read_logcat`
+
+Read the device's logcat buffers (dumped with `logcat -d`, not followed), running as root so other processes' logs are visible too — for diagnosing failures on the device itself.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `lines` | integer | No | 200 | How many of the most recent lines to read (max 5000) |
+| `filter` | string | No | - | Fixed string (tag or keyword); only lines containing it are returned |
+| `justification` | string | Yes | - | Why the logs are needed |
+
+**Output**: The matching lines as plain text, still bounded by the Shell settings per-call byte limit.
+
+### `android_read_root_file`
+
+Read a text file at any absolute path, running as root — including app-private data and system files that `android_read_file` cannot reach (it is limited to authorized storage locations). Presentation follows `android_read_file`: line-numbered output, `offset`/`limit` pagination capped at 200 lines per call, content decoded as UTF-8 text.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `path` | string | Yes | - | Absolute path of the file to read |
+| `offset` | integer | No | 1 | 1-based line number to start reading from |
+| `limit` | integer | No | 200 | Maximum number of lines to return (max 200) |
+| `justification` | string | Yes | - | Why the file is needed |
 
 ### Security Considerations
 

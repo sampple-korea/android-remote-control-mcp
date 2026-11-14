@@ -37,6 +37,7 @@ import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerIntentTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerLocationTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNodeActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNotificationTools
+import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerRootTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerScreenIntrospectionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSharingTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerShellTools
@@ -400,6 +401,7 @@ object McpIntegrationTestHelper {
             perms,
         )
         registerShellTools(registrar, deps.shellToolContext, toolNamePrefix, perms)
+        registerRootTools(registrar, deps.shellToolContext, deps.serverLog, toolNamePrefix, perms)
     }
 
     /**

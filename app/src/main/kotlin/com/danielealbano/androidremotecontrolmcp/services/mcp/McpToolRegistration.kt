@@ -15,6 +15,7 @@ import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerIntentTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerLocationTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNodeActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNotificationTools
+import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerRootTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerScreenIntrospectionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSharingTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerShellTools
@@ -76,14 +77,23 @@ class McpToolRegistration
             )
             registerLocationTools(registrar, d.locationProvider, privacy.privacyToolGate, toolNamePrefix, perms)
             registerSharingBundle(registrar, toolNamePrefix, perms, fileSizeLimitMb, currentBaseUrl)
-            registerShellTools(
-                registrar,
+            val shellContext =
                 ShellToolContext(
                     shell.processManager,
                     shell.authorizer,
                     shell.settingsRepository,
                     shell.scratchDirectory.path()?.absolutePath,
-                ),
+                )
+            registerShellTools(
+                registrar,
+                shellContext,
+                toolNamePrefix,
+                perms,
+            )
+            registerRootTools(
+                registrar,
+                shellContext,
+                serverLogRepository,
                 toolNamePrefix,
                 perms,
             )
