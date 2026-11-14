@@ -251,6 +251,10 @@ jobs:
             - **`android_batch_actions`** — new tool that runs a sequence of UI actions in a single MCP call (allowlist of 29 action tools; stops at the first failure unless `continue_on_error` is set).
             - **`interactive_only` snapshot filter** — opt-in `android_get_screen_state` filter that keeps only interactive elements (clickable, long-clickable, editable, scrollable, or carrying accessibility actions); composes with diff mode.
 
+            ### v1.13.8
+
+            - **Cropped, enlarged region screenshots** — `android_get_screen_state` accepts `crop_left`, `crop_top`, `crop_right` and `crop_bottom` (real device pixels, all four together): the screenshot then shows only that region, enlarged so its longer side reaches the usual 700 px, instead of the whole screen. The annotation grid is drawn at the region's edges and at every 200 px multiple inside it with real device coordinates, element boxes are intersected with the region, and the response text names the shown region — so in densely packed areas the boxes and labels stay distinguishable instead of overlapping at full-screen scale. Cropping happens after Privacy Mode masking, `annotate=false` returns the plain enlarged region, and without the crop parameters the screenshot is unchanged from v1.13.7.
+
             ### v1.13.7
 
             - **Fix: annotated screenshots failed on real captures** — v1.13.6's annotator sampled background luminance with `Bitmap.getPixel()` directly on the source screenshot, which Android forbids on HARDWARE bitmaps (`IllegalStateException: unable to getPixel(), pixel access is not supported on Config#HARDWARE bitmaps`), so `android_get_screen_state` with a screenshot and annotation enabled returned "Screenshot annotation failed" on device (unit tests used software bitmaps and passed). When the source is a HARDWARE bitmap, sampling now goes through a readable software copy of it; the drawing path, `annotate=false` and all other behavior are unchanged.
