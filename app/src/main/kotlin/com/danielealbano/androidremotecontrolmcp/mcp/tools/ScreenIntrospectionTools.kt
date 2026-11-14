@@ -498,10 +498,16 @@ class GetScreenStateHandler
         /**
          * Collects elements from all windows that should be annotated on the screenshot:
          * nodes that pass the formatter's keep filter AND are visible (on-screen).
+         * Elements of the system bars (status bar, navigation bar, taskbar — SYSTEM
+         * windows) and of the soft keyboard (INPUT_METHOD windows) are never annotated:
+         * they are not interaction targets and their labels only clutter the bars.
          */
         private fun collectOnScreenElements(windows: List<WindowData>): List<AccessibilityNodeData> {
             val result = mutableListOf<AccessibilityNodeData>()
             for (windowData in windows) {
+                if (windowData.windowType == "SYSTEM" || windowData.windowType == "INPUT_METHOD") {
+                    continue
+                }
                 collectOnScreenElementsFromTree(windowData.tree, result)
             }
             return result

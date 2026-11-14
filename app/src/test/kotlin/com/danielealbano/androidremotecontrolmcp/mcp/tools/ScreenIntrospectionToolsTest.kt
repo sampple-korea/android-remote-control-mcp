@@ -529,6 +529,40 @@ class ScreenIntrospectionToolsTest {
             }
 
         @Test
+        @DisplayName("elements of a SYSTEM window (status/navigation bars) are not annotated")
+        fun systemWindowElementsAreNotAnnotated() =
+            runTest {
+                setupReadyService()
+                stubScreenshot()
+                every { mockWindowInfo.type } returns AccessibilityWindowInfo.TYPE_SYSTEM
+                val annotated = slot<List<AccessibilityNodeData>>()
+                every {
+                    mockScreenshotAnnotator.annotate(any(), capture(annotated), any(), any())
+                } returns mockk(relaxed = true)
+
+                handler.execute(buildJsonObject { put("include_screenshot", true) })
+
+                assertEquals(emptyList(), annotated.captured)
+            }
+
+        @Test
+        @DisplayName("elements of an INPUT_METHOD window (soft keyboard) are not annotated")
+        fun inputMethodWindowElementsAreNotAnnotated() =
+            runTest {
+                setupReadyService()
+                stubScreenshot()
+                every { mockWindowInfo.type } returns AccessibilityWindowInfo.TYPE_INPUT_METHOD
+                val annotated = slot<List<AccessibilityNodeData>>()
+                every {
+                    mockScreenshotAnnotator.annotate(any(), capture(annotated), any(), any())
+                } returns mockk(relaxed = true)
+
+                handler.execute(buildJsonObject { put("include_screenshot", true) })
+
+                assertEquals(emptyList(), annotated.captured)
+            }
+
+        @Test
         @DisplayName("annotate defaults to true and encodes the annotated screenshot")
         fun annotateDefaultsToTrue() =
             runTest {
