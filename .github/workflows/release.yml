@@ -251,6 +251,10 @@ jobs:
             - **`android_batch_actions`** — new tool that runs a sequence of UI actions in a single MCP call (allowlist of 29 action tools; stops at the first failure unless `continue_on_error` is set).
             - **`interactive_only` snapshot filter** — opt-in `android_get_screen_state` filter that keeps only interactive elements (clickable, long-clickable, editable, scrollable, or carrying accessibility actions); composes with diff mode.
 
+            ### v1.14.2
+
+            - **Root screen capture** — when a working `su` (root) is present, screenshots are captured with `screencap -p` under root: SurfaceFlinger renders the default display directly (the compositor source scrcpy taps), so captures are no longer subject to the AccessibilityService API's 334 ms minimum interval, its callback timeouts, or the accessibility service being connected. The lossless PNG is piped over the process stdout and never touches a file. The `su` probe result is cached (60 s positive / 5 s negative), captures time out after 5 s, and any root-path failure falls back to the previous accessibility capture with its existing behaviour — non-rooted devices are unchanged.
+
             ### v1.14.1
 
             - **Screenshot annotation ignores the system bars** — elements belonging to SYSTEM windows (status bar, navigation bar, taskbar) and INPUT_METHOD windows (soft keyboard) are no longer boxed or labelled on annotated screenshots. They are never interaction targets, and their labels only cluttered the top and bottom edges of the image.
