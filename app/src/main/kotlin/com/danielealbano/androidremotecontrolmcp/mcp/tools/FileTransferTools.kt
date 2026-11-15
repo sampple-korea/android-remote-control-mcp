@@ -51,8 +51,26 @@ internal object FileTransferLimits {
 /** Block sizes tried for the staging `dd`, largest first; the transfer block must divide the offset. */
 private val TRANSFER_BLOCK_LADDER =
     longArrayOf(
-        1_048_576, 524_288, 262_144, 131_072, 65_536, 32_768, 16_384, 8_192, 4_096, 2_048,
-        1_024, 512, 256, 128, 64, 32, 16, 8, 4, 2,
+        1_048_576,
+        524_288,
+        262_144,
+        131_072,
+        65_536,
+        32_768,
+        16_384,
+        8_192,
+        4_096,
+        2_048,
+        1_024,
+        512,
+        256,
+        128,
+        64,
+        32,
+        16,
+        8,
+        4,
+        2,
     )
 
 /**
@@ -324,7 +342,11 @@ internal class DeviceFileChunkStore(
                 }
             val page = runner.run(command, justification)
             val output = page.chunkOutputOrFailure("Writing a chunk to '$path'")
-            return output.trim().lines().lastOrNull()?.toLongOrNull()
+            return output
+                .trim()
+                .lines()
+                .lastOrNull()
+                ?.toLongOrNull()
                 ?: throw McpToolException.ActionFailed(
                     "Could not write '$path': unexpected output: ${output.take(200)}",
                 )
@@ -358,7 +380,11 @@ internal class DeviceFileChunkStore(
             }
             val output = page.chunkOutputOrFailure("Reading a chunk of '$path'")
             val fileSize =
-                output.split('\n').firstOrNull()?.trim()?.toLongOrNull()
+                output
+                    .split('\n')
+                    .firstOrNull()
+                    ?.trim()
+                    ?.toLongOrNull()
                     ?: throw McpToolException.ActionFailed(
                         "Could not read '$path': unexpected output: ${output.take(200)}",
                     )
@@ -385,14 +411,22 @@ internal class DeviceFileChunkStore(
         val output = page.chunkOutputOrFailure("Inspecting '$path'")
         val lines = output.split('\n').map { it.trim() }.filter { it.isNotEmpty() }
         return when (lines.firstOrNull()) {
-            "MISSING" -> null
+            "MISSING" -> {
+                null
+            }
+
             "EXISTS" -> {
                 val size =
                     lines.getOrNull(1)?.toLongOrNull()
                         ?: throw McpToolException.ActionFailed(
                             "Could not inspect '$path': unexpected output: ${output.take(200)}",
                         )
-                val sha256 = lines.getOrNull(2)?.split(Regex("\\s+"))?.firstOrNull().orEmpty()
+                val sha256 =
+                    lines
+                        .getOrNull(2)
+                        ?.split(Regex("\\s+"))
+                        ?.firstOrNull()
+                        .orEmpty()
                 if (!SHA256_HEX_PATTERN.matches(sha256)) {
                     throw McpToolException.ActionFailed(
                         "Could not inspect '$path': unexpected sha256sum output: ${output.take(200)}",
@@ -400,10 +434,12 @@ internal class DeviceFileChunkStore(
                 }
                 FileInfoData(size, sha256)
             }
-            else ->
+
+            else -> {
                 throw McpToolException.ActionFailed(
                     "Could not inspect '$path': unexpected output: ${output.take(200)}",
                 )
+            }
         }
     }
 

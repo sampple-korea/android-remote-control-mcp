@@ -599,8 +599,7 @@ class WaitForIdleTool
             return McpToolUtils.untrustedTextResult(Json.encodeToString(resultJson))
         }
 
-        private fun generateCurrentFingerprint(): IntArray =
-            generateCurrentTreeFingerprint(accessibilityServiceProvider, treeFingerprint)
+        private fun generateCurrentFingerprint(): IntArray = generateCurrentTreeFingerprint(accessibilityServiceProvider, treeFingerprint)
 
         fun register(
             registrar: LoggedToolRegistrar,

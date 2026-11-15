@@ -422,7 +422,7 @@ internal class ReadRootFileHandler(
 
         val quoted = ShellScriptBuilder.quoteForShell(path)
         val end = offset + limit - 1
-        val command = "[ -f $quoted ] || exit 3; wc -l < $quoted; sed -n '${offset},${end}p' $quoted"
+        val command = "[ -f $quoted ] || exit 3; wc -l < $quoted; sed -n '$offset,${end}p' $quoted"
         val page = runner.run(command, justification)
         if (page.snapshot.state == ShellProcessState.EXITED && page.snapshot.exitCode == 3) {
             throw McpToolException.ActionFailed("'$path' is not a regular file (or is not readable as root)")
@@ -571,9 +571,7 @@ internal class TypeVirtualKeyboardHandler(
         return target
     }
 
-    private fun sha256(bytes: ByteArray): String {
-        return MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-    }
+    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
     fun register(
         registrar: LoggedToolRegistrar,

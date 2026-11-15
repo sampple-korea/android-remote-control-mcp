@@ -929,9 +929,15 @@ class UnifiedScrollTool
         suspend fun execute(arguments: JsonObject?): CallToolResult {
             val mode = McpToolUtils.optionalString(arguments, PARAM_MODE, MODE_SCREEN).lowercase()
             return when (mode) {
-                MODE_SCREEN -> executeScreenScroll(arguments)
-                MODE_NODE -> executeNodeScroll(arguments)
-                MODE_UNTIL ->
+                MODE_SCREEN -> {
+                    executeScreenScroll(arguments)
+                }
+
+                MODE_NODE -> {
+                    executeNodeScroll(arguments)
+                }
+
+                MODE_UNTIL -> {
                     ScrollToNodeTool(
                         treeParser,
                         elementFinder,
@@ -940,11 +946,13 @@ class UnifiedScrollTool
                         nodeCache,
                         targetResolver,
                     ).execute(arguments)
+                }
 
-                else ->
+                else -> {
                     throw McpToolException.InvalidParams(
                         "Parameter '$PARAM_MODE' must be one of: $MODE_SCREEN, $MODE_NODE, $MODE_UNTIL. Got: '$mode'",
                     )
+                }
             }
         }
 
@@ -957,13 +965,23 @@ class UnifiedScrollTool
 
             val amount =
                 when (amountStr.lowercase()) {
-                    "small" -> ScrollAmount.SMALL
-                    "medium" -> ScrollAmount.MEDIUM
-                    "large" -> ScrollAmount.LARGE
-                    else ->
+                    "small" -> {
+                        ScrollAmount.SMALL
+                    }
+
+                    "medium" -> {
+                        ScrollAmount.MEDIUM
+                    }
+
+                    "large" -> {
+                        ScrollAmount.LARGE
+                    }
+
+                    else -> {
                         throw McpToolException.InvalidParams(
                             "Parameter 'amount' must be one of: small, medium, large. Got: '$amountStr'",
                         )
+                    }
                 }
 
             McpToolUtils.validateNonNegative(variance, "variance")
@@ -1398,7 +1416,6 @@ fun registerNodeActionTools(
             targetResolver,
         ).register(registrar, toolNamePrefix)
     }
-
 }
 
 /**

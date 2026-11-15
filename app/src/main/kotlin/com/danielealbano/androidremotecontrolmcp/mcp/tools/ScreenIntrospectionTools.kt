@@ -21,13 +21,13 @@ import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenSt
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateRows
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateSnapshot
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenStateSnapshotCache
-import com.danielealbano.androidremotecontrolmcp.services.accessibility.collectScreenStateRows
-import com.danielealbano.androidremotecontrolmcp.services.accessibility.computeScreenStateDiff
-import com.danielealbano.androidremotecontrolmcp.services.accessibility.formatScreenStateDiff
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.WebViewNodeMerger
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.WindowData
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.collectScreenStateRows
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.computeScreenStateDiff
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.countKeptNodes
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.formatMultiWindowPage
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.formatScreenStateDiff
 import com.danielealbano.androidremotecontrolmcp.services.screencapture.NodeImageCropper
 import com.danielealbano.androidremotecontrolmcp.services.screencapture.ScreenCaptureProvider
 import com.danielealbano.androidremotecontrolmcp.services.screencapture.ScreenshotAnnotator
@@ -46,11 +46,11 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import javax.inject.Inject
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.roundToInt
-import javax.inject.Inject
 
 // ─────────────────────────────────────────────────────────────────────────────
 // get_screen_state

@@ -395,13 +395,15 @@ class EditTextTool
                     val current = fieldNode.text ?: ""
                     val (newText, message) =
                         when (mode) {
-                            MODE_APPEND ->
+                            MODE_APPEND -> {
                                 TextEditCalculator.appended(current, text) to
                                     "Appended ${text.length} characters at end of node '$nodeId'."
+                            }
 
-                            MODE_SET ->
+                            MODE_SET -> {
                                 text to
                                     "Set text of node '$nodeId' (${text.length} characters)."
+                            }
 
                             MODE_INSERT -> {
                                 if (offset > current.length) {
@@ -421,10 +423,12 @@ class EditTextTool
                                         )
                                 replaced to
                                     "Replaced ${search.length} characters with ${replacement.length} " +
-                                        "characters in node '$nodeId'."
+                                    "characters in node '$nodeId'."
                             }
 
-                            else -> throw IllegalStateException("Unexpected edit mode: $mode")
+                            else -> {
+                                throw IllegalStateException("Unexpected edit mode: $mode")
+                            }
                         }
                     applySetText(actionExecutor, fieldNode.id, newText, windows)
                     Triple(

@@ -57,14 +57,15 @@ class BatchActionsHandler(
         var stoppedAtStep = -1
         for ((index, step) in steps.withIndex()) {
             val outcome = executeStep(step)
-            sections += buildString {
-                append("--- step ${index + 1}/${steps.size}: ${step.toolName} — ")
-                append(if (outcome.ok) "OK" else "FAILED")
-                if (outcome.text.isNotEmpty()) {
-                    append('\n')
-                    append(outcome.text)
+            sections +=
+                buildString {
+                    append("--- step ${index + 1}/${steps.size}: ${step.toolName} — ")
+                    append(if (outcome.ok) "OK" else "FAILED")
+                    if (outcome.text.isNotEmpty()) {
+                        append('\n')
+                        append(outcome.text)
+                    }
                 }
-            }
             if (outcome.ok) {
                 succeeded++
             } else {
@@ -79,10 +80,11 @@ class BatchActionsHandler(
             sections += captureScreenStateSection()
         }
 
-        val summary = buildString {
-            append("batch: $succeeded/${steps.size} steps succeeded")
-            if (stoppedAtStep > 0) append(" (stopped at step $stoppedAtStep)")
-        }
+        val summary =
+            buildString {
+                append("batch: $succeeded/${steps.size} steps succeeded")
+                if (stoppedAtStep > 0) append(" (stopped at step $stoppedAtStep)")
+            }
         Log.d(TAG, "batch_actions: steps=${steps.size} succeeded=$succeeded failures=$failures")
         val body = (listOf(summary) + sections).joinToString("\n")
         return CallToolResult(
