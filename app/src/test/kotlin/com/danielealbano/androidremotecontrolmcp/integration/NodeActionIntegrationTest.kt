@@ -363,7 +363,10 @@ class NodeActionIntegrationTest {
                     client.callTool(
                         name = "android_scroll",
                         arguments =
-                            mapOf("mode" to "until", "by" to "text", "value" to "OK", "exact_match" to true, "direction" to "down"),
+                            mapOf(
+                                "mode" to "until", "by" to "text", "value" to "OK",
+                                "exact_match" to true, "direction" to "down",
+                            ),
                     )
                 assertNotEquals(true, result.isError)
                 assertEquals("Node 'node_btn' is already visible", (result.content[0] as TextContent).text)

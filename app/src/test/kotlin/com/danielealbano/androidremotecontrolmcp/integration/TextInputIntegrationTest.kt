@@ -266,7 +266,10 @@ class TextInputIntegrationTest {
                     client.callTool(
                         name = "android_edit_text",
                         arguments =
-                            mapOf("mode" to "clear", "by" to "class_name", "value" to "android.widget.EditText", "exact_match" to true),
+                            mapOf(
+                                "mode" to "clear", "by" to "class_name",
+                                "value" to "android.widget.EditText", "exact_match" to true,
+                            ),
                     )
                 assertNotEquals(true, result.isError)
                 assertTrue((result.content[0] as TextContent).text.contains("Text cleared from node 'node_edit'"))

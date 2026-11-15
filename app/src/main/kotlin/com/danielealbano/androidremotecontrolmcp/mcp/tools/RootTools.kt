@@ -26,6 +26,9 @@ import java.security.MessageDigest
 
 private const val MILLIS_PER_SECOND = 1000L
 
+/** Exit code the read commands use to signal "not a regular file" (`[ -f ... ] || exit 3`). */
+private const val EXIT_CODE_NOT_A_FILE = 3
+
 /** Working directory for root tool commands: always exists, needs no storage permission. */
 private const val ROOT_WORKDIR = "/"
 
@@ -346,7 +349,10 @@ internal class ReadLogcatHandler(
                 append('\n')
                 append(output.ifBlank { "(no log lines)" })
                 if (page.chunk.nextOffset < page.chunk.totalBytes) {
-                    append("\n--- Output truncated at the per-call byte limit; narrow the filter or read fewer lines. ---")
+                    append(
+                        "\n--- Output truncated at the per-call byte limit; " +
+                            "narrow the filter or read fewer lines. ---",
+                    )
                 }
             }
         return McpToolUtils.untrustedTextResult(body)
@@ -424,7 +430,7 @@ internal class ReadRootFileHandler(
         val end = offset + limit - 1
         val command = "[ -f $quoted ] || exit 3; wc -l < $quoted; sed -n '$offset,${end}p' $quoted"
         val page = runner.run(command, justification)
-        if (page.snapshot.state == ShellProcessState.EXITED && page.snapshot.exitCode == 3) {
+        if (page.snapshot.state == ShellProcessState.EXITED && page.snapshot.exitCode == EXIT_CODE_NOT_A_FILE) {
             throw McpToolException.ActionFailed("'$path' is not a regular file (or is not readable as root)")
         }
         val output = page.outputOrFailure("Reading '$path'")
@@ -571,7 +577,8 @@ internal class TypeVirtualKeyboardHandler(
         return target
     }
 
-    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+    private fun sha256(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
     fun register(
         registrar: LoggedToolRegistrar,

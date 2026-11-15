@@ -54,6 +54,7 @@ class ShellLimitEditor(
      * an intermediate keystroke state — or a stray character committed into the focused field by
      * an IME gesture — never becomes the stored limit.
      */
+    @Suppress("ReturnCount")
     fun pendingValue(limit: ShellLimit): Int? {
         val field = fields.value[limit] ?: return null
         if (field.error != null) return null

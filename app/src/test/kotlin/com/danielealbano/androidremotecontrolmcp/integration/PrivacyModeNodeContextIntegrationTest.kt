@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test
  * labels of a node's accessibility actions are redacted the same way, and perform_node_action matches them as shown.
  */
 @DisplayName("Privacy Mode node context Integration Tests")
+@Suppress("LargeClass")
 class PrivacyModeNodeContextIntegrationTest {
     private val screenInfo = ScreenInfo(width = 1080, height = 2400, densityDpi = 420, orientation = "portrait")
 
@@ -575,7 +576,10 @@ class PrivacyModeNodeContextIntegrationTest {
             val deps = privacyDeps(tree)
             val fieldText = deps.wireSetText(tree, "node_pwd", "hunter2secret")
 
-            val text = typeToolResult(deps, "android_edit_text", mapOf("mode" to "append", "node_id" to "node_pwd", "text" to "9"))
+            val text =
+                typeToolResult(
+                    deps, "android_edit_text", mapOf("mode" to "append", "node_id" to "node_pwd", "text" to "9"),
+                )
 
             assertEquals("hunter2secret9", fieldText())
             assertCredentialRedacted(text, secret = "hunter2secret")
@@ -625,7 +629,9 @@ class PrivacyModeNodeContextIntegrationTest {
 
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
-                    client.callTool(name = "android_edit_text", arguments = mapOf("mode" to "clear", "node_id" to "node_pwd"))
+                    client.callTool(
+                        name = "android_edit_text", arguments = mapOf("mode" to "clear", "node_id" to "node_pwd"),
+                    )
                 assertEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text
                 assertTrue(text.contains("was not deleted"), text)

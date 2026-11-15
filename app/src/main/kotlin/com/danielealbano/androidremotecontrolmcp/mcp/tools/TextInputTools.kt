@@ -107,6 +107,7 @@ internal object TextEditCalculator {
  * and converted to [McpToolException.ActionFailed]: a defect or a framework failure inside a text tool must
  * surface as an ordinary tool error, never as an uncaught exception escaping the tool handler.
  */
+@Suppress("TooGenericExceptionCaught", "SwallowedException")
 internal suspend inline fun <T> guardedTextEdit(
     toolName: String,
     serverLogRepository: ServerLogRepository,
@@ -484,6 +485,7 @@ class EditTextTool
             }
 
         /** Resolves the target in a fresh read and clears its field; runs under [typeOperationMutex]. */
+        @Suppress("ReturnCount")
         private suspend fun clearLocked(target: NodeTarget): ClearOutcome {
             val windows = getFreshRead(treeParser, accessibilityServiceProvider, nodeCache).result.windows
             val nodeId =

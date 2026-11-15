@@ -960,7 +960,8 @@ class ScreenIntrospectionToolsTest {
             )
 
         /** Root + 6 unchanged labels + 1 label = 8 listed nodes. */
-        private fun baseTree() = screenTree((1..6).map { labelNode("node_same_$it", "same$it") } + labelNode("node_label", "Hello"))
+        private fun baseTree() =
+            screenTree((1..6).map { labelNode("node_same_$it", "same$it") } + labelNode("node_label", "Hello"))
 
         private fun stubCaptureWithTree(tree: AccessibilityNodeData) {
             every { mockAccessibilityServiceProvider.isReady() } returns true
@@ -981,7 +982,8 @@ class ScreenIntrospectionToolsTest {
             every { mockTreeParser.parseTree(mockRootNode, "root_w0", any()) } returns tree
         }
 
-        private suspend fun executeText(params: JsonObject?): String = (handler.execute(params).content[0] as TextContent).text
+        private suspend fun executeText(params: JsonObject?): String =
+            (handler.execute(params).content[0] as TextContent).text
 
         @Test
         @DisplayName("first diff call returns the full state (no baseline yet)")
@@ -1187,13 +1189,16 @@ class ScreenIntrospectionToolsTest {
             every { mockTreeParser.parseTree(mockRootNode, "root_w0", any()) } returns tree
         }
 
-        private suspend fun executeText(params: JsonObject?): String = (handler.execute(params).content[0] as TextContent).text
+        private suspend fun executeText(params: JsonObject?): String =
+            (handler.execute(params).content[0] as TextContent).text
 
         @Test
         @DisplayName("interactive_only lists the button but not the label or the root")
         fun interactiveOnlyFiltersNonInteractiveNodes() =
             runTest {
-                stubCaptureWithTree(screenTree(listOf(labelNode("node_label", "Hello"), buttonNode("node_button", "Save"))))
+                stubCaptureWithTree(
+                    screenTree(listOf(labelNode("node_label", "Hello"), buttonNode("node_button", "Save"))),
+                )
 
                 val full = executeText(null)
                 assertTrue(full.lines().any { it.startsWith("node_label\t") }, full)
@@ -1220,10 +1225,14 @@ class ScreenIntrospectionToolsTest {
         @DisplayName("diff under interactive_only ignores changes to non-interactive nodes")
         fun diffUnderInteractiveOnlyIgnoresLabelChanges() =
             runTest {
-                stubCaptureWithTree(screenTree(listOf(labelNode("node_label", "Hello"), buttonNode("node_button", "Save"))))
+                stubCaptureWithTree(
+                    screenTree(listOf(labelNode("node_label", "Hello"), buttonNode("node_button", "Save"))),
+                )
                 executeText(buildJsonObject { put("interactive_only", true) })
 
-                stubCaptureWithTree(screenTree(listOf(labelNode("node_label", "Changed"), buttonNode("node_button", "Save"))))
+                stubCaptureWithTree(
+                    screenTree(listOf(labelNode("node_label", "Changed"), buttonNode("node_button", "Save"))),
+                )
                 val text =
                     executeText(
                         buildJsonObject {
@@ -1269,7 +1278,9 @@ class ScreenIntrospectionToolsTest {
         @DisplayName("diff falls back to the full state when interactive_only differs from the baseline")
         fun diffFallsBackWhenInteractiveOnlyDiffers() =
             runTest {
-                stubCaptureWithTree(screenTree(listOf(labelNode("node_label", "Hello"), buttonNode("node_button", "Save"))))
+                stubCaptureWithTree(
+                    screenTree(listOf(labelNode("node_label", "Hello"), buttonNode("node_button", "Save"))),
+                )
                 executeText(buildJsonObject { put("interactive_only", true) })
 
                 val text = executeText(buildJsonObject { put("diff", true) })

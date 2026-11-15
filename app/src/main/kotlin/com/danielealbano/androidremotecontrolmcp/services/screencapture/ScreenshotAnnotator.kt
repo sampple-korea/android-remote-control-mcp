@@ -154,7 +154,9 @@ class ScreenshotAnnotator
                 val density = copy.width.toFloat() / REFERENCE_WIDTH_DP
 
                 drawGrid(canvas, sampling, viewLeft, viewTop, viewWidth, viewHeight, scaleX, scaleY, density)
-                drawElements(canvas, sampling, elements, copy.width, copy.height, viewLeft, viewTop, scaleX, scaleY, density)
+                drawElements(
+                    canvas, sampling, elements, copy.width, copy.height, viewLeft, viewTop, scaleX, scaleY, density,
+                )
 
                 return copy
             } catch (e: Exception) {
@@ -167,7 +169,7 @@ class ScreenshotAnnotator
 
         // ── Grid ─────────────────────────────────────────────────────────────
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "LongMethod")
         private fun drawGrid(
             canvas: Canvas,
             source: Bitmap,
@@ -286,7 +288,7 @@ class ScreenshotAnnotator
 
         // ── Elements ─────────────────────────────────────────────────────────
 
-        @Suppress("LongParameterList", "LongMethod")
+        @Suppress("LongParameterList", "LongMethod", "LoopWithTooManyJumpStatements")
         private fun drawElements(
             canvas: Canvas,
             source: Bitmap,
@@ -314,7 +316,8 @@ class ScreenshotAnnotator
 
             for (element in elements) {
                 val scaled =
-                    computeScaledBounds(element, scaleX, scaleY, bitmapWidth, bitmapHeight, viewLeft, viewTop) ?: continue
+                    computeScaledBounds(element, scaleX, scaleY, bitmapWidth, bitmapHeight, viewLeft, viewTop)
+                        ?: continue
                 val rect = RectF(scaled.left, scaled.top, scaled.right, scaled.bottom)
                 val lum =
                     sampleRectLuminance(
@@ -335,7 +338,9 @@ class ScreenshotAnnotator
                 }
 
                 val label = elementLabel(element) ?: continue
-                drawElementLabel(canvas, source, labelTextPaint, label, rect, choice.ink, bitmapWidth, bitmapHeight, density)
+                drawElementLabel(
+                    canvas, source, labelTextPaint, label, rect, choice.ink, bitmapWidth, bitmapHeight, density,
+                )
             }
         }
 
@@ -394,7 +399,10 @@ class ScreenshotAnnotator
             var top = if (centerY != null) centerY - chipHeight / 2f else edge
             left = left.coerceIn(0f, max(0f, bitmapWidth - chipWidth))
             top = top.coerceIn(0f, max(0f, bitmapHeight - chipHeight))
-            drawChipRect(canvas, source, textPaint, text, RectF(left, top, left + chipWidth, top + chipHeight), density, borderColor)
+            drawChipRect(
+                canvas, source, textPaint, text,
+                RectF(left, top, left + chipWidth, top + chipHeight), density, borderColor,
+            )
         }
 
         /**
@@ -514,7 +522,8 @@ class ScreenshotAnnotator
         }
 
         /** ITU-R BT.601 luma of a packed ARGB color, 0–255. */
-        internal fun luminanceOfColor(color: Int): Float = luminanceOfRgb(Color.red(color), Color.green(color), Color.blue(color))
+        internal fun luminanceOfColor(color: Int): Float =
+            luminanceOfRgb(Color.red(color), Color.green(color), Color.blue(color))
 
         /** ITU-R BT.601 luma of raw RGB channels, 0–255. Pure arithmetic, unit-testable without Android stubs. */
         internal fun luminanceOfRgb(
@@ -528,6 +537,7 @@ class ScreenshotAnnotator
          * whitespace-collapsed and truncated to [MAX_LABEL_CHARS]. Null when the element carries
          * neither — such elements are drawn with a box only.
          */
+        @Suppress("ReturnCount")
         internal fun elementLabel(element: AccessibilityNodeData): String? {
             val raw =
                 element.text?.takeIf { it.isNotBlank() }

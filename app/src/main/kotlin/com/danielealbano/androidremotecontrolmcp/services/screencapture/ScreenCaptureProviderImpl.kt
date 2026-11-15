@@ -111,6 +111,7 @@ class ScreenCaptureProviderImpl
          * Root capture first; the accessibility validation/capture runs only when the root
          * path delivered nothing, so its error messages stay the ones callers see on failure.
          */
+        @Suppress("ReturnCount")
         private suspend fun captureRawBitmap(): RawCapture {
             rootScreenCapture.captureBitmap()?.let { return RawCapture.Captured(it) }
 

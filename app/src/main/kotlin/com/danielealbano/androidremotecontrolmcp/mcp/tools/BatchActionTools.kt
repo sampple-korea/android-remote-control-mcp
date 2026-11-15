@@ -100,6 +100,7 @@ class BatchActionsHandler(
     )
 
     @Suppress("TooGenericExceptionCaught")
+    @Suppress("ReturnCount")
     private suspend fun executeStep(step: BatchStep): StepOutcome {
         val handler =
             toolHandlers.handlerFor(step.toolName)
@@ -133,6 +134,7 @@ class BatchActionsHandler(
      * batch result already carries it once at the top.
      */
     @Suppress("TooGenericExceptionCaught")
+    @Suppress("ReturnCount")
     private suspend fun captureScreenStateSection(): String {
         val header = "--- screen state (fresh ${GetScreenStateHandler.TOOL_NAME} capture)"
         val handler =
