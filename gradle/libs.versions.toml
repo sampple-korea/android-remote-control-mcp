@@ -63,6 +63,9 @@ material = "1.14.0"
 # Accompanist
 accompanist = "0.37.3"
 
+# Miuix (UI components, blur and liquid glass backdrops)
+miuix = "0.9.4"
+
 # Testing
 junit = "6.1.3"
 mockk = "1.14.11"
@@ -190,6 +193,12 @@ material = { group = "com.google.android.material", name = "material", version.r
 
 # Accompanist
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
+
+# Miuix
+miuix-ui = { group = "top.yukonga.miuix.kmp", name = "miuix-ui-android", version.ref = "miuix" }
+miuix-icons = { group = "top.yukonga.miuix.kmp", name = "miuix-icons-android", version.ref = "miuix" }
+miuix-preference = { group = "top.yukonga.miuix.kmp", name = "miuix-preference-android", version.ref = "miuix" }
+miuix-blur = { group = "top.yukonga.miuix.kmp", name = "miuix-blur-android", version.ref = "miuix" }
 
 # Testing
 junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit" }
