@@ -220,7 +220,7 @@ class ScreenshotAnnotator
                             y1.toInt(),
                         )
                     val choice = inkChoice(lum, INK_GRID_BRIGHT, INK_GRID_DARK)
-                    strokeSegment(canvas, linePaint, choice, haloWidth, coreWidth) {
+                    strokeSegment(linePaint, choice, haloWidth, coreWidth) {
                         canvas.drawLine(x, y0, x, y1, linePaint)
                     }
                 }
@@ -240,7 +240,7 @@ class ScreenshotAnnotator
                             (y + SAMPLE_BAND_PX).toInt(),
                         )
                     val choice = inkChoice(lum, INK_GRID_BRIGHT, INK_GRID_DARK)
-                    strokeSegment(canvas, linePaint, choice, haloWidth, coreWidth) {
+                    strokeSegment(linePaint, choice, haloWidth, coreWidth) {
                         canvas.drawLine(x0, y, x1, y, linePaint)
                     }
                 }
@@ -342,7 +342,7 @@ class ScreenshotAnnotator
                     } else {
                         inkChoice(lum, INK_OTHER_BRIGHT, INK_OTHER_DARK)
                     }
-                strokeSegment(canvas, boxPaint, choice, haloWidth, coreWidth) {
+                strokeSegment(boxPaint, choice, haloWidth, coreWidth) {
                     canvas.drawRect(rect, boxPaint)
                 }
 
@@ -355,7 +355,6 @@ class ScreenshotAnnotator
                     rect,
                     choice.ink,
                     bitmapWidth,
-                    bitmapHeight,
                     density,
                 )
             }
@@ -371,7 +370,6 @@ class ScreenshotAnnotator
             box: RectF,
             borderColor: Int,
             bitmapWidth: Int,
-            bitmapHeight: Int,
             density: Float,
         ) {
             val padX = LABEL_PADDING_X_DP * density
@@ -479,7 +477,6 @@ class ScreenshotAnnotator
 
         /** Draws [draw] twice: first the halo (opposite tone, wider), then the core ink. */
         private inline fun strokeSegment(
-            canvas: Canvas,
             paint: Paint,
             choice: InkChoice,
             haloWidth: Float,

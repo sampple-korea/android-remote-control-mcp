@@ -176,6 +176,7 @@ class BatchActionsHandler(
     )
 
     /** Parses and validates the `actions` array structure; allowlist checks are [validateAllowlist]. */
+    @Suppress("ThrowsCount")
     private fun parseSteps(arguments: JsonObject?): List<BatchStep> {
         val element =
             arguments?.get(PARAM_ACTIONS)
@@ -194,6 +195,7 @@ class BatchActionsHandler(
         return array.mapIndexed { index, item -> parseStep(index, item) }
     }
 
+    @Suppress("ThrowsCount")
     private fun parseStep(
         index: Int,
         element: JsonElement,

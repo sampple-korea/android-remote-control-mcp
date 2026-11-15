@@ -408,6 +408,7 @@ internal class DeviceFileChunkStore(
         }
     }
 
+    @Suppress("ThrowsCount")
     private suspend fun rootInfo(
         path: String,
         justification: String,

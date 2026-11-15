@@ -85,6 +85,7 @@ internal class ElevatedCommandRunner(
 }
 
 /** The justification every root tool requires: non-blank, bounded, NUL-free, as for elevated shell commands. */
+@Suppress("ThrowsCount")
 internal fun requireJustification(arguments: JsonObject?): String {
     val value = McpToolUtils.optionalString(arguments, "justification", "").trim()
     if (value.isEmpty()) {
@@ -412,6 +413,7 @@ internal class ReadLogcatHandler(
 internal class ReadRootFileHandler(
     private val runner: ElevatedCommandRunner,
 ) {
+    @Suppress("ThrowsCount")
     suspend fun execute(arguments: JsonObject?): CallToolResult {
         val path = requireAbsolutePath(arguments, "path")
         val offset = McpToolUtils.optionalInt(arguments, "offset", 1)
@@ -528,6 +530,7 @@ internal class TypeVirtualKeyboardHandler(
     private val appContext: Context,
     private val runner: ElevatedCommandRunner,
 ) {
+    @Suppress("ThrowsCount")
     suspend fun execute(arguments: JsonObject?): CallToolResult {
         val text = McpToolUtils.requireString(arguments, "text")
         if (text.isEmpty()) {

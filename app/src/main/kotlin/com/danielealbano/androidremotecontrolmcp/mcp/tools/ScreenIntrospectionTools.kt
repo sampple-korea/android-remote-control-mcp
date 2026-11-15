@@ -177,7 +177,7 @@ class GetScreenStateHandler
                     right = McpToolUtils.optionalInt(arguments, PARAM_CROP_RIGHT, 0),
                     bottom = McpToolUtils.optionalInt(arguments, PARAM_CROP_BOTTOM, 0),
                 )
-            if (region.left < 0 || region.top < 0 || region.right < 0 || region.bottom < 0) {
+            if (listOf(region.left, region.top, region.right, region.bottom).any { it < 0 }) {
                 throw McpToolException.InvalidParams(
                     "Crop bounds must not be negative, got " +
                         "(${region.left}, ${region.top})-(${region.right}, ${region.bottom})",
