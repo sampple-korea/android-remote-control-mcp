@@ -333,9 +333,6 @@ dependencies {
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material.icons.extended)
-    implementation(libs.miuix.ui)
-    implementation(libs.miuix.preference)
-    implementation(libs.miuix.blur)
     implementation(libs.compose.navigation)
     debugImplementation(libs.compose.ui.tooling)
 
@@ -450,6 +447,12 @@ dependencies {
 
     // Accompanist
     implementation(libs.accompanist.permissions)
+
+    // Miuix (UI components, blur and liquid glass backdrops)
+    implementation(libs.miuix.ui)
+    implementation(libs.miuix.icons)
+    implementation(libs.miuix.preference)
+    implementation(libs.miuix.blur)
 
     // Privacy Mode (on-device PII detection). The detection core lives in :privacy (pure JVM,
     // compileOnly onnxruntime); the Android AAR below supplies ai.onnxruntime.* at app runtime.

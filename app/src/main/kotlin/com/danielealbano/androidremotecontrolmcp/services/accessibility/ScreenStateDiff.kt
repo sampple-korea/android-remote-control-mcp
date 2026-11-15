@@ -172,7 +172,8 @@ internal fun formatScreenStateDiff(
             sb.appendLine(CompactTreeFormatter.ACTIONS_HEADER)
             sb.appendLine()
             for (entry in withActions) {
-                sb.append(CompactTreeFormatter.ACTIONS_ITEM_PREFIX)
+                sb
+                    .append(CompactTreeFormatter.ACTIONS_ITEM_PREFIX)
                     .append(entry.id)
                     .append(": ")
                     .appendLine(entry.actions.joinToString(NodeActionLabels.SEPARATOR))
