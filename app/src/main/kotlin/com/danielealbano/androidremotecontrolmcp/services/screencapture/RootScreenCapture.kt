@@ -58,10 +58,11 @@ class BitmapFactoryPngDecoder
     }
 
 /**
- * Production [ScreencapRunner]: spawns `su -c "exec screencap -p"` and reads the PNG from its
- * stdout. stderr is discarded separately — merging it into stdout would corrupt the PNG.
- * Reading happens on the IO dispatcher while a timeout bounds the whole run; on timeout the
- * process is destroyed, which also closes the pipe and unblocks the reader.
+ * Production [ScreencapRunner]: spawns `su -c "exec screencap -p 2>/dev/null"` and reads the
+ * PNG from its stdout. screencap's stderr is redirected to /dev/null inside the shell —
+ * merging it into stdout would corrupt the PNG, and Android's ProcessBuilder has no
+ * Redirect.DISCARD. Reading happens on the IO dispatcher while a timeout bounds the whole
+ * run; on timeout the process is destroyed, which also closes the pipe and unblocks the reader.
  */
 class ProcessScreencapRunner
     @Inject
@@ -69,9 +70,7 @@ class ProcessScreencapRunner
         override suspend fun run(suPath: String): ByteArray? {
             val process =
                 try {
-                    ProcessBuilder(suPath, "-c", SCREENCAP_COMMAND)
-                        .redirectError(ProcessBuilder.Redirect.DISCARD)
-                        .start()
+                    ProcessBuilder(suPath, "-c", SCREENCAP_COMMAND).start()
                 } catch (e: IOException) {
                     Log.w(TAG, "Could not start su for screencap", e)
                     return null
@@ -111,7 +110,7 @@ class ProcessScreencapRunner
 
         companion object {
             private const val TAG = "MCP:RootScreencap"
-            private const val SCREENCAP_COMMAND = "exec screencap -p"
+            private const val SCREENCAP_COMMAND = "exec screencap -p 2>/dev/null"
             private const val CAPTURE_TIMEOUT_MS = 5_000L
             private const val EXIT_WAIT_TIMEOUT_MS = 1_000L
             private const val READ_BUFFER_BYTES = 64 * 1024
