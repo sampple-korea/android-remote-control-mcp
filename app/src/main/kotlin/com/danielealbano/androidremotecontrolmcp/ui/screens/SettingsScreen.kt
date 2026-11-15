@@ -10,6 +10,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.danielealbano.androidremotecontrolmcp.ui.navigation.SettingsRoute
+import com.danielealbano.androidremotecontrolmcp.ui.navigation.navEnterTransition
+import com.danielealbano.androidremotecontrolmcp.ui.navigation.navExitTransition
+import com.danielealbano.androidremotecontrolmcp.ui.navigation.navPopEnterTransition
+import com.danielealbano.androidremotecontrolmcp.ui.navigation.navPopExitTransition
 import com.danielealbano.androidremotecontrolmcp.ui.screens.settings.AccessSettingsScreen
 import com.danielealbano.androidremotecontrolmcp.ui.screens.settings.ChannelSettingsScreen
 import com.danielealbano.androidremotecontrolmcp.ui.screens.settings.GeneralSettingsScreen
@@ -57,6 +61,10 @@ fun SettingsScreen(
         navController = navController,
         startDestination = SettingsRoute.Index.route,
         modifier = modifier,
+        enterTransition = navEnterTransition,
+        exitTransition = navExitTransition,
+        popEnterTransition = navPopEnterTransition,
+        popExitTransition = navPopExitTransition,
     ) {
         composable(SettingsRoute.Index.route) {
             SettingsIndexScreen(onNavigate = { navController.navigate(it) })

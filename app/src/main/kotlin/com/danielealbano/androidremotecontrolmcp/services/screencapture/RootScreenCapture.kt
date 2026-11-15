@@ -67,6 +67,7 @@ class BitmapFactoryPngDecoder
 class ProcessScreencapRunner
     @Inject
     constructor() : ScreencapRunner {
+        @Suppress("ReturnCount")
         override suspend fun run(suPath: String): ByteArray? {
             val process =
                 try {
@@ -140,6 +141,7 @@ class RootScreenCaptureImpl
 
         override fun hasSuBinary(): Boolean = su.locate() != null
 
+        @Suppress("ReturnCount")
         override suspend fun isAvailable(): Boolean {
             val suPath = su.locate() ?: return false
             val cached = cachedProbe
@@ -151,6 +153,7 @@ class RootScreenCaptureImpl
             return works
         }
 
+        @Suppress("ReturnCount")
         override suspend fun captureBitmap(): Bitmap? {
             if (!isAvailable()) return null
             val suPath = su.locate() ?: return null

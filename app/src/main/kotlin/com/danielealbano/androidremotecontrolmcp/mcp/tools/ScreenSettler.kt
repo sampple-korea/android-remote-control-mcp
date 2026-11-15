@@ -95,6 +95,7 @@ class ScreenSettler
         private val treeFingerprint = TreeFingerprint()
 
         /** Returns true when the UI settled within [timeoutMs], false on timeout. */
+        @Suppress("ReturnCount", "NestedBlockDepth")
         suspend fun awaitIdle(timeoutMs: Long): Boolean {
             if (timeoutMs <= 0) return false
             val startTime = SystemClock.elapsedRealtime()

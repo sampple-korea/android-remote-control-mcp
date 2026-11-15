@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.PrintWriter
@@ -39,11 +40,15 @@ import java.util.concurrent.TimeUnit
  * The test is skipped when `NGROK_AUTHTOKEN` is not set or empty, e.g. on a pull request from a fork, which gets
  * no repository secrets.
  *
+ * Tagged `live-integration`: excluded from CI and from default local runs; run it with
+ * `./gradlew :app:test -PrunLiveIntegrationTests`.
+ *
  * The test starts a simple standalone HTTP test server on a random local port,
  * creates an ngrok tunnel to it, and verifies the tunnel URL returns the expected
  * response.
  */
 @DisplayName("NgrokTunnelIntegrationTest")
+@Tag("live-integration")
 @Timeout(value = NGROK_TUNNEL_TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
 class NgrokTunnelIntegrationTest {
     private lateinit var provider: NgrokTunnelProvider

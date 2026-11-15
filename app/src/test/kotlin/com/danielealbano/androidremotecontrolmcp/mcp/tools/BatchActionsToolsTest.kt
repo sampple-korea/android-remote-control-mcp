@@ -36,7 +36,8 @@ class BatchActionsToolsTest {
             Implementation(name = "test", version = "test"),
             ServerOptions(capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = false))),
         )
-    private val registrar = LoggedToolRegistrar(server, RecordingServerLogRepository(), ToolCallIndicator.NONE, InFlightToolCalls())
+    private val registrar =
+        LoggedToolRegistrar(server, RecordingServerLogRepository(), ToolCallIndicator.NONE, InFlightToolCalls())
     private val handler = BatchActionsHandler(registrar)
     private val calls = mutableListOf<String>()
 

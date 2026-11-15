@@ -64,6 +64,7 @@ import kotlin.math.roundToInt
  *
  * Replaces: get_accessibility_tree, capture_screenshot, get_current_app, get_screen_info.
  */
+@Suppress("TooManyFunctions")
 class GetScreenStateHandler
     @Suppress("LongParameterList")
     @Inject
@@ -115,7 +116,15 @@ class GetScreenStateHandler
                     cursorElement is JsonNull ||
                     ((cursorElement as? JsonPrimitive)?.contentOrNull?.isBlank() == true)
             return if (isFresh) {
-                handleFreshRequest(includeScreenshot, annotate, cropRegion, formatOptions, diff, settle, settleTimeoutMs)
+                handleFreshRequest(
+                    includeScreenshot,
+                    annotate,
+                    cropRegion,
+                    formatOptions,
+                    diff,
+                    settle,
+                    settleTimeoutMs,
+                )
             } else {
                 McpToolUtils.untrustedTextResult(buildPagedText(cursorElement, includeScreenshot))
             }
@@ -149,7 +158,7 @@ class GetScreenStateHandler
          * `include_screenshot` does. Bounds are validated for shape here (non-negative,
          * right > left, bottom > top) and clamped to the actual screen at capture time.
          */
-        @Suppress("ThrowsCount")
+        @Suppress("ThrowsCount", "ReturnCount")
         private fun parseCropRegion(arguments: JsonObject?): CropRegion? {
             if (!includeScreenshotEnabled) return null
             val names = listOf(PARAM_CROP_LEFT, PARAM_CROP_TOP, PARAM_CROP_RIGHT, PARAM_CROP_BOTTOM)
@@ -168,7 +177,7 @@ class GetScreenStateHandler
                     right = McpToolUtils.optionalInt(arguments, PARAM_CROP_RIGHT, 0),
                     bottom = McpToolUtils.optionalInt(arguments, PARAM_CROP_BOTTOM, 0),
                 )
-            if (region.left < 0 || region.top < 0 || region.right < 0 || region.bottom < 0) {
+            if (listOf(region.left, region.top, region.right, region.bottom).any { it < 0 }) {
                 throw McpToolException.InvalidParams(
                     "Crop bounds must not be negative, got " +
                         "(${region.left}, ${region.top})-(${region.right}, ${region.bottom})",
@@ -258,6 +267,7 @@ class GetScreenStateHandler
          * output options (its listed nodes are not comparable), or a change covering most of the tree
          * (a diff listing would be no smaller than the full state).
          */
+        @Suppress("ReturnCount")
         private fun buildDiffText(
             previousRows: ScreenStateRows?,
             currentRows: ScreenStateRows,
@@ -491,7 +501,8 @@ class GetScreenStateHandler
             screenWidth: Int,
             screenHeight: Int,
         ): String =
-            "note:the screenshot shows only region (${region.left}, ${region.top})-(${region.right}, ${region.bottom}) " +
+            "note:the screenshot shows only region (${region.left}, ${region.top})-" +
+                "(${region.right}, ${region.bottom}) " +
                 "of the full ${screenWidth}x$screenHeight screen, enlarged; grid lines and coordinate " +
                 "chips keep real device coordinates."
 
@@ -682,6 +693,7 @@ fun registerScreenIntrospectionTools(
  * The `get_screen_state` input properties. `include_screenshot` and `annotate` are listed only while the
  * `include_screenshot` parameter is enabled in the tool permissions.
  */
+@Suppress("LongMethod")
 private fun getScreenStateProperties(includeScreenshotParamEnabled: Boolean): JsonObject =
     buildJsonObject {
         if (includeScreenshotParamEnabled) {

@@ -227,7 +227,7 @@ class TakeCameraPhotoHandler
         private val cameraProvider: CameraProvider,
         private val fileOperationProvider: FileOperationProvider,
     ) {
-        @Suppress("CyclomaticComplexMethod")
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount")
         suspend fun execute(arguments: JsonObject?): CallToolResult {
             val cameraId = McpToolUtils.requireString(arguments, "camera_id")
             val resolution = parseOptionalResolution(arguments, "resolution")

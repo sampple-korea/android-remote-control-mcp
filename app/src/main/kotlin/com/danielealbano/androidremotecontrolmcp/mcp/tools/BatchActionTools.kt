@@ -99,7 +99,7 @@ class BatchActionsHandler(
         val text: String,
     )
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     private suspend fun executeStep(step: BatchStep): StepOutcome {
         val handler =
             toolHandlers.handlerFor(step.toolName)
@@ -132,7 +132,7 @@ class BatchActionsHandler(
      * outcome never depends on it. The capture's own untrusted-content warning is stripped: the
      * batch result already carries it once at the top.
      */
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     private suspend fun captureScreenStateSection(): String {
         val header = "--- screen state (fresh ${GetScreenStateHandler.TOOL_NAME} capture)"
         val handler =
@@ -176,6 +176,7 @@ class BatchActionsHandler(
     )
 
     /** Parses and validates the `actions` array structure; allowlist checks are [validateAllowlist]. */
+    @Suppress("ThrowsCount")
     private fun parseSteps(arguments: JsonObject?): List<BatchStep> {
         val element =
             arguments?.get(PARAM_ACTIONS)
@@ -194,6 +195,7 @@ class BatchActionsHandler(
         return array.mapIndexed { index, item -> parseStep(index, item) }
     }
 
+    @Suppress("ThrowsCount")
     private fun parseStep(
         index: Int,
         element: JsonElement,

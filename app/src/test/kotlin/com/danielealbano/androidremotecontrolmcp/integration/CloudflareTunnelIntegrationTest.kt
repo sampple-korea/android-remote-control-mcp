@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.PrintWriter
@@ -34,11 +35,15 @@ import java.util.concurrent.TimeUnit
  * Requires the `cloudflared` binary to be installed on the host machine.
  * This test FAILs (not skips) if the binary is not found.
  *
+ * Tagged `live-integration`: excluded from CI and from default local runs; run it with
+ * `./gradlew :app:test -PrunLiveIntegrationTests`.
+ *
  * The test starts a simple standalone HTTP test server on a random local port,
  * creates a tunnel to it, and verifies the tunnel URL returns the expected
  * response.
  */
 @DisplayName("CloudflareTunnelIntegrationTest")
+@Tag("live-integration")
 @Timeout(value = TUNNEL_TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
 class CloudflareTunnelIntegrationTest {
     private lateinit var provider: CloudflareTunnelProvider

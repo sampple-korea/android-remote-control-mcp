@@ -46,7 +46,13 @@ internal object FileTransferToolNames {
 internal object FileTransferLimits {
     const val MAX_CHUNK_BYTES = 1_048_576
     const val DEFAULT_CHUNK_BYTES = 24_576
+
+    /** How much of an unexpected shell output is quoted back in an error message. */
+    const val OUTPUT_PREVIEW_LIMIT = 200
 }
+
+/** Exit code the transfer shell commands use to signal "not a regular file" (`[ -f ... ] || exit 3`). */
+private const val EXIT_CODE_NOT_A_FILE = 3
 
 /** Block sizes tried for the staging `dd`, largest first; the transfer block must divide the offset. */
 private val TRANSFER_BLOCK_LADDER =
@@ -78,6 +84,7 @@ private val TRANSFER_BLOCK_LADDER =
  * (1 MiB for offset 0), so `seek`/`skip` stay whole blocks while blocks stay large. The byte
  * count itself needs no divisibility — `dd` writes the final partial block as-is.
  */
+@Suppress("ReturnCount")
 internal fun transferBlockSize(offset: Long): Long {
     if (offset <= 0L) return TRANSFER_BLOCK_LADDER.first()
     for (block in TRANSFER_BLOCK_LADDER) {
@@ -131,7 +138,7 @@ private fun decodeBase64Chunk(value: String): ByteArray {
         try {
             Base64.getDecoder().decode(compact)
         } catch (e: IllegalArgumentException) {
-            throw McpToolException.InvalidParams("Parameter 'data_base64' is not valid base64")
+            throw McpToolException.InvalidParams("Parameter 'data_base64' is not valid base64", e)
         }
     if (bytes.size > FileTransferLimits.MAX_CHUNK_BYTES) {
         throw McpToolException.InvalidParams(
@@ -245,9 +252,9 @@ internal class DeviceFileChunkStore(
                     raf.write(bytes)
                     raf.length()
                 }
-            } catch (e: IOException) {
+            } catch (_: IOException) {
                 null
-            } catch (e: SecurityException) {
+            } catch (_: SecurityException) {
                 null
             }
         }
@@ -270,9 +277,9 @@ internal class DeviceFileChunkStore(
                     raf.readFully(buffer)
                     FileChunkData(buffer, size)
                 }
-            } catch (e: IOException) {
+            } catch (_: IOException) {
                 null
-            } catch (e: SecurityException) {
+            } catch (_: SecurityException) {
                 null
             }
         }
@@ -292,9 +299,9 @@ internal class DeviceFileChunkStore(
                     }
                 }
                 FileInfoData(file.length(), digest.digest().joinToString("") { "%02x".format(it) })
-            } catch (e: IOException) {
+            } catch (_: IOException) {
                 null
-            } catch (e: SecurityException) {
+            } catch (_: SecurityException) {
                 null
             }
         }
@@ -348,7 +355,8 @@ internal class DeviceFileChunkStore(
                 .lastOrNull()
                 ?.toLongOrNull()
                 ?: throw McpToolException.ActionFailed(
-                    "Could not write '$path': unexpected output: ${output.take(200)}",
+                    "Could not write '$path': unexpected output: " +
+                        "${output.take(FileTransferLimits.OUTPUT_PREVIEW_LIMIT)}",
                 )
         } finally {
             stage.delete()
@@ -373,7 +381,7 @@ internal class DeviceFileChunkStore(
                     "dd if=$quotedPath of=$quotedStage bs=$block skip=${offset / block} " +
                     "count=$count 2>/dev/null"
             val page = runner.run(command, justification)
-            if (page.snapshot.state == ShellProcessState.EXITED && page.snapshot.exitCode == 3) {
+            if (page.snapshot.state == ShellProcessState.EXITED && page.snapshot.exitCode == EXIT_CODE_NOT_A_FILE) {
                 throw McpToolException.ActionFailed(
                     "'$path' is not a regular file (or is not readable as root)",
                 )
@@ -386,7 +394,8 @@ internal class DeviceFileChunkStore(
                     ?.trim()
                     ?.toLongOrNull()
                     ?: throw McpToolException.ActionFailed(
-                        "Could not read '$path': unexpected output: ${output.take(200)}",
+                        "Could not read '$path': unexpected output: " +
+                            "${output.take(FileTransferLimits.OUTPUT_PREVIEW_LIMIT)}",
                     )
             val staged =
                 withContext(Dispatchers.IO) {
@@ -399,6 +408,7 @@ internal class DeviceFileChunkStore(
         }
     }
 
+    @Suppress("ThrowsCount")
     private suspend fun rootInfo(
         path: String,
         justification: String,
@@ -419,7 +429,8 @@ internal class DeviceFileChunkStore(
                 val size =
                     lines.getOrNull(1)?.toLongOrNull()
                         ?: throw McpToolException.ActionFailed(
-                            "Could not inspect '$path': unexpected output: ${output.take(200)}",
+                            "Could not inspect '$path': unexpected output: " +
+                                "${output.take(FileTransferLimits.OUTPUT_PREVIEW_LIMIT)}",
                         )
                 val sha256 =
                     lines
@@ -429,7 +440,8 @@ internal class DeviceFileChunkStore(
                         .orEmpty()
                 if (!SHA256_HEX_PATTERN.matches(sha256)) {
                     throw McpToolException.ActionFailed(
-                        "Could not inspect '$path': unexpected sha256sum output: ${output.take(200)}",
+                        "Could not inspect '$path': unexpected sha256sum output: " +
+                            "${output.take(FileTransferLimits.OUTPUT_PREVIEW_LIMIT)}",
                     )
                 }
                 FileInfoData(size, sha256)
@@ -437,7 +449,8 @@ internal class DeviceFileChunkStore(
 
             else -> {
                 throw McpToolException.ActionFailed(
-                    "Could not inspect '$path': unexpected output: ${output.take(200)}",
+                    "Could not inspect '$path': unexpected output: " +
+                        "${output.take(FileTransferLimits.OUTPUT_PREVIEW_LIMIT)}",
                 )
             }
         }

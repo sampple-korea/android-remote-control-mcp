@@ -154,7 +154,18 @@ class ScreenshotAnnotator
                 val density = copy.width.toFloat() / REFERENCE_WIDTH_DP
 
                 drawGrid(canvas, sampling, viewLeft, viewTop, viewWidth, viewHeight, scaleX, scaleY, density)
-                drawElements(canvas, sampling, elements, copy.width, copy.height, viewLeft, viewTop, scaleX, scaleY, density)
+                drawElements(
+                    canvas,
+                    sampling,
+                    elements,
+                    copy.width,
+                    copy.height,
+                    viewLeft,
+                    viewTop,
+                    scaleX,
+                    scaleY,
+                    density,
+                )
 
                 return copy
             } catch (e: Exception) {
@@ -167,7 +178,7 @@ class ScreenshotAnnotator
 
         // ── Grid ─────────────────────────────────────────────────────────────
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "LongMethod")
         private fun drawGrid(
             canvas: Canvas,
             source: Bitmap,
@@ -209,7 +220,7 @@ class ScreenshotAnnotator
                             y1.toInt(),
                         )
                     val choice = inkChoice(lum, INK_GRID_BRIGHT, INK_GRID_DARK)
-                    strokeSegment(canvas, linePaint, choice, haloWidth, coreWidth) {
+                    strokeSegment(linePaint, choice, haloWidth, coreWidth) {
                         canvas.drawLine(x, y0, x, y1, linePaint)
                     }
                 }
@@ -229,7 +240,7 @@ class ScreenshotAnnotator
                             (y + SAMPLE_BAND_PX).toInt(),
                         )
                     val choice = inkChoice(lum, INK_GRID_BRIGHT, INK_GRID_DARK)
-                    strokeSegment(canvas, linePaint, choice, haloWidth, coreWidth) {
+                    strokeSegment(linePaint, choice, haloWidth, coreWidth) {
                         canvas.drawLine(x0, y, x1, y, linePaint)
                     }
                 }
@@ -286,7 +297,7 @@ class ScreenshotAnnotator
 
         // ── Elements ─────────────────────────────────────────────────────────
 
-        @Suppress("LongParameterList", "LongMethod")
+        @Suppress("LongParameterList", "LongMethod", "LoopWithTooManyJumpStatements")
         private fun drawElements(
             canvas: Canvas,
             source: Bitmap,
@@ -314,7 +325,8 @@ class ScreenshotAnnotator
 
             for (element in elements) {
                 val scaled =
-                    computeScaledBounds(element, scaleX, scaleY, bitmapWidth, bitmapHeight, viewLeft, viewTop) ?: continue
+                    computeScaledBounds(element, scaleX, scaleY, bitmapWidth, bitmapHeight, viewLeft, viewTop)
+                        ?: continue
                 val rect = RectF(scaled.left, scaled.top, scaled.right, scaled.bottom)
                 val lum =
                     sampleRectLuminance(
@@ -330,12 +342,21 @@ class ScreenshotAnnotator
                     } else {
                         inkChoice(lum, INK_OTHER_BRIGHT, INK_OTHER_DARK)
                     }
-                strokeSegment(canvas, boxPaint, choice, haloWidth, coreWidth) {
+                strokeSegment(boxPaint, choice, haloWidth, coreWidth) {
                     canvas.drawRect(rect, boxPaint)
                 }
 
                 val label = elementLabel(element) ?: continue
-                drawElementLabel(canvas, source, labelTextPaint, label, rect, choice.ink, bitmapWidth, bitmapHeight, density)
+                drawElementLabel(
+                    canvas,
+                    source,
+                    labelTextPaint,
+                    label,
+                    rect,
+                    choice.ink,
+                    bitmapWidth,
+                    density,
+                )
             }
         }
 
@@ -349,7 +370,6 @@ class ScreenshotAnnotator
             box: RectF,
             borderColor: Int,
             bitmapWidth: Int,
-            bitmapHeight: Int,
             density: Float,
         ) {
             val padX = LABEL_PADDING_X_DP * density
@@ -394,7 +414,15 @@ class ScreenshotAnnotator
             var top = if (centerY != null) centerY - chipHeight / 2f else edge
             left = left.coerceIn(0f, max(0f, bitmapWidth - chipWidth))
             top = top.coerceIn(0f, max(0f, bitmapHeight - chipHeight))
-            drawChipRect(canvas, source, textPaint, text, RectF(left, top, left + chipWidth, top + chipHeight), density, borderColor)
+            drawChipRect(
+                canvas,
+                source,
+                textPaint,
+                text,
+                RectF(left, top, left + chipWidth, top + chipHeight),
+                density,
+                borderColor,
+            )
         }
 
         /**
@@ -449,7 +477,6 @@ class ScreenshotAnnotator
 
         /** Draws [draw] twice: first the halo (opposite tone, wider), then the core ink. */
         private inline fun strokeSegment(
-            canvas: Canvas,
             paint: Paint,
             choice: InkChoice,
             haloWidth: Float,
@@ -514,7 +541,12 @@ class ScreenshotAnnotator
         }
 
         /** ITU-R BT.601 luma of a packed ARGB color, 0–255. */
-        internal fun luminanceOfColor(color: Int): Float = luminanceOfRgb(Color.red(color), Color.green(color), Color.blue(color))
+        internal fun luminanceOfColor(color: Int): Float {
+            val red = Color.red(color)
+            val green = Color.green(color)
+            val blue = Color.blue(color)
+            return luminanceOfRgb(red, green, blue)
+        }
 
         /** ITU-R BT.601 luma of raw RGB channels, 0–255. Pure arithmetic, unit-testable without Android stubs. */
         internal fun luminanceOfRgb(
@@ -528,6 +560,7 @@ class ScreenshotAnnotator
          * whitespace-collapsed and truncated to [MAX_LABEL_CHARS]. Null when the element carries
          * neither — such elements are drawn with a box only.
          */
+        @Suppress("ReturnCount")
         internal fun elementLabel(element: AccessibilityNodeData): String? {
             val raw =
                 element.text?.takeIf { it.isNotBlank() }

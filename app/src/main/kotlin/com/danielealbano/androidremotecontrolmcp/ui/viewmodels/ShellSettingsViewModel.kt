@@ -63,6 +63,7 @@ sealed interface SuStatus {
 }
 
 @HiltViewModel
+@Suppress("TooManyFunctions")
 class ShellSettingsViewModel
     @Inject
     constructor(

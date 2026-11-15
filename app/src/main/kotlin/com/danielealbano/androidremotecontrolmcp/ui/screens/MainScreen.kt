@@ -5,6 +5,11 @@ package com.danielealbano.androidremotecontrolmcp.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -58,6 +63,9 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val FLOATING_BAR_HEIGHT_DP = 64
+
+/** Duration of the crossfade between top-level tabs. */
+private const val TAB_CROSSFADE_DURATION_MS = 200
 
 @Composable
 fun MainScreen(
@@ -132,33 +140,42 @@ fun MainScreen(
         ) {
             CompositionLocalProvider(LocalBottomBarInset provides barBottomPadding + FLOATING_BAR_HEIGHT_DP.dp) {
                 Box(modifier = Modifier.fillMaxSize().layerBackdrop(barBackdrop)) {
-                    when (selectedTabRoute) {
-                        TopLevelRoute.Settings.route -> {
-                            SettingsScreen(
-                                onRequestNotificationPermission = onRequestNotificationPermission,
-                                onRequestCameraPermission = onRequestCameraPermission,
-                                onRequestMicrophonePermission = onRequestMicrophonePermission,
-                                onRequestLocationPermission = onRequestLocationPermission,
-                                pendingRoute = pendingSettingsRoute,
-                                onPendingRouteConsumed = { pendingSettingsRoute = null },
-                                viewModel = viewModel,
-                                arcTunnelViewModel = arcTunnelViewModel,
-                            )
-                        }
+                    AnimatedContent(
+                        targetState = selectedTabRoute,
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(TAB_CROSSFADE_DURATION_MS)) togetherWith
+                                fadeOut(animationSpec = tween(TAB_CROSSFADE_DURATION_MS))
+                        },
+                        label = "mainTab",
+                    ) { tabRoute ->
+                        when (tabRoute) {
+                            TopLevelRoute.Settings.route -> {
+                                SettingsScreen(
+                                    onRequestNotificationPermission = onRequestNotificationPermission,
+                                    onRequestCameraPermission = onRequestCameraPermission,
+                                    onRequestMicrophonePermission = onRequestMicrophonePermission,
+                                    onRequestLocationPermission = onRequestLocationPermission,
+                                    pendingRoute = pendingSettingsRoute,
+                                    onPendingRouteConsumed = { pendingSettingsRoute = null },
+                                    viewModel = viewModel,
+                                    arcTunnelViewModel = arcTunnelViewModel,
+                                )
+                            }
 
-                        TopLevelRoute.About.route -> {
-                            AboutScreen()
-                        }
+                            TopLevelRoute.About.route -> {
+                                AboutScreen()
+                            }
 
-                        else -> {
-                            ServerTabScreen(
-                                onNavigateToPermissions = { navigateToSettings(SettingsRoute.Permissions.route) },
-                                onNavigateToNetworkSettings = { navigateToSettings(SettingsRoute.General.route) },
-                                onNavigateToTunnelSettings = { navigateToSettings(SettingsRoute.Tunnel.route) },
-                                onOpenPrivacySettings = { navigateToSettings(SettingsRoute.Privacy.route) },
-                                viewModel = viewModel,
-                                arcTunnelViewModel = arcTunnelViewModel,
-                            )
+                            else -> {
+                                ServerTabScreen(
+                                    onNavigateToPermissions = { navigateToSettings(SettingsRoute.Permissions.route) },
+                                    onNavigateToNetworkSettings = { navigateToSettings(SettingsRoute.General.route) },
+                                    onNavigateToTunnelSettings = { navigateToSettings(SettingsRoute.Tunnel.route) },
+                                    onOpenPrivacySettings = { navigateToSettings(SettingsRoute.Privacy.route) },
+                                    viewModel = viewModel,
+                                    arcTunnelViewModel = arcTunnelViewModel,
+                                )
+                            }
                         }
                     }
                 }
