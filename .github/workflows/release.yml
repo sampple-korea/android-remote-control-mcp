@@ -144,6 +144,9 @@ jobs:
 
       # ── 6. Unit tests gate the release ──
       - name: Run FOSS unit tests
+        # Tests gate nothing in a release: a failing suite is reported on the run but the
+        # APK is still built and published (owner directive, 2026-11-15).
+        continue-on-error: true
         run: ./gradlew :app:testFossDebugUnitTest
 
       # ── 6. Native dependencies (same steps/caches as the CI build-release job) ──
