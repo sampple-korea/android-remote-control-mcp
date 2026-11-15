@@ -84,7 +84,12 @@ class ScreenStateDiffTest {
             val rows = rowsOf(tree)
 
             assertEquals(listOf("node_root", "node_a", "node_b"), rows.entries.keys.toList())
-            assertTrue(rows.entries.getValue("node_a").row.startsWith("node_a\tTextView\tA\t"))
+            assertTrue(
+                rows.entries
+                    .getValue("node_a")
+                    .row
+                    .startsWith("node_a\tTextView\tA\t"),
+            )
         }
 
         @Test

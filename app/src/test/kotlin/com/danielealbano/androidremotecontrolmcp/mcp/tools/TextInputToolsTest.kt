@@ -766,7 +766,12 @@ class TextInputToolsTest {
                 fieldText = "Hello"
 
                 val result =
-                    clearTool().execute(buildJsonObject { put("mode", "clear"); put("node_id", "node_edit") })
+                    clearTool().execute(
+                        buildJsonObject {
+                            put("mode", "clear")
+                            put("node_id", "node_edit")
+                        },
+                    )
 
                 assertEquals("", fieldText)
                 val text = extractTextContent(result)
@@ -781,7 +786,12 @@ class TextInputToolsTest {
                 fieldText = ""
 
                 val result =
-                    clearTool().execute(buildJsonObject { put("mode", "clear"); put("node_id", "node_edit") })
+                    clearTool().execute(
+                        buildJsonObject {
+                            put("mode", "clear")
+                            put("node_id", "node_edit")
+                        },
+                    )
 
                 assertTrue(extractTextContent(result).contains("Text cleared from node 'node_edit'"))
                 coVerify(exactly = 0) { mockActionExecutor.setTextOnNode(any(), any(), any()) }
@@ -796,7 +806,12 @@ class TextInputToolsTest {
 
                 val e =
                     assertThrows<McpToolException.ActionFailed> {
-                        clearTool().execute(buildJsonObject { put("mode", "clear"); put("node_id", "node_edit") })
+                        clearTool().execute(
+                            buildJsonObject {
+                                put("mode", "clear")
+                                put("node_id", "node_edit")
+                            },
+                        )
                     }
                 assertTrue(e.message!!.contains("was not deleted"), e.message)
             }
@@ -811,7 +826,12 @@ class TextInputToolsTest {
                 }
 
                 val result =
-                    clearTool().execute(buildJsonObject { put("mode", "clear"); put("node_id", "node_edit") })
+                    clearTool().execute(
+                        buildJsonObject {
+                            put("mode", "clear")
+                            put("node_id", "node_edit")
+                        },
+                    )
 
                 assertTrue(extractTextContent(result).contains("Field content: refill"), extractTextContent(result))
             }
