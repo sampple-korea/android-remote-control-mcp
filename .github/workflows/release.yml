@@ -251,6 +251,10 @@ jobs:
             - **`android_batch_actions`** — new tool that runs a sequence of UI actions in a single MCP call (allowlist of 29 action tools; stops at the first failure unless `continue_on_error` is set).
             - **`interactive_only` snapshot filter** — opt-in `android_get_screen_state` filter that keeps only interactive elements (clickable, long-clickable, editable, scrollable, or carrying accessibility actions); composes with diff mode.
 
+            ### v1.14.4
+
+            - **Virtual keyboard typing** — new root tool `android_type_virtual_keyboard` (68 → 69 tools): types text into the currently focused field as a virtual USB keyboard created through `/dev/uinput` by a bundled helper (source in `scripts/vkbd/`), running as root through the standard elevation authorization. The key events travel the input pipeline like a hardware keyboard, so they reach fields that only accept IME-committed text — notably WebView inputs while every soft keyboard is disabled, where `android_edit_text` cannot type. The text is fed to the helper from a file in the app's private storage: it never appears on a command line, in the server log or in the result. Printable ASCII and newline (Enter) only, max 500 characters per call.
+
             ### v1.14.3
 
             - Re-issue of v1.14.2 (identical code): the v1.14.2 release runner wedged during the APK build step and ignored cancellation, so the version was bumped to publish from a fresh runner instead of waiting out the 90-minute job timeout.
