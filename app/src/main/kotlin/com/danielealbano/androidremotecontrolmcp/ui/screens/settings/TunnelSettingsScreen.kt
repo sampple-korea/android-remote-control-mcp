@@ -5,27 +5,20 @@ package com.danielealbano.androidremotecontrolmcp.ui.screens.settings
 import android.content.ClipData
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +31,6 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -52,19 +44,22 @@ import com.danielealbano.androidremotecontrolmcp.data.model.ServerStatus
 import com.danielealbano.androidremotecontrolmcp.data.model.TunnelProviderType
 import com.danielealbano.androidremotecontrolmcp.data.model.TunnelStatus
 import com.danielealbano.androidremotecontrolmcp.mcp.ListenerSettingsCheck
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppTextField
+import com.danielealbano.androidremotecontrolmcp.ui.components.CardContentPadding
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixPage
+import com.danielealbano.androidremotecontrolmcp.ui.components.SwitchOnlyPreference
 import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelRenewalViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.RadioButton
-import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val STATUS_INDICATOR_SIZE_DP = 16
@@ -94,108 +89,57 @@ fun TunnelSettingsScreen(
             serverStatus !is ServerStatus.Starting
     val arcSelected = serverConfig.tunnelProvider == TunnelProviderType.ARC_TUNNEL
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.settings_tunnel_title)) },
-            navigationIcon = { TopBarBackButton(onClick = onBack) },
-            windowInsets = WindowInsets(0),
-        )
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-        ) {
-            if (serverConfig.httpsEnabled && arcSelected) {
-                Text(
-                    text = stringResource(R.string.remote_access_https_note_arc_tunnel),
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
-            }
-
-            // Tunnel Enable/Disable Toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.remote_access_enabled_label),
-                    style = MiuixTheme.textStyles.body1,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = serverConfig.tunnelEnabled,
-                    onCheckedChange = { on ->
-                        viewModel.updateTunnelEnabled(on)
-                        if (on && arcSelected) arcViewModel.requestEnrollment()
-                    },
-                    enabled = isEnabled,
-                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Tunnel Provider Selector
+    MiuixPage(
+        title = stringResource(R.string.settings_tunnel_title),
+        modifier = modifier,
+        onBack = onBack,
+    ) {
+        if (serverConfig.httpsEnabled && arcSelected) {
             Text(
-                text = stringResource(R.string.remote_access_provider_label),
-                style = MiuixTheme.textStyles.subtitle,
+                text = stringResource(R.string.remote_access_https_note_arc_tunnel),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Column(modifier = Modifier.selectableGroup()) {
-                TunnelProviderType.entries.forEach { provider ->
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .selectable(
-                                    selected = provider == serverConfig.tunnelProvider,
-                                    onClick = { viewModel.updateTunnelProvider(provider) },
-                                    role = Role.RadioButton,
-                                    enabled = isEnabled,
-                                ).padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(
+        }
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            // Tunnel Enable/Disable Toggle
+            SwitchOnlyPreference(
+                title = stringResource(R.string.remote_access_enabled_label),
+                checked = serverConfig.tunnelEnabled,
+                onCheckedChange = { on ->
+                    viewModel.updateTunnelEnabled(on)
+                    if (on && arcSelected) arcViewModel.requestEnrollment()
+                },
+                enabled = isEnabled,
+            )
+        }
+
+        // Tunnel Provider Selector
+        Column {
+            SmallTitle(text = stringResource(R.string.remote_access_provider_label))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.selectableGroup()) {
+                    TunnelProviderType.entries.forEach { provider ->
+                        RadioButtonPreference(
+                            title = providerTitle(provider),
+                            summary = providerDescription(provider),
                             selected = provider == serverConfig.tunnelProvider,
-                            onClick = null,
+                            onClick = { viewModel.updateTunnelProvider(provider) },
                             enabled = isEnabled,
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        if (provider == TunnelProviderType.ARC_TUNNEL) {
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.remote_access_provider_arc_tunnel),
-                                    style = MiuixTheme.textStyles.body1,
-                                )
-                                Text(
-                                    text = stringResource(R.string.remote_access_provider_arc_tunnel_desc),
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            }
-                        } else {
-                            Text(text = providerTitle(provider), style = MiuixTheme.textStyles.body1)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = providerDescription(provider),
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                        }
                     }
                 }
             }
+        }
 
+        Card(modifier = Modifier.fillMaxWidth(), insideMargin = CardContentPadding) {
             // Cloudflare mode selector (Free vs Token)
             AnimatedVisibility(
                 visible = serverConfig.tunnelProvider == TunnelProviderType.CLOUDFLARE,
             ) {
                 Column {
-                    Spacer(modifier = Modifier.height(8.dp))
                     CloudflareModeSelector(
                         selectedMode = serverConfig.cloudflareTunnelMode,
                         enabled = isEnabled,
@@ -238,7 +182,6 @@ fun TunnelSettingsScreen(
             // ngrok-specific fields
             AnimatedVisibility(visible = serverConfig.tunnelProvider == TunnelProviderType.NGROK) {
                 Column {
-                    Spacer(modifier = Modifier.height(8.dp))
                     NgrokConfigFields(
                         authtoken = ngrokAuthtokenInput,
                         domain = ngrokDomainInput,
@@ -255,28 +198,22 @@ fun TunnelSettingsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     val portError = tunnelLocalPortFieldError(tunnelLocalPortError, listenerCheck)
                     val forwardUrl = tunnelForwardUrl(serverConfig)
-                    OutlinedTextField(
+                    AppTextField(
                         value = tunnelLocalPortInput,
                         onValueChange = viewModel::updateTunnelLocalPort,
-                        label = { Text(stringResource(R.string.remote_access_tunnel_local_port_label)) },
-                        isError = portError != null,
-                        supportingText = {
-                            Text(
-                                portError
-                                    ?: stringResource(R.string.remote_access_tunnel_local_port_hint, forwardUrl),
-                            )
-                        },
+                        label = stringResource(R.string.remote_access_tunnel_local_port_label),
+                        error = portError,
+                        supportingText = stringResource(R.string.remote_access_tunnel_local_port_hint, forwardUrl),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
                         enabled = isEnabled,
-                        modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
+                        modifier = Modifier.fillMaxWidth(),
+                        fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
                     )
                 }
             }
 
             AnimatedVisibility(visible = arcSelected) {
                 Column {
-                    Spacer(modifier = Modifier.height(8.dp))
                     ArcTunnelSettingsSection(
                         tunnelEnabled = serverConfig.tunnelEnabled,
                         enabled = isEnabled,
@@ -288,8 +225,9 @@ fun TunnelSettingsScreen(
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Card(modifier = Modifier.fillMaxWidth(), insideMargin = CardContentPadding) {
             TunnelStatusIndicator(status = tunnelStatus)
         }
     }
@@ -334,15 +272,10 @@ private fun NgrokConfigFields(
     var showAuthtoken by remember { mutableStateOf(false) }
 
     Column {
-        Text(
-            text = stringResource(R.string.remote_access_ngrok_authtoken_label),
-            style = MiuixTheme.textStyles.subtitle,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        OutlinedTextField(
+        AppTextField(
             value = authtoken,
             onValueChange = onAuthtokenChange,
-            singleLine = true,
+            label = stringResource(R.string.remote_access_ngrok_authtoken_label),
             enabled = enabled,
             visualTransformation =
                 if (showAuthtoken) {
@@ -370,25 +303,20 @@ private fun NgrokConfigFields(
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
+            modifier = Modifier.fillMaxWidth(),
+            fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Text(
-            text = stringResource(R.string.remote_access_ngrok_domain_label),
-            style = MiuixTheme.textStyles.subtitle,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        OutlinedTextField(
+        AppTextField(
             value = domain,
             onValueChange = onDomainChange,
-            singleLine = true,
+            label = stringResource(R.string.remote_access_ngrok_domain_label),
+            supportingText = stringResource(R.string.remote_access_ngrok_domain_hint),
             enabled = enabled,
-            placeholder = {
-                Text(text = stringResource(R.string.remote_access_ngrok_domain_hint))
-            },
-            modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
+            modifier = Modifier.fillMaxWidth(),
+            fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
         )
     }
 }
@@ -402,57 +330,26 @@ private fun CloudflareModeSelector(
     Text(
         text = stringResource(R.string.remote_access_cloudflare_mode_label),
         style = MiuixTheme.textStyles.subtitle,
+        color = MiuixTheme.colorScheme.onBackgroundVariant,
     )
-    Spacer(modifier = Modifier.height(4.dp))
     Column(modifier = Modifier.selectableGroup()) {
         CloudflareTunnelMode.entries.forEach { mode ->
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = mode == selectedMode,
-                            onClick = { onModeSelected(mode) },
-                            role = Role.RadioButton,
-                            enabled = enabled,
-                        ).padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                RadioButton(
-                    selected = mode == selectedMode,
-                    onClick = null,
-                    enabled = enabled,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text =
-                        when (mode) {
-                            CloudflareTunnelMode.FREE -> {
-                                stringResource(R.string.remote_access_cloudflare_mode_free)
-                            }
-
-                            CloudflareTunnelMode.TOKEN -> {
-                                stringResource(R.string.remote_access_cloudflare_mode_token)
-                            }
-                        },
-                    style = MiuixTheme.textStyles.body1,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text =
-                        when (mode) {
-                            CloudflareTunnelMode.FREE -> {
-                                stringResource(R.string.remote_access_cloudflare_mode_free_desc)
-                            }
-
-                            CloudflareTunnelMode.TOKEN -> {
-                                stringResource(R.string.remote_access_cloudflare_mode_token_desc)
-                            }
-                        },
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
+            RadioButtonPreference(
+                title =
+                    when (mode) {
+                        CloudflareTunnelMode.FREE -> stringResource(R.string.remote_access_cloudflare_mode_free)
+                        CloudflareTunnelMode.TOKEN -> stringResource(R.string.remote_access_cloudflare_mode_token)
+                    },
+                summary =
+                    when (mode) {
+                        CloudflareTunnelMode.FREE -> stringResource(R.string.remote_access_cloudflare_mode_free_desc)
+                        CloudflareTunnelMode.TOKEN -> stringResource(R.string.remote_access_cloudflare_mode_token_desc)
+                    },
+                selected = mode == selectedMode,
+                onClick = { onModeSelected(mode) },
+                enabled = enabled,
+                insideMargin = PaddingValues(vertical = 10.dp),
+            )
         }
     }
 }
@@ -469,15 +366,10 @@ private fun CloudflareTokenFields(
     val scope = rememberCoroutineScope()
 
     Column {
-        Text(
-            text = stringResource(R.string.remote_access_cloudflare_token_label),
-            style = MiuixTheme.textStyles.subtitle,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        OutlinedTextField(
+        AppTextField(
             value = token,
             onValueChange = onTokenChange,
-            singleLine = true,
+            label = stringResource(R.string.remote_access_cloudflare_token_label),
             enabled = enabled,
             visualTransformation =
                 if (showToken) {
@@ -503,7 +395,8 @@ private fun CloudflareTokenFields(
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
+            modifier = Modifier.fillMaxWidth(),
+            fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -543,20 +436,14 @@ private fun CloudflareExtraArgsField(
     onExtraArgsChange: (String) -> Unit,
 ) {
     Column {
-        Text(
-            text = stringResource(R.string.remote_access_cloudflare_extra_args_label),
-            style = MiuixTheme.textStyles.subtitle,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        OutlinedTextField(
+        AppTextField(
             value = extraArgs,
             onValueChange = onExtraArgsChange,
-            singleLine = true,
+            label = stringResource(R.string.remote_access_cloudflare_extra_args_label),
+            supportingText = stringResource(R.string.remote_access_cloudflare_extra_args_hint),
             enabled = enabled,
-            placeholder = {
-                Text(text = stringResource(R.string.remote_access_cloudflare_extra_args_hint))
-            },
-            modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
+            modifier = Modifier.fillMaxWidth(),
+            fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -586,9 +473,9 @@ private fun TunnelStatusIndicator(
             }
 
             is TunnelStatus.Connecting -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(STATUS_INDICATOR_SIZE_DP.dp),
-                    strokeWidth = 2.dp,
+                InfiniteProgressIndicator(
+                    color = MiuixTheme.colorScheme.primary,
+                    size = STATUS_INDICATOR_SIZE_DP.dp,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(

@@ -1,56 +1,34 @@
 package com.danielealbano.androidremotecontrolmcp.ui.screens.settings
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.ListItem
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.danielealbano.androidremotecontrolmcp.R
+import com.danielealbano.androidremotecontrolmcp.ui.components.EventSourceRow
 import com.danielealbano.androidremotecontrolmcp.ui.navigation.GeofenceRoutes
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.GeofenceSettingsViewModel
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.Card
 
 /** gms flavor: the "Geofence Events" row in the Event Channel settings list. */
 fun LazyListScope.geofenceEventSourceItem(navController: NavHostController) {
     item {
         val viewModel: GeofenceSettingsViewModel = hiltViewModel()
         val config by viewModel.geofenceConfig.collectAsStateWithLifecycle()
-        // The row opens the zones, so the switch is a control of its own, named after the row
-        val geofenceEvents = stringResource(R.string.geofence_events)
-        ListItem(
-            headlineContent = { Text(geofenceEvents) },
-            leadingContent = { Icon(Icons.Default.LocationOn, contentDescription = null) },
-            trailingContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(
-                        checked = config.enabled,
-                        onCheckedChange = { viewModel.updateGeofenceChannelEnabled(it) },
-                        modifier = Modifier.semantics { contentDescription = geofenceEvents },
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                }
-            },
-            modifier =
-                Modifier.clickable(onClickLabel = stringResource(R.string.a11y_action_open)) {
-                    navController.navigate(GeofenceRoutes.LIST)
-                },
-        )
+        Card(modifier = Modifier.fillMaxWidth()) {
+            EventSourceRow(
+                title = stringResource(R.string.geofence_events),
+                icon = Icons.Default.LocationOn,
+                checked = config.enabled,
+                onCheckedChange = { viewModel.updateGeofenceChannelEnabled(it) },
+                onClick = { navController.navigate(GeofenceRoutes.LIST) },
+            )
+        }
     }
 }

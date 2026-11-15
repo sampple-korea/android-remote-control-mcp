@@ -8,20 +8,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,12 +48,14 @@ import com.danielealbano.androidremotecontrolmcp.geo.CountryDisplay
 import com.danielealbano.androidremotecontrolmcp.geo.GeoLocation
 import com.danielealbano.androidremotecontrolmcp.mcp.oauth.ClientIconUrl
 import com.danielealbano.androidremotecontrolmcp.mcp.oauth.PendingApproval
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixLazyPage
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ApprovalViewModel
 import kotlinx.coroutines.delay
 import okhttp3.OkHttpClient
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -81,29 +79,25 @@ fun ApprovalScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.approval_title)) },
-            windowInsets = WindowInsets(0),
-        )
+    val imageLoader = rememberLogoImageLoader()
+    MiuixLazyPage(title = stringResource(R.string.approval_title)) {
         if (pending.isEmpty()) {
-            Text(
-                text = stringResource(R.string.approval_empty),
-                style = MiuixTheme.textStyles.body2,
-                modifier = Modifier.padding(16.dp),
-            )
+            item {
+                Text(
+                    text = stringResource(R.string.approval_empty),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
         } else {
-            val imageLoader = rememberLogoImageLoader()
-            LazyColumn(modifier = Modifier.weight(1f).padding(16.dp)) {
-                items(pending, key = { it.id }) { approval ->
-                    ApprovalCard(
-                        approval = approval,
-                        imageLoader = imageLoader,
-                        onApprove = { viewModel.approve(approval.id) },
-                        onDeny = { viewModel.deny(approval.id) },
-                    )
-                    Spacer(Modifier.height(16.dp))
-                }
+            items(pending, key = { it.id }) { approval ->
+                ApprovalCard(
+                    approval = approval,
+                    imageLoader = imageLoader,
+                    onApprove = { viewModel.approve(approval.id) },
+                    onDeny = { viewModel.deny(approval.id) },
+                )
             }
         }
     }
@@ -144,9 +138,12 @@ private fun ApprovalCard(
     val expired = remaining <= 0
     val cardColors =
         if (expired) {
-            CardDefaults.cardColors(containerColor = MiuixTheme.colorScheme.errorContainer)
+            CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.errorContainer,
+                contentColor = MiuixTheme.colorScheme.onErrorContainer,
+            )
         } else {
-            CardDefaults.cardColors()
+            CardDefaults.defaultColors()
         }
     Card(modifier = Modifier.fillMaxWidth(), colors = cardColors) {
         Column(
@@ -205,7 +202,7 @@ private fun ApprovalActions(
             )
         }
         Spacer(Modifier.width(12.dp))
-        Button(onClick = onApprove, enabled = !expired) {
+        Button(onClick = onApprove, enabled = !expired, colors = ButtonDefaults.buttonColorsPrimary()) {
             Text(
                 text = stringResource(R.string.approval_approve),
                 modifier = Modifier.semantics { contentDescription = approveDescription },

@@ -6,24 +6,15 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,14 +24,16 @@ import com.danielealbano.androidremotecontrolmcp.data.model.RedactionMode
 import com.danielealbano.androidremotecontrolmcp.privacy.PiiCategory
 import com.danielealbano.androidremotecontrolmcp.privacy.PrivacyModeStatus
 import com.danielealbano.androidremotecontrolmcp.privacy.model.DownloadState
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppDialog
+import com.danielealbano.androidremotecontrolmcp.ui.components.CardContentPadding
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixPage
+import com.danielealbano.androidremotecontrolmcp.ui.components.SwitchOnlyPreference
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.PrivacyViewModel
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.RadioButton
-import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -60,164 +53,125 @@ fun PrivacySettingsScreen(
     val downloadInProgress = downloadState is DownloadState.Downloading || downloadState is DownloadState.Verifying
 
     if (consentRequired) {
-        AlertDialog(
+        AppDialog(
+            title = stringResource(R.string.privacy_consent_title),
+            message = stringResource(R.string.privacy_consent_message),
+            confirmText = stringResource(R.string.privacy_consent_confirm),
+            onConfirm = { viewModel.confirmDownloadAndEnable() },
+            dismissText = stringResource(R.string.privacy_consent_cancel),
             onDismissRequest = { viewModel.cancelConsent() },
-            title = { Text(stringResource(R.string.privacy_consent_title)) },
-            text = { Text(stringResource(R.string.privacy_consent_message)) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.confirmDownloadAndEnable() }) {
-                    Text(stringResource(R.string.privacy_consent_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.cancelConsent() }) {
-                    Text(stringResource(R.string.privacy_consent_cancel))
-                }
-            },
         )
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.settings_privacy_title)) },
-            navigationIcon = { TopBarBackButton(onClick = onBack) },
-            windowInsets = WindowInsets(0),
-        )
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-        ) {
+    MiuixPage(
+        title = stringResource(R.string.settings_privacy_title),
+        modifier = modifier,
+        onBack = onBack,
+    ) {
+        Card(modifier = Modifier.fillMaxWidth()) {
             // 1. Master enable toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.privacy_enable_label),
-                    style = MiuixTheme.textStyles.body1,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = config.enabled,
-                    onCheckedChange = { requested ->
-                        if (requested) {
-                            viewModel.requestEnablePrivacyMode()
-                        } else {
-                            viewModel.disablePrivacyMode()
-                        }
-                    },
-                    // Disabled through the WHOLE enable window (request -> download -> warm-up), not
-                    // just while DownloadState reports progress; stays usable during the benchmark,
-                    // which finishes and stores its result even if Privacy Mode is toggled off.
-                    enabled = !downloadInProgress && !enableInProgress,
-                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
+            SwitchOnlyPreference(
+                title = stringResource(R.string.privacy_enable_label),
+                checked = config.enabled,
+                onCheckedChange = { requested ->
+                    if (requested) {
+                        viewModel.requestEnablePrivacyMode()
+                    } else {
+                        viewModel.disablePrivacyMode()
+                    }
+                },
+                // Disabled through the WHOLE enable window (request -> download -> warm-up), not
+                // just while DownloadState reports progress; stays usable during the benchmark,
+                // which finishes and stores its result even if Privacy Mode is toggled off.
+                enabled = !downloadInProgress && !enableInProgress,
+            )
 
             // 2. Status + download / warm-up / benchmark progress
-            PrivacyProgressSection(
-                status = status,
-                downloadState = downloadState,
-                enableInProgress = enableInProgress,
-                benchmarkRunning = benchmarkRunning,
-                benchmarkEstimate = benchmarkEstimate,
-            )
+            Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                PrivacyProgressSection(
+                    status = status,
+                    downloadState = downloadState,
+                    enableInProgress = enableInProgress,
+                    benchmarkRunning = benchmarkRunning,
+                    benchmarkEstimate = benchmarkEstimate,
+                )
+            }
+        }
 
-            Spacer(Modifier.height(16.dp))
-
-            // 4. Protected categories
-            Text(
-                text = stringResource(R.string.privacy_categories_header),
-                style = MiuixTheme.textStyles.subtitle,
-            )
-            PiiCategory.entries.forEach { category ->
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(categoryLabel(category)),
-                        style = MiuixTheme.textStyles.body1,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Switch(
+        // 4. Protected categories
+        Column {
+            SmallTitle(text = stringResource(R.string.privacy_categories_header))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                PiiCategory.entries.forEach { category ->
+                    SwitchOnlyPreference(
+                        title = stringResource(categoryLabel(category)),
                         checked = config.isCategoryEnabled(category),
                         onCheckedChange = { viewModel.updatePrivacyCategoryEnabled(category, it) },
                         // Categories are only editable while Privacy Mode is ON and not mid-enable:
                         // toggling them while disabled or during the download would silently change
                         // what gets protected once the mode comes up.
                         enabled = config.enabled && !downloadInProgress && !enableInProgress,
-                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                     )
                 }
             }
+        }
 
-            Spacer(Modifier.height(16.dp))
-
-            // 5. Redaction style + placeholder format
-            Text(
-                text = stringResource(R.string.privacy_mode_header),
-                style = MiuixTheme.textStyles.subtitle,
-            )
-            Column(Modifier.selectableGroup()) {
-                RedactionModeOption(
-                    label = stringResource(R.string.privacy_mode_pseudonymize),
-                    selected = config.redactionMode == RedactionMode.PSEUDONYMIZE,
-                    onSelect = { viewModel.updatePrivacyRedactionMode(RedactionMode.PSEUDONYMIZE) },
-                )
-                RedactionModeOption(
-                    label = stringResource(R.string.privacy_mode_redact),
-                    selected = config.redactionMode == RedactionMode.REDACT,
-                    onSelect = { viewModel.updatePrivacyRedactionMode(RedactionMode.REDACT) },
-                )
-            }
-
-            AnimatedVisibility(visible = config.redactionMode == RedactionMode.PSEUDONYMIZE) {
-                Column {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.privacy_format_header),
-                        style = MiuixTheme.textStyles.subtitle,
+        // 5. Redaction style + placeholder format
+        Column {
+            SmallTitle(text = stringResource(R.string.privacy_mode_header))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.selectableGroup()) {
+                    RadioButtonPreference(
+                        title = stringResource(R.string.privacy_mode_pseudonymize),
+                        selected = config.redactionMode == RedactionMode.PSEUDONYMIZE,
+                        onClick = { viewModel.updatePrivacyRedactionMode(RedactionMode.PSEUDONYMIZE) },
                     )
+                    RadioButtonPreference(
+                        title = stringResource(R.string.privacy_mode_redact),
+                        selected = config.redactionMode == RedactionMode.REDACT,
+                        onClick = { viewModel.updatePrivacyRedactionMode(RedactionMode.REDACT) },
+                    )
+                }
+            }
+        }
+
+        AnimatedVisibility(visible = config.redactionMode == RedactionMode.PSEUDONYMIZE) {
+            Column {
+                SmallTitle(text = stringResource(R.string.privacy_format_header))
+                Card(modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.selectableGroup()) {
-                        RedactionModeOption(
-                            label = stringResource(R.string.privacy_format_hashed),
+                        RadioButtonPreference(
+                            title = stringResource(R.string.privacy_format_hashed),
                             selected = config.placeholderFormat == PlaceholderFormat.HASHED,
-                            onSelect = { viewModel.updatePrivacyPlaceholderFormat(PlaceholderFormat.HASHED) },
+                            onClick = { viewModel.updatePrivacyPlaceholderFormat(PlaceholderFormat.HASHED) },
                         )
-                        RedactionModeOption(
-                            label = stringResource(R.string.privacy_format_numbered),
+                        RadioButtonPreference(
+                            title = stringResource(R.string.privacy_format_numbered),
                             selected = config.placeholderFormat == PlaceholderFormat.NUMBERED,
-                            onSelect = { viewModel.updatePrivacyPlaceholderFormat(PlaceholderFormat.NUMBERED) },
+                            onClick = { viewModel.updatePrivacyPlaceholderFormat(PlaceholderFormat.NUMBERED) },
                         )
                     }
                 }
             }
+        }
 
-            Spacer(Modifier.height(16.dp))
-
-            // 6. Disclaimer
+        // 6. Disclaimer
+        Card(modifier = Modifier.fillMaxWidth(), insideMargin = CardContentPadding) {
             Text(
                 text = stringResource(R.string.privacy_disclaimer),
                 style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.privacy_shell_not_covered),
                 style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
+        }
 
-            Spacer(Modifier.height(16.dp))
-
-            // 7. Measured detection rates
+        // 7. Measured detection rates
+        Card(modifier = Modifier.fillMaxWidth(), insideMargin = CardContentPadding) {
             DetectionRatesSection()
         }
     }
@@ -227,7 +181,7 @@ fun PrivacySettingsScreen(
 private fun DetectionRatesSection() {
     Text(
         text = stringResource(R.string.privacy_detection_rates_header),
-        style = MiuixTheme.textStyles.subtitle,
+        style = MiuixTheme.textStyles.headline2,
     )
     Spacer(Modifier.height(8.dp))
     PiiCategory.entries
@@ -268,12 +222,13 @@ private fun PrivacyProgressSection(
     Text(
         text = statusText(status),
         style = MiuixTheme.textStyles.body2,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
     )
     when (downloadState) {
         is DownloadState.Downloading -> {
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { downloadState.progressPercent / PERCENT_DIVISOR },
+                progress = downloadState.progressPercent / PERCENT_DIVISOR,
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
@@ -331,30 +286,6 @@ private fun PrivacyProgressSection(
                     formatEstimate(estimate),
                 ),
             style = MiuixTheme.textStyles.footnote1,
-        )
-    }
-}
-
-@Composable
-private fun RedactionModeOption(
-    label: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton)
-                .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = null)
-        Spacer(Modifier.height(0.dp))
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.body1,
-            modifier = Modifier.padding(start = 8.dp),
         )
     }
 }

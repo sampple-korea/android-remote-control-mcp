@@ -4,22 +4,12 @@ package com.danielealbano.androidremotecontrolmcp.ui.screens.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Android
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,19 +20,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.data.model.NotificationFilterMode
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppTextField
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixLazyPage
+import com.danielealbano.androidremotecontrolmcp.ui.components.SegmentedChoice
 import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ChannelViewModel
-import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.preference.CheckboxLocation
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -56,39 +46,39 @@ fun NotificationFilterScreen(
 
     LaunchedEffect(Unit) { viewModel.loadInstalledApps() }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { TopBarTitle(stringResource(R.string.notification_filter_title)) },
-                navigationIcon = { TopBarBackButton(onClick = onNavigateBack) },
-            )
-        },
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            val modes = NotificationFilterMode.entries
-            SingleChoiceSegmentedButtonRow(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            ) {
-                modes.forEachIndexed { index, mode ->
-                    SegmentedButton(
-                        selected = config.notifications.filterMode == mode,
-                        onClick = { viewModel.updateNotificationFilterMode(mode) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
-                    ) {
-                        Text(stringResource(notificationFilterModeLabel(mode)))
-                    }
-                }
-            }
+    val filterActive = config.notifications.filterMode != NotificationFilterMode.ALL
+    val filtered =
+        installedApps.filter {
+            it.name.contains(searchQuery, ignoreCase = true) ||
+                it.packageId.contains(searchQuery, ignoreCase = true)
+        }
+    val appIcons by viewModel.appIcons.collectAsStateWithLifecycle()
 
-            if (config.notifications.filterMode != NotificationFilterMode.ALL) {
-                OutlinedTextField(
+    MiuixLazyPage(
+        title = stringResource(R.string.notification_filter_title),
+        onBack = onNavigateBack,
+        itemSpacing = 0.dp,
+    ) {
+        item {
+            val modes = NotificationFilterMode.entries
+            SegmentedChoice(
+                options = modes.map { stringResource(notificationFilterModeLabel(it)) },
+                selectedIndex = modes.indexOf(config.notifications.filterMode),
+                onSelect = { index -> viewModel.updateNotificationFilterMode(modes[index]) },
+            )
+        }
+
+        if (filterActive) {
+            item {
+                AppTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    label = { Text(stringResource(R.string.notification_filter_search_label)) },
-                    modifier = Modifier.fillMaxWidth().padding(16.dp).hideSoftKeyboardOnFocus(),
-                    singleLine = true,
+                    label = stringResource(R.string.notification_filter_search_label),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
                 )
-
+            }
+            item {
                 Text(
                     pluralStringResource(
                         R.plurals.notification_filter_selected_count,
@@ -96,59 +86,40 @@ fun NotificationFilterScreen(
                         config.notifications.filterApps.size,
                     ),
                     style = MiuixTheme.textStyles.footnote1,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 )
-
-                val filtered =
-                    installedApps.filter {
-                        it.name.contains(searchQuery, ignoreCase = true) ||
-                            it.packageId.contains(searchQuery, ignoreCase = true)
-                    }
-                val appIcons by viewModel.appIcons.collectAsStateWithLifecycle()
-                LazyColumn {
-                    items(filtered, key = { it.packageId }) { app ->
-                        ListItem(
-                            modifier =
-                                Modifier.toggleable(
-                                    value = app.packageId in config.notifications.filterApps,
-                                    role = Role.Checkbox,
-                                    onValueChange = { checked ->
-                                        viewModel.toggleNotificationFilterApp(app.packageId, checked)
-                                    },
-                                ),
-                            headlineContent = { Text(app.name) },
-                            supportingContent = {
-                                Text(app.packageId, style = MiuixTheme.textStyles.footnote1)
-                            },
-                            leadingContent = {
-                                val bitmap = appIcons[app.packageId]
-                                if (bitmap != null) {
-                                    Image(
-                                        bitmap = bitmap.asImageBitmap(),
-                                        // Decorative: the app's name is the row's headline
-                                        contentDescription = null,
-                                        modifier = Modifier.size(40.dp),
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.Android,
-                                        // Decorative: the app's name is the row's headline
-                                        contentDescription = null,
-                                        modifier = Modifier.size(40.dp),
-                                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    )
-                                }
-                            },
-                            trailingContent = {
-                                Checkbox(
-                                    checked = app.packageId in config.notifications.filterApps,
-                                    onCheckedChange = null,
-                                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-                                )
-                            },
-                        )
-                    }
-                }
+            }
+            items(filtered, key = { it.packageId }) { app ->
+                CheckboxPreference(
+                    title = app.name,
+                    summary = app.packageId,
+                    checked = app.packageId in config.notifications.filterApps,
+                    onCheckedChange = { checked ->
+                        viewModel.toggleNotificationFilterApp(app.packageId, checked)
+                    },
+                    checkboxLocation = CheckboxLocation.End,
+                    startAction = {
+                        val bitmap = appIcons[app.packageId]
+                        val iconModifier = Modifier.padding(end = 12.dp).size(40.dp)
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                // Decorative: the app's name is the row's title
+                                contentDescription = null,
+                                modifier = iconModifier,
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Android,
+                                // Decorative: the app's name is the row's title
+                                contentDescription = null,
+                                modifier = iconModifier,
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                        }
+                    },
+                )
             }
         }
     }

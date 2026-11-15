@@ -7,27 +7,18 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,20 +43,22 @@ import com.danielealbano.androidremotecontrolmcp.data.model.BuiltinAccessLevel
 import com.danielealbano.androidremotecontrolmcp.data.model.BuiltinStorageLocation
 import com.danielealbano.androidremotecontrolmcp.data.model.StorageLocation
 import com.danielealbano.androidremotecontrolmcp.services.storage.StorageLocationProvider
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppDialog
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppTextField
+import com.danielealbano.androidremotecontrolmcp.ui.components.CardContentPadding
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixPage
+import com.danielealbano.androidremotecontrolmcp.ui.components.SwitchOnlyPreference
 import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -131,396 +124,287 @@ fun StorageSettingsScreen(
             }
         }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            TopAppBar(
-                title = { TopBarTitle(stringResource(R.string.settings_storage_title)) },
-                navigationIcon = { TopBarBackButton(onClick = onBack) },
-                windowInsets = WindowInsets(0),
-            )
-            Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-            ) {
-                val builtinLocations = storageLocations.filter { it.isBuiltin }
-                val userLocations = storageLocations.filter { !it.isBuiltin }
+    MiuixPage(
+        title = stringResource(R.string.settings_storage_title),
+        modifier = modifier,
+        onBack = onBack,
+        snackbarHostState = snackbarHostState,
+    ) {
+        val builtinLocations = storageLocations.filter { it.isBuiltin }
+        val userLocations = storageLocations.filter { !it.isBuiltin }
 
-                // ── Built-in Locations Section ──────────────────────────────
-                Text(
-                    text = stringResource(R.string.storage_builtin_locations_title),
-                    style = MiuixTheme.textStyles.title3,
+        // ── Built-in Locations Section ──────────────────────────────
+        StorageSectionHeader(
+            title = stringResource(R.string.storage_builtin_locations_title),
+            description = stringResource(R.string.storage_builtin_locations_description),
+        )
+        Card(modifier = Modifier.fillMaxWidth()) {
+            builtinLocations.forEach { location ->
+                val builtin = BuiltinStorageLocation.fromLocationId(location.id)
+                val readMediaPermissions =
+                    builtin
+                        ?.collections
+                        ?.mapNotNull { it.readMediaPermission }
+                        ?.distinct()
+                        .orEmpty()
+                val requestPermissions = builtinRequestPermissions(builtin)
+                BuiltinStorageLocationRow(
+                    location = location,
+                    accessLevel = location.accessLevel,
+                    readMediaPermissions = readMediaPermissions,
+                    requestPermissions = requestPermissions,
+                    onAllowWriteChange = { enabled ->
+                        viewModel.updateLocationAllowWrite(location.id, enabled)
+                    },
+                    onAllowDeleteChange = { enabled ->
+                        viewModel.updateLocationAllowDelete(location.id, enabled)
+                    },
+                    onRequestPermission = { permissions ->
+                        permissionLauncher.launch(permissions.toTypedArray())
+                    },
                 )
+            }
+        }
+
+        // ── User Locations Section ──────────────────────────────────
+        StorageSectionHeader(
+            title = stringResource(R.string.storage_user_locations_title),
+            description = stringResource(R.string.storage_locations_description),
+        )
+        Card(modifier = Modifier.fillMaxWidth()) {
+            if (userLocations.isEmpty()) {
                 Text(
-                    text = stringResource(R.string.storage_builtin_locations_description),
+                    text = stringResource(R.string.storage_location_no_locations),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(16.dp),
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                builtinLocations.forEach { location ->
-                    val builtin = BuiltinStorageLocation.fromLocationId(location.id)
-                    val readMediaPermissions =
-                        builtin
-                            ?.collections
-                            ?.mapNotNull { it.readMediaPermission }
-                            ?.distinct()
-                            .orEmpty()
-                    val requestPermissions = builtinRequestPermissions(builtin)
-                    BuiltinStorageLocationRow(
+            } else {
+                userLocations.forEach { location ->
+                    StorageLocationRow(
                         location = location,
-                        accessLevel = location.accessLevel,
-                        readMediaPermissions = readMediaPermissions,
-                        requestPermissions = requestPermissions,
+                        onEdit = {
+                            editDialogLocation = location
+                            editDialogDescription = location.description
+                            showEditDialog = true
+                        },
+                        onDelete = {
+                            deleteDialogLocation = location
+                            showDeleteDialog = true
+                        },
                         onAllowWriteChange = { enabled ->
                             viewModel.updateLocationAllowWrite(location.id, enabled)
                         },
                         onAllowDeleteChange = { enabled ->
                             viewModel.updateLocationAllowDelete(location.id, enabled)
                         },
-                        onRequestPermission = { permissions ->
-                            permissionLauncher.launch(permissions.toTypedArray())
-                        },
                     )
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // ── User Locations Section ──────────────────────────────────
-                Text(
-                    text = stringResource(R.string.storage_user_locations_title),
-                    style = MiuixTheme.textStyles.title3,
-                )
-                Text(
-                    text = stringResource(R.string.storage_locations_description),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(onClick = {
+            }
+            Button(
+                onClick = {
                     addDialogDescription = ""
                     addDialogSelectedUri = null
                     addDialogSelectedName = null
                     addDialogDuplicateError = false
                     addDialogDuplicateChecking = false
                     showAddDialog = true
-                }) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.storage_location_add_button))
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (userLocations.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.storage_location_no_locations),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                } else {
-                    userLocations.forEach { location ->
-                        StorageLocationRow(
-                            location = location,
-                            onEdit = {
-                                editDialogLocation = location
-                                editDialogDescription = location.description
-                                showEditDialog = true
-                            },
-                            onDelete = {
-                                deleteDialogLocation = location
-                                showDeleteDialog = true
-                            },
-                            onAllowWriteChange = { enabled ->
-                                viewModel.updateLocationAllowWrite(location.id, enabled)
-                            },
-                            onAllowDeleteChange = { enabled ->
-                                viewModel.updateLocationAllowDelete(location.id, enabled)
-                            },
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = fileSizeLimitInput,
-                    onValueChange = viewModel::updateFileSizeLimit,
-                    label = { Text(stringResource(R.string.storage_file_size_limit_label)) },
-                    isError = fileSizeLimitError != null,
-                    supportingText = fileSizeLimitError?.let { { Text(it) } },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = downloadTimeoutInput,
-                    onValueChange = viewModel::updateDownloadTimeout,
-                    label = { Text(stringResource(R.string.storage_download_timeout_label)) },
-                    isError = downloadTimeoutError != null,
-                    supportingText = downloadTimeoutError?.let { { Text(it) } },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.storage_allow_http_downloads_label),
-                            style = MiuixTheme.textStyles.body1,
-                        )
-                        Text(
-                            text = stringResource(R.string.storage_allow_http_downloads_description),
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                    Switch(
-                        checked = serverConfig.allowHttpDownloads,
-                        onCheckedChange = viewModel::updateAllowHttpDownloads,
-                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.storage_allow_unverified_https_label),
-                            style = MiuixTheme.textStyles.body1,
-                        )
-                        Text(
-                            text = stringResource(R.string.storage_allow_unverified_https_description),
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                    Switch(
-                        checked = serverConfig.allowUnverifiedHttpsCerts,
-                        onCheckedChange = viewModel::updateAllowUnverifiedHttpsCerts,
-                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.storage_block_local_network_downloads_label),
-                            style = MiuixTheme.textStyles.body1,
-                        )
-                        Text(
-                            text = stringResource(R.string.storage_block_local_network_downloads_description),
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                    Switch(
-                        checked = serverConfig.blockLocalNetworkDownloads,
-                        onCheckedChange = viewModel::updateBlockLocalNetworkDownloads,
-                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-                    )
-                }
+                },
+                colors = ButtonDefaults.buttonColorsPrimary(),
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            ) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.storage_location_add_button))
             }
         }
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
+
+        Card(modifier = Modifier.fillMaxWidth(), insideMargin = CardContentPadding) {
+            AppTextField(
+                value = fileSizeLimitInput,
+                onValueChange = viewModel::updateFileSizeLimit,
+                label = stringResource(R.string.storage_file_size_limit_label),
+                error = fileSizeLimitError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            AppTextField(
+                value = downloadTimeoutInput,
+                onValueChange = viewModel::updateDownloadTimeout,
+                label = stringResource(R.string.storage_download_timeout_label),
+                error = downloadTimeoutError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
+            )
+        }
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            SwitchOnlyPreference(
+                title = stringResource(R.string.storage_allow_http_downloads_label),
+                summary = stringResource(R.string.storage_allow_http_downloads_description),
+                checked = serverConfig.allowHttpDownloads,
+                onCheckedChange = viewModel::updateAllowHttpDownloads,
+            )
+            SwitchOnlyPreference(
+                title = stringResource(R.string.storage_allow_unverified_https_label),
+                summary = stringResource(R.string.storage_allow_unverified_https_description),
+                checked = serverConfig.allowUnverifiedHttpsCerts,
+                onCheckedChange = viewModel::updateAllowUnverifiedHttpsCerts,
+            )
+            SwitchOnlyPreference(
+                title = stringResource(R.string.storage_block_local_network_downloads_label),
+                summary = stringResource(R.string.storage_block_local_network_downloads_description),
+                checked = serverConfig.blockLocalNetworkDownloads,
+                onCheckedChange = viewModel::updateBlockLocalNetworkDownloads,
+            )
+        }
     }
 
     // Add Storage Location Dialog
     if (showAddDialog) {
-        AlertDialog(
+        AppDialog(
+            title = stringResource(R.string.storage_location_add_dialog_title),
+            confirmText = stringResource(R.string.storage_location_add_dialog_add),
+            onConfirm = {
+                addDialogSelectedUri?.let { uri ->
+                    viewModel.addLocation(uri, addDialogDescription)
+                }
+                showAddDialog = false
+            },
+            confirmEnabled =
+                addDialogSelectedUri != null &&
+                    !addDialogDuplicateError &&
+                    !addDialogDuplicateChecking,
+            dismissText = stringResource(R.string.storage_location_add_dialog_cancel),
             onDismissRequest = { showAddDialog = false },
-            title = { Text(stringResource(R.string.storage_location_add_dialog_title)) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = addDialogDescription,
-                        onValueChange = { newValue ->
-                            if (newValue.length <= StorageLocationProvider.MAX_DESCRIPTION_LENGTH) {
-                                addDialogDescription = newValue
-                            }
-                        },
-                        label = { Text(stringResource(R.string.storage_location_add_dialog_description_label)) },
-                        placeholder = { Text(stringResource(R.string.storage_location_add_dialog_description_hint)) },
-                        supportingText = {
-                            Text(
-                                stringResource(
-                                    R.string.storage_location_description_counter,
-                                    addDialogDescription.length,
-                                    StorageLocationProvider.MAX_DESCRIPTION_LENGTH,
-                                ),
-                            )
-                        },
-                        singleLine = false,
-                        modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = { documentTreeLauncher.launch(null) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(R.string.storage_location_add_dialog_browse))
+        ) {
+            AppTextField(
+                value = addDialogDescription,
+                onValueChange = { newValue ->
+                    if (newValue.length <= StorageLocationProvider.MAX_DESCRIPTION_LENGTH) {
+                        addDialogDescription = newValue
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (addDialogSelectedName != null) {
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.storage_location_add_dialog_selected,
-                                    addDialogSelectedName!!,
-                                ),
-                            style = MiuixTheme.textStyles.body2,
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.storage_location_add_dialog_no_selection),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                    if (addDialogDuplicateError) {
-                        Text(
-                            text = stringResource(R.string.storage_location_add_dialog_duplicate),
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.error,
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        addDialogSelectedUri?.let { uri ->
-                            viewModel.addLocation(uri, addDialogDescription)
-                        }
-                        showAddDialog = false
-                    },
-                    enabled =
-                        addDialogSelectedUri != null &&
-                            !addDialogDuplicateError &&
-                            !addDialogDuplicateChecking,
-                ) {
-                    Text(stringResource(R.string.storage_location_add_dialog_add))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) {
-                    Text(stringResource(R.string.storage_location_add_dialog_cancel))
-                }
-            },
-        )
+                },
+                label = stringResource(R.string.storage_location_add_dialog_description_label),
+                supportingText =
+                    stringResource(R.string.storage_location_add_dialog_description_hint) + " · " +
+                        stringResource(
+                            R.string.storage_location_description_counter,
+                            addDialogDescription.length,
+                            StorageLocationProvider.MAX_DESCRIPTION_LENGTH,
+                        ),
+                singleLine = false,
+                modifier = Modifier.fillMaxWidth(),
+                fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
+            )
+            Button(
+                onClick = { documentTreeLauncher.launch(null) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.storage_location_add_dialog_browse))
+            }
+            if (addDialogSelectedName != null) {
+                Text(
+                    text =
+                        stringResource(
+                            R.string.storage_location_add_dialog_selected,
+                            addDialogSelectedName!!,
+                        ),
+                    style = MiuixTheme.textStyles.body2,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.storage_location_add_dialog_no_selection),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+            if (addDialogDuplicateError) {
+                Text(
+                    text = stringResource(R.string.storage_location_add_dialog_duplicate),
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.error,
+                )
+            }
+        }
     }
 
     // Edit Description Dialog
     if (showEditDialog) {
-        AlertDialog(
+        AppDialog(
+            title = stringResource(R.string.storage_location_edit_dialog_title),
+            confirmText = stringResource(R.string.storage_location_edit_dialog_save),
+            onConfirm = {
+                editDialogLocation?.let { location ->
+                    viewModel.updateLocationDescription(location.id, editDialogDescription)
+                }
+                showEditDialog = false
+            },
+            dismissText = stringResource(R.string.storage_location_add_dialog_cancel),
             onDismissRequest = { showEditDialog = false },
-            title = { Text(stringResource(R.string.storage_location_edit_dialog_title)) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = editDialogDescription,
-                        onValueChange = { newValue ->
-                            if (newValue.length <= StorageLocationProvider.MAX_DESCRIPTION_LENGTH) {
-                                editDialogDescription = newValue
-                            }
-                        },
-                        label = { Text(stringResource(R.string.storage_location_add_dialog_description_label)) },
-                        supportingText = {
-                            Text(
-                                stringResource(
-                                    R.string.storage_location_description_counter,
-                                    editDialogDescription.length,
-                                    StorageLocationProvider.MAX_DESCRIPTION_LENGTH,
-                                ),
-                            )
-                        },
-                        singleLine = false,
-                        modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        editDialogLocation?.let { location ->
-                            viewModel.updateLocationDescription(location.id, editDialogDescription)
-                        }
-                        showEditDialog = false
-                    },
-                ) {
-                    Text(stringResource(R.string.storage_location_edit_dialog_save))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) {
-                    Text(stringResource(R.string.storage_location_add_dialog_cancel))
-                }
-            },
-        )
+        ) {
+            AppTextField(
+                value = editDialogDescription,
+                onValueChange = { newValue ->
+                    if (newValue.length <= StorageLocationProvider.MAX_DESCRIPTION_LENGTH) {
+                        editDialogDescription = newValue
+                    }
+                },
+                label = stringResource(R.string.storage_location_add_dialog_description_label),
+                supportingText =
+                    stringResource(
+                        R.string.storage_location_description_counter,
+                        editDialogDescription.length,
+                        StorageLocationProvider.MAX_DESCRIPTION_LENGTH,
+                    ),
+                singleLine = false,
+                modifier = Modifier.fillMaxWidth(),
+                fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
+            )
+        }
     }
 
     // Delete Confirmation Dialog
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.storage_location_delete_dialog_title)) },
-            text = {
+        AppDialog(
+            title = stringResource(R.string.storage_location_delete_dialog_title),
+            message =
                 deleteDialogLocation?.let { location ->
-                    Text(
-                        stringResource(R.string.storage_location_delete_dialog_message, location.name),
-                    )
+                    stringResource(R.string.storage_location_delete_dialog_message, location.name)
+                },
+            confirmText = stringResource(R.string.storage_location_delete_dialog_confirm),
+            onConfirm = {
+                deleteDialogLocation?.let { location ->
+                    viewModel.removeLocation(location.id)
                 }
+                showDeleteDialog = false
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        deleteDialogLocation?.let { location ->
-                            viewModel.removeLocation(location.id)
-                        }
-                        showDeleteDialog = false
-                    },
-                ) {
-                    Text(
-                        text = stringResource(R.string.storage_location_delete_dialog_confirm),
-                        color = MiuixTheme.colorScheme.error,
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.storage_location_delete_dialog_cancel))
-                }
-            },
+            dismissText = stringResource(R.string.storage_location_delete_dialog_cancel),
+            onDismissRequest = { showDeleteDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun StorageSectionHeader(
+    title: String,
+    description: String,
+) {
+    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.subtitle,
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+        )
+        Text(
+            text = description,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
     }
 }
@@ -538,7 +422,7 @@ private fun StorageLocationRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -637,7 +521,7 @@ private fun BuiltinStorageLocationRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Text(
             text = location.name,
@@ -695,6 +579,7 @@ private fun BuiltinStorageLocationRow(
             Button(
                 onClick = { onRequestPermission(requestPermissions) },
                 enabled = builtinGrantButtonEnabled(accessLevel),
+                colors = ButtonDefaults.buttonColorsPrimary(),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(builtinGrantButtonLabelRes(accessLevel)))

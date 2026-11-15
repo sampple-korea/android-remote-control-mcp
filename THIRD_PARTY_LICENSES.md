@@ -49,6 +49,7 @@ Gradle Plugin, ...) are not part of the app and are not listed.
 | JSR-330 (`javax.inject`) and Jakarta Inject API | Apache-2.0 | https://github.com/eclipse-ee4j/injection-api |
 | JSpecify annotations | Apache-2.0 | https://github.com/jspecify/jspecify |
 | osmdroid | Apache-2.0 | https://github.com/osmdroid/osmdroid |
+| Miuix (`top.yukonga.miuix.kmp:miuix-ui`, `miuix-preference`, `miuix-blur` and their `miuix-core`, `miuix-squircle`, `miuix-shader` dependencies) | Apache-2.0 | https://github.com/compose-miuix-ui/miuix |
 
 ## Bundled native binaries
 
@@ -260,6 +261,13 @@ Rust crates compiled into it:
 | url | MIT OR Apache-2.0 | https://crates.io/crates/url |
 | want | MIT | https://crates.io/crates/want |
 | zeroize | Apache-2.0 OR MIT | https://crates.io/crates/zeroize |
+
+## Adapted source code
+
+| Component | License | Source |
+|---|---|---|
+| KernelSU manager UI: the floating liquid glass bottom bar, blurred bars and their drag / highlight animations (`ui/components/glass/`) | GPL-3.0 | https://github.com/tiann/KernelSU |
+| AndroidLiquidGlass: the lens, vibrancy, inner shadow and combined backdrop effects those files build on | Apache-2.0 | https://github.com/Kyant0/AndroidLiquidGlass |
 
 ## Data and models
 

@@ -10,31 +10,29 @@ import android.graphics.drawable.BitmapDrawable
 import android.location.Geocoder
 import android.view.MotionEvent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -58,8 +56,9 @@ import androidx.core.graphics.createBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.data.model.GeofenceZone
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppTextField
+import com.danielealbano.androidremotecontrolmcp.ui.components.LocalBottomBarInset
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.GeofenceSettingsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -70,10 +69,13 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.Polygon
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -224,17 +226,16 @@ fun GeofenceMapScreen(
         map.invalidate()
     }
 
+    val bottomInset = LocalBottomBarInset.current ?: WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    TopBarTitle(
-                        stringResource(if (zoneId != null) R.string.geofence_edit_zone_title else R.string.geofence_add_zone_title),
-                    )
-                },
+            SmallTopAppBar(
+                title =
+                    stringResource(if (zoneId != null) R.string.geofence_edit_zone_title else R.string.geofence_add_zone_title),
                 navigationIcon = { TopBarBackButton(onClick = onNavigateBack) },
                 actions = {
                     TextButton(
+                        text = stringResource(R.string.geofence_save),
                         onClick = {
                             val zone =
                                 GeofenceZone(
@@ -257,25 +258,26 @@ fun GeofenceMapScreen(
                             onNavigateBack()
                         },
                         enabled = canSave,
-                    ) {
-                        Text(stringResource(R.string.geofence_save))
-                    }
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.padding(end = 16.dp),
+                    )
                 },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MiuixTheme.colorScheme.surface,
-                    ),
             )
         },
+        contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal),
     ) { scaffoldPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(scaffoldPadding)) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = scaffoldPadding.calculateTopPadding(), bottom = bottomInset),
+        ) {
             // Zone name field
-            OutlinedTextField(
+            AppTextField(
                 value = name,
                 onValueChange = { name = it },
-                placeholder = { Text(stringResource(R.string.geofence_zone_name_placeholder)) },
+                label = stringResource(R.string.geofence_zone_name_placeholder),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                singleLine = true,
             )
 
             Spacer(Modifier.height(12.dp))
@@ -397,7 +399,7 @@ fun GeofenceMapScreen(
                 }
 
                 // My Location button
-                SmallFloatingActionButton(
+                FloatingActionButton(
                     onClick = {
                         coroutineScope.launch {
                             viewModel.currentLocation().onSuccess { loc ->
@@ -412,9 +414,14 @@ fun GeofenceMapScreen(
                             .align(Alignment.BottomEnd)
                             .padding(end = 12.dp, bottom = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surface,
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
+                    minWidth = 48.dp,
+                    minHeight = 48.dp,
                 ) {
-                    Icon(Icons.Default.MyLocation, stringResource(R.string.geofence_my_location))
+                    Icon(
+                        Icons.Default.MyLocation,
+                        stringResource(R.string.geofence_my_location),
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
                 }
             }
 
@@ -443,10 +450,10 @@ fun GeofenceMapScreen(
                 )
 
                 // Search address
-                OutlinedTextField(
+                AppTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text(stringResource(R.string.geofence_search_placeholder)) },
+                    label = stringResource(R.string.geofence_search_placeholder),
                     trailingIcon = {
                         IconButton(onClick = {
                             coroutineScope.launch(Dispatchers.IO) {
@@ -473,8 +480,7 @@ fun GeofenceMapScreen(
                             Icon(Icons.Default.Search, stringResource(R.string.geofence_search))
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
             }
         }

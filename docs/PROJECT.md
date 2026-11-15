@@ -58,7 +58,7 @@ The application is a **service-based Android app** that exposes an MCP server ov
 - **Type**: Android Activity (Jetpack Compose UI)
 - **Purpose**: Configuration and control interface
 - **Features**: Server status display (running/stopped), start/stop MCP server toggle, configuration settings (binding address, port, bearer token, auto-start on boot, HTTPS toggle and certificate management, remote access tunnel toggle and provider selection), quick links (enable accessibility service), connection info display (with tunnel public URL when connected), server logs viewer (recent server events including MCP tool calls and tunnel events)
-- **Implementation**: Material Design 3 with dark mode support, Jetpack Compose, ViewModel for state management, observes service status via Flow/StateFlow
+- **Implementation**: Miuix design language (HyperOS look) with dark mode support, frosted (blurred) top bars and a floating liquid glass bottom bar, Jetpack Compose, ViewModel for state management, observes service status via Flow/StateFlow
 
 ### Inter-Service Communication
 
@@ -94,7 +94,8 @@ The typical startup flow: User opens app → enables Accessibility Service in An
 
 ### Frameworks & Libraries
 
-- **Jetpack Compose**: UI framework (Material Design 3)
+- **Jetpack Compose**: UI framework
+- **Miuix**: 0.9.4 (`top.yukonga.miuix.kmp:miuix-ui`, `miuix-preference`, `miuix-blur`, Apache-2.0), the Compose component kit, theme and backdrop blur the UI is built with; the floating liquid glass bottom bar (`ui/components/glass/`) is adapted from KernelSU (GPL-3.0)
 - **Lifecycle**: ViewModel, LiveData, Flow
 - **DataStore**: Settings persistence (modern replacement for SharedPreferences)
 - **Hilt**: Dependency injection (Dagger-based, official Android DI)

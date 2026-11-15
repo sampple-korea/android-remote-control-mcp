@@ -11,28 +11,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.ReportProblem
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -54,16 +46,20 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.BuildConfig
 import com.danielealbano.androidremotecontrolmcp.R
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixPage
+import com.danielealbano.androidremotecontrolmcp.ui.components.NavigationPreference
 import com.danielealbano.androidremotecontrolmcp.ui.components.rememberChangedSinceShown
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.UpdateCheckUiState
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.UpdateViewModel
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -74,19 +70,13 @@ fun AboutScreen(
     val context = LocalContext.current
 
     val openLink = stringResource(R.string.a11y_action_open_link)
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.tab_about)) },
-            windowInsets = WindowInsets(0),
-        )
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-        ) {
-            // App icon + name + version
+    val openUrl: (String) -> Unit = { url ->
+        // No-op if the device has no browser to handle ACTION_VIEW (never crash).
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+    }
+    MiuixPage(title = stringResource(R.string.tab_about), modifier = modifier) {
+        // App icon + name + version
+        Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 24.dp, horizontal = 16.dp)) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -120,139 +110,81 @@ fun AboutScreen(
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
-
-            Spacer(Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
-
-            // Updates section
-            UpdateSettingsSection(
-                viewModel = updateViewModel,
-                onOpenUrl = { url ->
-                    // No-op if the device has no browser to handle ACTION_VIEW (never crash).
-                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
-                },
-            )
-
-            Spacer(Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
-
-            // Author section
-            Text(
-                text = stringResource(R.string.about_author_section),
-                style = MiuixTheme.textStyles.headline2,
-            )
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = stringResource(R.string.about_author_name),
-                style = MiuixTheme.textStyles.body1,
-            )
-            Spacer(Modifier.height(4.dp))
-
-            Text(
-                text = stringResource(R.string.about_author_linkedin),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.primary,
-                modifier =
-                    Modifier.clickable(onClickLabel = openLink) {
-                        runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AboutLinks.LINKEDIN_URL)))
-                        }
-                    },
-            )
-            Spacer(Modifier.height(4.dp))
-
-            Text(
-                text = stringResource(R.string.about_author_x),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.primary,
-                modifier =
-                    Modifier.clickable(onClickLabel = openLink) {
-                        runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AboutLinks.X_URL)))
-                        }
-                    },
-            )
-
-            Spacer(Modifier.height(16.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
-
-            // Links section
-            Text(
-                text = stringResource(R.string.about_links_section),
-                style = MiuixTheme.textStyles.headline2,
-            )
-            Spacer(Modifier.height(8.dp))
-
-            AboutLinkItem(R.string.about_link_github, Icons.Default.Code, AboutLinks.GITHUB_URL)
-            AboutLinkItem(R.string.about_link_license, Icons.Default.Description, AboutLinks.LICENSE_URL)
-            AboutLinkItem(
-                R.string.about_link_third_party_licenses,
-                Icons.AutoMirrored.Filled.LibraryBooks,
-                AboutLinks.THIRD_PARTY_LICENSES_URL,
-            )
-            AboutLinkItem(R.string.about_link_issues, Icons.Default.ReportProblem, AboutLinks.ISSUES_URL)
-            AboutLinkItem(R.string.about_link_tunnel_status, Icons.Default.MonitorHeart, AboutLinks.TUNNEL_STATUS_URL)
-            AboutLinkItem(
-                R.string.about_link_tunnel_server_repository,
-                Icons.Default.Dns,
-                AboutLinks.TUNNEL_SERVER_REPOSITORY_URL,
-            )
-
-            Spacer(Modifier.height(16.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
-
-            // Attributions section
-            Text(
-                text = stringResource(R.string.about_attributions_section),
-                style = MiuixTheme.textStyles.headline2,
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.about_attribution_dbip),
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.primary,
-                modifier =
-                    Modifier.clickable(onClickLabel = openLink) {
-                        runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AboutLinks.DBIP_URL)))
-                        }
-                    },
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.about_attribution_privacy_model),
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.primary,
-                modifier =
-                    Modifier.clickable(onClickLabel = openLink) {
-                        runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AboutLinks.PRIVACY_MODEL_URL)))
-                        }
-                    },
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.about_attribution_android_robot),
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // Footer
-            Text(
-                text = stringResource(R.string.about_footer),
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
+
+        // Updates section
+        Column {
+            SmallTitle(text = stringResource(R.string.about_updates_section))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                UpdateSettingsSection(viewModel = updateViewModel, onOpenUrl = openUrl)
+            }
+        }
+
+        // Author section
+        Column {
+            SmallTitle(text = stringResource(R.string.about_author_section))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                BasicComponent(title = stringResource(R.string.about_author_name))
+                NavigationPreference(
+                    title = stringResource(R.string.about_author_linkedin),
+                    onClick = { openUrl(AboutLinks.LINKEDIN_URL) },
+                    onClickLabel = openLink,
+                )
+                NavigationPreference(
+                    title = stringResource(R.string.about_author_x),
+                    onClick = { openUrl(AboutLinks.X_URL) },
+                    onClickLabel = openLink,
+                )
+            }
+        }
+
+        // Links section
+        Column {
+            SmallTitle(text = stringResource(R.string.about_links_section))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                AboutLinkItem(R.string.about_link_github, Icons.Default.Code, AboutLinks.GITHUB_URL)
+                AboutLinkItem(R.string.about_link_license, Icons.Default.Description, AboutLinks.LICENSE_URL)
+                AboutLinkItem(
+                    R.string.about_link_third_party_licenses,
+                    Icons.AutoMirrored.Filled.LibraryBooks,
+                    AboutLinks.THIRD_PARTY_LICENSES_URL,
+                )
+                AboutLinkItem(R.string.about_link_issues, Icons.Default.ReportProblem, AboutLinks.ISSUES_URL)
+                AboutLinkItem(R.string.about_link_tunnel_status, Icons.Default.MonitorHeart, AboutLinks.TUNNEL_STATUS_URL)
+                AboutLinkItem(
+                    R.string.about_link_tunnel_server_repository,
+                    Icons.Default.Dns,
+                    AboutLinks.TUNNEL_SERVER_REPOSITORY_URL,
+                )
+            }
+        }
+
+        // Attributions section
+        Column {
+            SmallTitle(text = stringResource(R.string.about_attributions_section))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                NavigationPreference(
+                    title = stringResource(R.string.about_attribution_dbip),
+                    onClick = { openUrl(AboutLinks.DBIP_URL) },
+                    onClickLabel = openLink,
+                )
+                NavigationPreference(
+                    title = stringResource(R.string.about_attribution_privacy_model),
+                    onClick = { openUrl(AboutLinks.PRIVACY_MODEL_URL) },
+                    onClickLabel = openLink,
+                )
+                BasicComponent(summary = stringResource(R.string.about_attribution_android_robot))
+            }
+        }
+
+        // Footer
+        Text(
+            text = stringResource(R.string.about_footer),
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
     }
 }
 
@@ -264,14 +196,11 @@ private fun AboutLinkItem(
     url: String,
 ) {
     val context = LocalContext.current
-    ListItem(
-        headlineContent = { Text(stringResource(labelRes)) },
-        leadingContent = { Icon(icon, contentDescription = null) },
-        trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
-        modifier =
-            Modifier.clickable(onClickLabel = stringResource(R.string.a11y_action_open_link)) {
-                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
-            },
+    NavigationPreference(
+        title = stringResource(labelRes),
+        icon = icon,
+        onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } },
+        onClickLabel = stringResource(R.string.a11y_action_open_link),
     )
 }
 
@@ -283,44 +212,33 @@ private fun UpdateSettingsSection(
     val autoCheckEnabled by viewModel.autoCheckEnabled.collectAsStateWithLifecycle()
     val checkState by viewModel.checkState.collectAsStateWithLifecycle()
 
-    Text(
-        text = stringResource(R.string.about_updates_section),
-        style = MiuixTheme.textStyles.headline2,
+    SwitchPreference(
+        title = stringResource(R.string.about_auto_update_label),
+        checked = autoCheckEnabled,
+        onCheckedChange = viewModel::setAutoCheckEnabled,
     )
-    Spacer(Modifier.height(8.dp))
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = stringResource(R.string.about_auto_update_label),
-            style = MiuixTheme.textStyles.body1,
-            modifier = Modifier.weight(1f),
-        )
-        Switch(
-            checked = autoCheckEnabled,
-            onCheckedChange = viewModel::setAutoCheckEnabled,
-            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-        )
-    }
-
-    Spacer(Modifier.height(8.dp))
-    Button(
-        onClick = viewModel::checkNow,
-        enabled = checkState !is UpdateCheckUiState.Checking,
-    ) {
-        if (checkState is UpdateCheckUiState.Checking) {
-            val checking = stringResource(R.string.about_update_checking)
-            CircularProgressIndicator(
-                modifier = Modifier.size(18.dp).semantics { contentDescription = checking },
-                strokeWidth = 2.dp,
-            )
-        } else {
-            Text(stringResource(R.string.about_check_updates_button))
+    Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+        Button(
+            onClick = viewModel::checkNow,
+            enabled = checkState !is UpdateCheckUiState.Checking,
+            colors = ButtonDefaults.buttonColorsPrimary(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (checkState is UpdateCheckUiState.Checking) {
+                val checking = stringResource(R.string.about_update_checking)
+                InfiniteProgressIndicator(
+                    modifier = Modifier.semantics { contentDescription = checking },
+                    color = LocalContentColor.current,
+                    size = 18.dp,
+                )
+            } else {
+                Text(stringResource(R.string.about_check_updates_button))
+            }
         }
-    }
 
-    UpdateCheckStatusText(state = checkState, onOpenUrl = onOpenUrl)
+        UpdateCheckStatusText(state = checkState, onOpenUrl = onOpenUrl)
+    }
 }
 
 @Composable
@@ -367,11 +285,15 @@ private fun UpdateCheckStatusText(
                 },
     ) {
         if (message != null) {
-            val colors = MaterialTheme.colorScheme
             Text(
                 text = message,
                 style = MiuixTheme.textStyles.body2,
-                color = if (found != null) colors.primary else colors.onSurfaceVariant,
+                color =
+                    if (found != null) {
+                        MiuixTheme.colorScheme.primary
+                    } else {
+                        MiuixTheme.colorScheme.onSurfaceVariantSummary
+                    },
             )
         }
     }

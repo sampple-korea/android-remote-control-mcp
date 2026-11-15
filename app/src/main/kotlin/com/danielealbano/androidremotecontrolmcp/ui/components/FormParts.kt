@@ -6,7 +6,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -27,6 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.VisualTransformation
@@ -35,6 +38,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.danielealbano.androidremotecontrolmcp.R
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
@@ -195,7 +199,6 @@ fun NavigationPreference(
     enabled: Boolean = true,
     onClickLabel: String = stringResource(R.string.a11y_action_open),
 ) {
-    val layoutDirection = LocalLayoutDirection.current
     BasicComponent(
         modifier = modifier,
         title = title,
@@ -212,25 +215,7 @@ fun NavigationPreference(
                     )
                 }
             },
-        endActions = {
-            Image(
-                imageVector = MiuixIcons.Basic.ArrowRight,
-                contentDescription = null,
-                colorFilter =
-                    ColorFilter.tint(
-                        if (enabled) {
-                            MiuixTheme.colorScheme.onSurfaceVariantActions
-                        } else {
-                            MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                        },
-                    ),
-                modifier =
-                    Modifier
-                        .size(width = 10.dp, height = 16.dp)
-                        .graphicsLayer { scaleX = if (layoutDirection == LayoutDirection.Rtl) -1f else 1f }
-                        .align(Alignment.CenterVertically),
-            )
-        },
+        endActions = { PreferenceArrow(enabled) },
         onClick = onClick,
         onClickLabel = onClickLabel,
         enabled = enabled,
@@ -249,12 +234,76 @@ fun SwitchOnlyPreference(
     modifier: Modifier = Modifier,
     summary: String? = null,
     enabled: Boolean = true,
+    insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
 ) {
     BasicComponent(
         modifier = modifier,
         title = title,
         summary = summary,
         endActions = { Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled) },
+        insideMargin = insideMargin,
         enabled = enabled,
+    )
+}
+
+/** The Miuix chevron that ends a row opening another screen. */
+@Composable
+private fun RowScope.PreferenceArrow(enabled: Boolean) {
+    val layoutDirection = LocalLayoutDirection.current
+    Image(
+        imageVector = MiuixIcons.Basic.ArrowRight,
+        contentDescription = null,
+        colorFilter =
+            ColorFilter.tint(
+                if (enabled) {
+                    MiuixTheme.colorScheme.onSurfaceVariantActions
+                } else {
+                    MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                },
+            ),
+        modifier =
+            Modifier
+                .padding(start = 8.dp)
+                .size(width = 10.dp, height = 16.dp)
+                .graphicsLayer { scaleX = if (layoutDirection == LayoutDirection.Rtl) -1f else 1f }
+                .align(Alignment.CenterVertically),
+    )
+}
+
+/**
+ * An event source row: the row opens its own settings ([onClick]), so the switch is a control of
+ * its own, named after the row.
+ */
+@Composable
+fun EventSourceRow(
+    title: String,
+    icon: ImageVector,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    BasicComponent(
+        modifier = modifier,
+        title = title,
+        startAction = {
+            // Decorative: the title says it
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(end = 12.dp),
+            )
+        },
+        endActions = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                modifier = Modifier.semantics { contentDescription = title },
+            )
+            PreferenceArrow(enabled = true)
+        },
+        onClick = onClick,
+        onClickLabel = stringResource(R.string.a11y_action_open),
     )
 }

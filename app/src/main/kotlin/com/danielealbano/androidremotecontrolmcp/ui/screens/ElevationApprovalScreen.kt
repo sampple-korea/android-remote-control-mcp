@@ -26,6 +26,7 @@ import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.services.shell.approval.PendingElevation
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ElevationApprovalViewModel
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -46,7 +47,7 @@ fun ElevationApprovalScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
         ) {
-            Text(stringResource(R.string.elevation_approval_title), style = MiuixTheme.textStyles.title3)
+            Text(stringResource(R.string.elevation_approval_title), style = MiuixTheme.textStyles.title2)
             Spacer(Modifier.height(16.dp))
             if (request == null) {
                 Text(stringResource(R.string.elevation_approval_gone))
@@ -73,6 +74,7 @@ fun ElevationApprovalScreen(
                             viewModel.approve(request.id)
                             onDone()
                         },
+                        colors = ButtonDefaults.buttonColorsPrimary(),
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.elevation_approve)) }
                 }

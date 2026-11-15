@@ -3,20 +3,12 @@
 package com.danielealbano.androidremotecontrolmcp.ui.screens.settings
 
 import android.location.Geocoder
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,23 +16,24 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.data.model.GeofenceZone
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppDialog
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixLazyPage
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.GeofenceSettingsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
 
@@ -94,86 +87,71 @@ fun GeofenceListScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { TopBarTitle(stringResource(R.string.geofence_list_title)) },
-                navigationIcon = { TopBarBackButton(onClick = onNavigateBack) },
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { onNavigateToMap(null) }) {
-                Icon(Icons.Default.Add, stringResource(R.string.geofence_add_zone))
+    MiuixLazyPage(
+        title = stringResource(R.string.geofence_list_title),
+        onBack = onNavigateBack,
+        actions = {
+            IconButton(onClick = { onNavigateToMap(null) }, modifier = Modifier.padding(end = 16.dp)) {
+                Icon(
+                    Icons.Default.Add,
+                    stringResource(R.string.geofence_add_zone),
+                    tint = MiuixTheme.colorScheme.onBackground,
+                )
             }
         },
-    ) { padding ->
+    ) {
         if (config.zones.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
+            item {
                 Text(
                     stringResource(R.string.geofence_list_empty),
                     style = MiuixTheme.textStyles.body1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                 )
             }
         } else {
-            LazyColumn(modifier = Modifier.padding(padding)) {
-                items(config.zones) { zone ->
-                    val street = streetNames[zone.id] ?: ""
-                    val summary =
-                        stringResource(
-                            R.string.geofence_zone_summary,
-                            zone.latitude,
-                            zone.longitude,
-                            zone.radiusMeters.toInt(),
-                        )
-                    ListItem(
-                        headlineContent = { Text(zone.name) },
-                        supportingContent = {
-                            Text(
-                                buildString {
-                                    if (street.isNotBlank()) append("$street\n")
-                                    append(summary)
-                                },
-                            )
-                        },
-                        trailingContent = {
-                            Row {
-                                IconButton(onClick = { zoneToDelete = zone }) {
-                                    Icon(Icons.Default.Delete, stringResource(R.string.geofence_delete_zone, zone.name))
-                                }
+            items(config.zones) { zone ->
+                val street = streetNames[zone.id] ?: ""
+                val summary =
+                    stringResource(
+                        R.string.geofence_zone_summary,
+                        zone.latitude,
+                        zone.longitude,
+                        zone.radiusMeters.toInt(),
+                    )
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    BasicComponent(
+                        title = zone.name,
+                        summary =
+                            buildString {
+                                if (street.isNotBlank()) append("$street\n")
+                                append(summary)
+                            },
+                        endActions = {
+                            IconButton(onClick = { zoneToDelete = zone }) {
+                                Icon(Icons.Default.Delete, stringResource(R.string.geofence_delete_zone, zone.name))
                             }
                         },
-                        modifier =
-                            Modifier.clickable(onClickLabel = stringResource(R.string.geofence_edit_action)) {
-                                onNavigateToMap(zone.id)
-                            },
+                        onClick = { onNavigateToMap(zone.id) },
+                        onClickLabel = stringResource(R.string.geofence_edit_action),
                     )
                 }
             }
         }
+    }
 
-        zoneToDelete?.let { zone ->
-            AlertDialog(
-                onDismissRequest = { zoneToDelete = null },
-                title = { Text(stringResource(R.string.geofence_delete_dialog_title)) },
-                text = { Text(stringResource(R.string.geofence_delete_dialog_message, zone.name)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.removeGeofenceZone(zone.id)
-                        zoneToDelete = null
-                    }) {
-                        Text(stringResource(R.string.geofence_delete_dialog_confirm))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { zoneToDelete = null }) {
-                        Text(stringResource(R.string.geofence_delete_dialog_cancel))
-                    }
-                },
-            )
-        }
+    zoneToDelete?.let { zone ->
+        AppDialog(
+            title = stringResource(R.string.geofence_delete_dialog_title),
+            message = stringResource(R.string.geofence_delete_dialog_message, zone.name),
+            confirmText = stringResource(R.string.geofence_delete_dialog_confirm),
+            onConfirm = {
+                viewModel.removeGeofenceZone(zone.id)
+                zoneToDelete = null
+            },
+            dismissText = stringResource(R.string.geofence_delete_dialog_cancel),
+            onDismissRequest = { zoneToDelete = null },
+        )
     }
 }

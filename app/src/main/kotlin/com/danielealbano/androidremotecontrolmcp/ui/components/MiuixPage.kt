@@ -138,6 +138,7 @@ fun MiuixLazyPage(
     actions: @Composable RowScope.() -> Unit = {},
     snackbarHostState: SnackbarHostState? = null,
     listState: LazyListState = rememberLazyListState(),
+    itemSpacing: Dp = PageItemSpacing,
     content: LazyListScope.() -> Unit,
 ) {
     PageScaffold(title, modifier, onBack, actions, snackbarHostState) { innerPadding, scrollModifier ->
@@ -152,7 +153,7 @@ fun MiuixLazyPage(
                     top = innerPadding.calculateTopPadding() + PageItemSpacing,
                     bottom = bottomInset,
                 ),
-            verticalArrangement = Arrangement.spacedBy(PageItemSpacing),
+            verticalArrangement = Arrangement.spacedBy(itemSpacing),
             overscrollEffect = null,
             content = content,
         )

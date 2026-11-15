@@ -6,39 +6,21 @@ import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
@@ -49,13 +31,14 @@ import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTu
 import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTunnelServiceProblem
 import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTunnelStatusPage
 import com.danielealbano.androidremotecontrolmcp.ui.ApprovalActivity
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppDialog
 import com.danielealbano.androidremotecontrolmcp.ui.components.BatteryOptimizationCard
 import com.danielealbano.androidremotecontrolmcp.ui.components.CalloutCard
 import com.danielealbano.androidremotecontrolmcp.ui.components.ConnectionInfoCard
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixPage
 import com.danielealbano.androidremotecontrolmcp.ui.components.PrivacyModeCard
 import com.danielealbano.androidremotecontrolmcp.ui.components.ServerLogsSection
 import com.danielealbano.androidremotecontrolmcp.ui.components.ServerStatusCard
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelRenewalViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ChannelViewModel
@@ -64,9 +47,6 @@ import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.PrivacyViewModel
 import com.danielealbano.androidremotecontrolmcp.utils.NetworkUtils
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 
 @Composable
@@ -111,150 +91,125 @@ fun ServerScreen(
     val copiedToClipboardMessage = stringResource(R.string.copied_to_clipboard)
     var showChannelNotConfiguredDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.tab_server)) },
-            windowInsets = WindowInsets(0),
-        )
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-        ) {
-            if (!isAccessibilityEnabled) {
-                PermissionWarningCard(onClick = onNavigateToPermissions)
-                Spacer(Modifier.height(16.dp))
-            }
+    MiuixPage(title = stringResource(R.string.tab_server), modifier = modifier) {
+        if (!isAccessibilityEnabled) {
+            PermissionWarningCard(onClick = onNavigateToPermissions)
+        }
 
-            if (!serverConfig.oauthEnabled && !serverConfig.bearerTokenEnabled) {
-                NoAuthWarningCard()
-                Spacer(Modifier.height(16.dp))
-            }
+        if (!serverConfig.oauthEnabled && !serverConfig.bearerTokenEnabled) {
+            NoAuthWarningCard()
+        }
 
-            if (!isBatteryOptimizationIgnored) {
-                BatteryOptimizationCard(
-                    onRequestExemption = { viewModel.requestBatteryOptimizationExemption() },
-                )
-                Spacer(Modifier.height(16.dp))
-            }
-
-            if (pendingApprovalCount > 0) {
-                PendingApprovalsCard(
-                    count = pendingApprovalCount,
-                    onClick = { context.startActivity(Intent(context, ApprovalActivity::class.java)) },
-                )
-                Spacer(Modifier.height(16.dp))
-            }
-
-            ArcTunnelServiceProblemCard(tunnelServiceProblem)
-
-            ArcTunnelCtAlertCard(
-                alert = ctAlert,
-                onChangeName = onNavigateToTunnelSettings,
-                onDismiss = { arcTunnelViewModel.dismissCtAlert() },
-            )
-
-            if (serverConfig.bindingAddress == BindingAddress.LOCALHOST && !serverConfig.tunnelEnabled) {
-                NetworkAccessSuggestionCard(
-                    enabled = serverStatus is ServerStatus.Stopped,
-                    onEnableFreeTunnel = {
-                        arcTunnelViewModel.enableFreeTunnel()
-                        onNavigateToTunnelSettings()
-                    },
-                    onEnableWifi = {
-                        viewModel.updateBindingAddress(BindingAddress.NETWORK)
-                        onNavigateToNetworkSettings()
-                    },
-                    onOtherTunnels = {
-                        viewModel.updateTunnelProvider(TunnelProviderType.CLOUDFLARE)
-                        onNavigateToTunnelSettings()
-                    },
-                )
-                Spacer(Modifier.height(16.dp))
-            }
-
-            if (!privacyConfig.enabled && !privacyCardDismissed) {
-                PrivacyModeCard(
-                    onSetupClick = onOpenPrivacySettings,
-                    onDismissClick = { privacyViewModel.dismissPrivacyCard() },
-                )
-                Spacer(Modifier.height(16.dp))
-            }
-
-            ServerStatusCard(
-                serverStatus = serverStatus,
-                channelStatus = channelStatus,
-                // Off until the saved configuration is read, and only from then on a state worth announcing
-                channelEnabled = channelEnabled ?: false,
-                channelStatusKnown = channelEnabled != null,
-                onMcpStartClick = { viewModel.startServer(context) },
-                onMcpStopClick = { viewModel.stopServer(context) },
-                onChannelStartClick = {
-                    if (channelConfig.endpointUrl.isBlank()) {
-                        showChannelNotConfiguredDialog = true
-                    } else {
-                        channelViewModel.startChannel()
-                    }
-                },
-                onChannelStopClick = { channelViewModel.stopChannel() },
-                startEnabled = isAccessibilityEnabled,
-                mcpStartBlockedMessage = listenerCheck.startError,
-                mcpBusy = renewal.inProgress,
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            ConnectionInfoCard(
-                bindingAddress = serverConfig.bindingAddress,
-                bindHost = serverConfig.bindHost,
-                ipAddress = deviceIp,
-                port = serverConfig.port,
-                httpsEnabled = serverConfig.httpsEnabled,
-                bearerToken = serverConfig.bearerToken,
-                tunnelEnabled = serverConfig.tunnelEnabled,
-                serverStatus = serverStatus,
-                tunnelStatus = tunnelStatus,
-                renewal = renewal,
-                onCancelRenewal = { viewModel.stopServer(context) },
-                onRetryRenewal = arcTunnelRenewalViewModel::retry,
-                specificAddressRefused = listenerCheck.specificAddressError != null,
-                onCopyAll = { text ->
-                    scope.launch {
-                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("서버 정보", text)))
-                        Toast.makeText(context, copiedToClipboardMessage, Toast.LENGTH_SHORT).show()
-                    }
-                },
-                onShare = { text ->
-                    val intent =
-                        Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, text)
-                        }
-                    context.startActivity(Intent.createChooser(intent, null))
-                },
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            ServerLogsSection(
-                logs = recentServerLogs,
-                onShowMore = onShowAllLogs,
+        if (!isBatteryOptimizationIgnored) {
+            BatteryOptimizationCard(
+                onRequestExemption = { viewModel.requestBatteryOptimizationExemption() },
             )
         }
+
+        if (pendingApprovalCount > 0) {
+            PendingApprovalsCard(
+                count = pendingApprovalCount,
+                onClick = { context.startActivity(Intent(context, ApprovalActivity::class.java)) },
+            )
+        }
+
+        ArcTunnelServiceProblemCard(tunnelServiceProblem)
+
+        ArcTunnelCtAlertCard(
+            alert = ctAlert,
+            onChangeName = onNavigateToTunnelSettings,
+            onDismiss = { arcTunnelViewModel.dismissCtAlert() },
+        )
+
+        if (serverConfig.bindingAddress == BindingAddress.LOCALHOST && !serverConfig.tunnelEnabled) {
+            NetworkAccessSuggestionCard(
+                enabled = serverStatus is ServerStatus.Stopped,
+                onEnableFreeTunnel = {
+                    arcTunnelViewModel.enableFreeTunnel()
+                    onNavigateToTunnelSettings()
+                },
+                onEnableWifi = {
+                    viewModel.updateBindingAddress(BindingAddress.NETWORK)
+                    onNavigateToNetworkSettings()
+                },
+                onOtherTunnels = {
+                    viewModel.updateTunnelProvider(TunnelProviderType.CLOUDFLARE)
+                    onNavigateToTunnelSettings()
+                },
+            )
+        }
+
+        if (!privacyConfig.enabled && !privacyCardDismissed) {
+            PrivacyModeCard(
+                onSetupClick = onOpenPrivacySettings,
+                onDismissClick = { privacyViewModel.dismissPrivacyCard() },
+            )
+        }
+
+        ServerStatusCard(
+            serverStatus = serverStatus,
+            channelStatus = channelStatus,
+            // Off until the saved configuration is read, and only from then on a state worth announcing
+            channelEnabled = channelEnabled ?: false,
+            channelStatusKnown = channelEnabled != null,
+            onMcpStartClick = { viewModel.startServer(context) },
+            onMcpStopClick = { viewModel.stopServer(context) },
+            onChannelStartClick = {
+                if (channelConfig.endpointUrl.isBlank()) {
+                    showChannelNotConfiguredDialog = true
+                } else {
+                    channelViewModel.startChannel()
+                }
+            },
+            onChannelStopClick = { channelViewModel.stopChannel() },
+            startEnabled = isAccessibilityEnabled,
+            mcpStartBlockedMessage = listenerCheck.startError,
+            mcpBusy = renewal.inProgress,
+        )
+
+        ConnectionInfoCard(
+            bindingAddress = serverConfig.bindingAddress,
+            bindHost = serverConfig.bindHost,
+            ipAddress = deviceIp,
+            port = serverConfig.port,
+            httpsEnabled = serverConfig.httpsEnabled,
+            bearerToken = serverConfig.bearerToken,
+            tunnelEnabled = serverConfig.tunnelEnabled,
+            serverStatus = serverStatus,
+            tunnelStatus = tunnelStatus,
+            renewal = renewal,
+            onCancelRenewal = { viewModel.stopServer(context) },
+            onRetryRenewal = arcTunnelRenewalViewModel::retry,
+            specificAddressRefused = listenerCheck.specificAddressError != null,
+            onCopyAll = { text ->
+                scope.launch {
+                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("서버 정보", text)))
+                    Toast.makeText(context, copiedToClipboardMessage, Toast.LENGTH_SHORT).show()
+                }
+            },
+            onShare = { text ->
+                val intent =
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, text)
+                    }
+                context.startActivity(Intent.createChooser(intent, null))
+            },
+        )
+
+        ServerLogsSection(
+            logs = recentServerLogs,
+            onShowMore = onShowAllLogs,
+        )
     }
 
     if (showChannelNotConfiguredDialog) {
-        AlertDialog(
+        AppDialog(
+            title = stringResource(R.string.channel_not_configured_dialog_title),
+            message = stringResource(R.string.channel_not_configured_dialog_body),
+            confirmText = stringResource(R.string.channel_not_configured_dialog_ok),
+            onConfirm = { showChannelNotConfiguredDialog = false },
             onDismissRequest = { showChannelNotConfiguredDialog = false },
-            title = { Text(stringResource(R.string.channel_not_configured_dialog_title)) },
-            text = { Text(stringResource(R.string.channel_not_configured_dialog_body)) },
-            confirmButton = {
-                TextButton(onClick = { showChannelNotConfiguredDialog = false }) {
-                    Text(stringResource(R.string.channel_not_configured_dialog_ok))
-                }
-            },
         )
     }
 }
@@ -278,9 +233,21 @@ private fun NetworkAccessSuggestionCard(
         icon = Icons.Default.Info,
         title = stringResource(R.string.server_network_access_suggestion_title),
     ) {
-        TextButton(text = stringResource(R.string.server_network_access_suggestion_arc_tunnel), onClick = onEnableFreeTunnel, enabled = enabled)
-        TextButton(text = stringResource(R.string.server_network_access_suggestion_wifi), onClick = onEnableWifi, enabled = enabled)
-        TextButton(text = stringResource(R.string.server_network_access_suggestion_other_tunnels), onClick = onOtherTunnels, enabled = enabled)
+        TextButton(
+            text = stringResource(R.string.server_network_access_suggestion_arc_tunnel),
+            onClick = onEnableFreeTunnel,
+            enabled = enabled,
+        )
+        TextButton(
+            text = stringResource(R.string.server_network_access_suggestion_wifi),
+            onClick = onEnableWifi,
+            enabled = enabled,
+        )
+        TextButton(
+            text = stringResource(R.string.server_network_access_suggestion_other_tunnels),
+            onClick = onOtherTunnels,
+            enabled = enabled,
+        )
     }
 }
 
@@ -304,16 +271,14 @@ private fun ArcTunnelServiceProblemCard(problem: ArcTunnelServiceProblem?) {
             },
     ) {
         TextButton(
+            text = stringResource(R.string.server_arc_tunnel_status_action),
             onClick = {
                 runCatching {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ArcTunnelStatusPage.PAGE_URL)))
                 }
             },
-        ) {
-            Text(stringResource(R.string.server_arc_tunnel_status_action))
-        }
+        )
     }
-    Spacer(Modifier.height(16.dp))
 }
 
 /** The Certificate Transparency banner; nothing when there is no alert. */
@@ -329,10 +294,12 @@ private fun ArcTunnelCtAlertCard(
         title = stringResource(R.string.server_arc_tunnel_ct_alert_title),
         body = stringResource(R.string.server_arc_tunnel_ct_alert_body, alert.fqdn),
     ) {
-        TextButton(text = stringResource(R.string.server_arc_tunnel_ct_alert_change_name), onClick = onChangeName)
+        TextButton(
+            text = stringResource(R.string.server_arc_tunnel_ct_alert_change_name),
+            onClick = onChangeName,
+        )
         TextButton(text = stringResource(R.string.server_arc_tunnel_ct_alert_dismiss), onClick = onDismiss)
     }
-    Spacer(Modifier.height(16.dp))
 }
 
 @Composable

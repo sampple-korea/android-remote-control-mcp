@@ -6,17 +6,16 @@ import android.content.Intent
 import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,15 +35,18 @@ import com.danielealbano.androidremotecontrolmcp.data.model.ServerConfig
 import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTunnelEnrollmentState
 import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTunnelRenewalState
 import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTunnelStatusPage
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppDialog
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppTextField
 import com.danielealbano.androidremotecontrolmcp.ui.components.ArcTunnelRenewalBlock
+import com.danielealbano.androidremotecontrolmcp.ui.components.SwitchOnlyPreference
 import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelRenewalViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelUrlState
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelViewModel
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -147,25 +149,14 @@ private fun ArcTunnelSwitchRow(
     enabled: Boolean,
     onChange: (Boolean) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = stringResource(label), style = MiuixTheme.textStyles.body1)
-            Text(
-                text = stringResource(description),
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onChange,
-            enabled = enabled,
-            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-        )
-    }
+    SwitchOnlyPreference(
+        title = stringResource(label),
+        summary = stringResource(description),
+        checked = checked,
+        onCheckedChange = onChange,
+        enabled = enabled,
+        insideMargin = PaddingValues(vertical = 10.dp),
+    )
 }
 
 /** The status page is that of the public service: a self-hosted base address has its own, or none. */
@@ -184,26 +175,20 @@ fun ArcTunnelSettingsContent(
     var showRotateDialog by rememberSaveable { mutableStateOf(false) }
 
     Column {
-        Text(
-            text = stringResource(R.string.remote_access_arc_tunnel_base_address_label),
-            style = MiuixTheme.textStyles.subtitle,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        OutlinedTextField(
+        AppTextField(
             value = state.baseAddress,
             onValueChange = actions.onBaseAddressChange,
-            singleLine = true,
+            label = stringResource(R.string.remote_access_arc_tunnel_base_address_label),
             enabled = state.enabled,
-            isError = !state.baseAddressValid,
-            supportingText =
+            error =
                 if (state.baseAddressValid) {
                     null
                 } else {
-                    { Text(stringResource(R.string.remote_access_arc_tunnel_base_address_error)) }
+                    stringResource(R.string.remote_access_arc_tunnel_base_address_error)
                 },
-            modifier =
+            modifier = Modifier.fillMaxWidth(),
+            fieldModifier =
                 Modifier
-                    .fillMaxWidth()
                     .onFocusChanged { focusState ->
                         // Gaining focus hides the soft keyboard instead of showing it (see
                         // hideSoftKeyboardOnFocus); losing it commits the address.
@@ -246,15 +231,15 @@ fun ArcTunnelSettingsContent(
         if (arcTunnelIsPublicService(state.baseAddress)) {
             val context = LocalContext.current
             TextButton(
+                text = stringResource(R.string.remote_access_arc_tunnel_status_link),
                 onClick = {
                     runCatching {
                         val page = Uri.parse(ArcTunnelStatusPage.PAGE_URL)
                         context.startActivity(Intent(Intent.ACTION_VIEW, page))
                     }
                 },
-            ) {
-                Text(stringResource(R.string.remote_access_arc_tunnel_status_link))
-            }
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
     }
 
@@ -289,16 +274,19 @@ private fun UrlRow(
 ) {
     when (val url = state.url) {
         is ArcTunnelUrlState.Loading -> {
-            Text(stringResource(R.string.remote_access_arc_tunnel_url_loading))
+            Text(
+                text = stringResource(R.string.remote_access_arc_tunnel_url_loading),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
         }
 
         is ArcTunnelUrlState.Enrolled -> {
-            OutlinedTextField(
+            AppTextField(
                 value = url.url,
                 onValueChange = {},
                 readOnly = true,
-                singleLine = true,
-                label = { Text(stringResource(R.string.remote_access_arc_tunnel_url_label)) },
+                label = stringResource(R.string.remote_access_arc_tunnel_url_label),
                 trailingIcon = {
                     IconButton(onClick = onRotate, enabled = state.enabled && !enrolling) {
                         Icon(
@@ -307,13 +295,19 @@ private fun UrlRow(
                         )
                     }
                 },
-                modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
+                modifier = Modifier.fillMaxWidth(),
+                fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
             )
         }
 
         is ArcTunnelUrlState.NotEnrolled -> {
             if (arcTunnelSetUpVisible(state)) {
-                TextButton(text = stringResource(R.string.remote_access_arc_tunnel_set_up), onClick = onEnroll, enabled = state.enabled)
+                TextButton(
+                    text = stringResource(R.string.remote_access_arc_tunnel_set_up),
+                    onClick = onEnroll,
+                    enabled = state.enabled,
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
             }
         }
     }
@@ -332,7 +326,10 @@ private fun EnrollmentProgress(
 
         is ArcTunnelEnrollmentState.Enrolling -> {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(modifier = Modifier.size(PROGRESS_SIZE_DP.dp), strokeWidth = 2.dp)
+                InfiniteProgressIndicator(
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    size = PROGRESS_SIZE_DP.dp,
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.remote_access_arc_tunnel_enrolling),
@@ -348,7 +345,11 @@ private fun EnrollmentProgress(
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.error,
                 )
-                TextButton(text = stringResource(R.string.remote_access_arc_tunnel_retry), onClick = onRetry, enabled = enabled)
+                TextButton(
+                    text = stringResource(R.string.remote_access_arc_tunnel_retry),
+                    onClick = onRetry,
+                    enabled = enabled,
+                )
             }
         }
     }
@@ -361,15 +362,12 @@ private fun ConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
+    AppDialog(
+        title = stringResource(title),
+        message = stringResource(body),
+        confirmText = stringResource(R.string.remote_access_arc_tunnel_enroll_dialog_continue),
+        onConfirm = onConfirm,
+        dismissText = stringResource(R.string.remote_access_arc_tunnel_enroll_dialog_cancel),
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(title)) },
-        text = { Text(stringResource(body)) },
-        confirmButton = {
-            TextButton(text = stringResource(R.string.remote_access_arc_tunnel_enroll_dialog_continue), onClick = onConfirm)
-        },
-        dismissButton = {
-            TextButton(text = stringResource(R.string.remote_access_arc_tunnel_enroll_dialog_cancel), onClick = onDismiss)
-        },
     )
 }
