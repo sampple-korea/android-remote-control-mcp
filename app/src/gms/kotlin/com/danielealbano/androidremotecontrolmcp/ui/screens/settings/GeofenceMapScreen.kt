@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
@@ -28,22 +29,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -79,6 +70,14 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.Polygon
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -129,7 +128,6 @@ private fun formatRadius(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GeofenceMapScreen(
     viewModel: GeofenceSettingsViewModel,
@@ -265,7 +263,7 @@ fun GeofenceMapScreen(
                 },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
+                        containerColor = MiuixTheme.colorScheme.surface,
                     ),
             )
         },
@@ -346,14 +344,14 @@ fun GeofenceMapScreen(
                             .padding(top = 8.dp, end = 8.dp)
                             .width(120.dp)
                             .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
+                                MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
                                 RoundedCornerShape(12.dp),
                             ).padding(horizontal = 12.dp, vertical = 8.dp),
                 ) {
                     Text(
                         stringResource(R.string.geofence_notifications_label),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                     Spacer(Modifier.height(4.dp))
                     Row(
@@ -367,13 +365,13 @@ fun GeofenceMapScreen(
                     ) {
                         Text(
                             stringResource(R.string.geofence_notify_enter),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MiuixTheme.textStyles.footnote1,
                             modifier = Modifier.weight(1f),
                         )
                         Switch(
                             checked = notifyOnEnter,
                             onCheckedChange = null,
-                            modifier = Modifier.minimumInteractiveComponentSize(),
+                            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                         )
                     }
                     Row(
@@ -387,13 +385,13 @@ fun GeofenceMapScreen(
                     ) {
                         Text(
                             stringResource(R.string.geofence_notify_exit),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MiuixTheme.textStyles.footnote1,
                             modifier = Modifier.weight(1f),
                         )
                         Switch(
                             checked = notifyOnExit,
                             onCheckedChange = null,
-                            modifier = Modifier.minimumInteractiveComponentSize(),
+                            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                         )
                     }
                 }
@@ -413,7 +411,7 @@ fun GeofenceMapScreen(
                         Modifier
                             .align(Alignment.BottomEnd)
                             .padding(end = 12.dp, bottom = 12.dp),
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MiuixTheme.colorScheme.surface,
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
                 ) {
                     Icon(Icons.Default.MyLocation, stringResource(R.string.geofence_my_location))
@@ -425,13 +423,13 @@ fun GeofenceMapScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
+                        .background(MiuixTheme.colorScheme.surface)
                         .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 // Radius slider
                 Text(
                     stringResource(R.string.geofence_radius, formatRadius(radiusMeters, resources)),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MiuixTheme.textStyles.body2,
                 )
                 Slider(
                     value = radiusMeters,

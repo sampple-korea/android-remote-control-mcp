@@ -21,14 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,9 +56,13 @@ import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ApprovalViewModel
 import kotlinx.coroutines.delay
 import okhttp3.OkHttpClient
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApprovalScreen(
     viewModel: ApprovalViewModel = hiltViewModel(),
@@ -93,7 +89,7 @@ fun ApprovalScreen(
         if (pending.isEmpty()) {
             Text(
                 text = stringResource(R.string.approval_empty),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MiuixTheme.textStyles.body2,
                 modifier = Modifier.padding(16.dp),
             )
         } else {
@@ -148,7 +144,7 @@ private fun ApprovalCard(
     val expired = remaining <= 0
     val cardColors =
         if (expired) {
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+            CardDefaults.cardColors(containerColor = MiuixTheme.colorScheme.errorContainer)
         } else {
             CardDefaults.cardColors()
         }
@@ -161,7 +157,7 @@ private fun ApprovalCard(
             Spacer(Modifier.height(16.dp))
             Text(
                 text = approval.clientName,
-                style = MaterialTheme.typography.titleLarge,
+                style = MiuixTheme.textStyles.title3,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(8.dp))
@@ -173,7 +169,7 @@ private fun ApprovalCard(
             Spacer(Modifier.height(24.dp))
             Text(
                 text = stringResource(R.string.approval_match_code_label),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MiuixTheme.textStyles.body2,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(12.dp))
@@ -202,7 +198,7 @@ private fun ApprovalActions(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // On the texts: a button reads its content, and the description replaces the bare "Deny" / "Approve"
-        OutlinedButton(onClick = onDeny) {
+        Button(onClick = onDeny) {
             Text(
                 text = stringResource(R.string.approval_deny),
                 modifier = Modifier.semantics { contentDescription = denyDescription },
@@ -250,7 +246,7 @@ private fun ClientIcon(
         Text(
             text = initials,
             color = ICON_INITIALS_COLOR,
-            style = MaterialTheme.typography.headlineSmall,
+            style = MiuixTheme.textStyles.title3,
             textAlign = TextAlign.Center,
         )
         if (iconUrl != null) {
@@ -271,21 +267,21 @@ private fun HostChip(host: String) {
         modifier =
             Modifier
                 .clip(RoundedCornerShape(CHIP_CORNER_DP.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = Icons.Filled.Public,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             modifier = Modifier.size(16.dp),
         )
         Spacer(Modifier.width(6.dp))
         Text(
             text = host,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
     }
 }
@@ -303,14 +299,14 @@ private fun ClientOriginRow(
         if (place.isNotEmpty()) {
             Text(
                 text = if (flag != null) "$flag  $place" else place,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MiuixTheme.textStyles.body2,
                 textAlign = TextAlign.Center,
             )
         }
         Text(
             text = ip,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
     }
 }
@@ -322,15 +318,15 @@ private fun MatchCodePill(code: String) {
         modifier =
             Modifier
                 .clip(RoundedCornerShape(PILL_CORNER_DP.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(MiuixTheme.colorScheme.primaryContainer)
                 .padding(horizontal = 32.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = code,
-            style = MaterialTheme.typography.displayMedium,
+            style = MiuixTheme.textStyles.title1,
             fontFamily = FontFamily.Monospace,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            color = MiuixTheme.colorScheme.onPrimaryContainer,
         )
     }
 }
@@ -361,9 +357,9 @@ private fun ExpiryCountdown(remaining: Long) {
         }
     Text(
         text = text,
-        style = if (expired) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodySmall,
+        style = if (expired) MiuixTheme.textStyles.headline2 else MiuixTheme.textStyles.footnote1,
         fontWeight = if (expired) FontWeight.Bold else null,
-        color = if (expired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        color = if (expired) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurfaceVariantSummary,
     )
 }
 

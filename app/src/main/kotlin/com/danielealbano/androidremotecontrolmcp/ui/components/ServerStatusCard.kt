@@ -5,7 +5,6 @@ package com.danielealbano.androidremotecontrolmcp.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,12 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -38,6 +31,14 @@ import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.data.model.ChannelConnectionStatus
 import com.danielealbano.androidremotecontrolmcp.data.model.ServerStatus
 import com.danielealbano.androidremotecontrolmcp.ui.theme.AndroidRemoteControlMcpTheme
+import com.danielealbano.androidremotecontrolmcp.ui.theme.isInDarkTheme
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.LocalContentColor
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val STATUS_DOT_SIZE_DP = 12
 private const val ANIMATION_DURATION_MS = 300
@@ -58,7 +59,7 @@ fun ServerStatusCard(
     channelStatusKnown: Boolean = true,
     mcpBusy: Boolean = false,
 ) {
-    ElevatedCard(
+    Card(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
@@ -66,7 +67,7 @@ fun ServerStatusCard(
         ) {
             Text(
                 text = stringResource(R.string.server_services_status_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MiuixTheme.textStyles.title3,
             )
 
             Spacer(Modifier.height(12.dp))
@@ -75,7 +76,7 @@ fun ServerStatusCard(
             ServiceRow(
                 label = stringResource(R.string.server_service_mcp),
                 statusText = serverStatusToText(serverStatus),
-                statusColor = serverStatusToColor(serverStatus, isSystemInDarkTheme()),
+                statusColor = serverStatusToColor(serverStatus, isInDarkTheme()),
                 running = serverStatus is ServerStatus.Running,
                 transientStatus = serverStatus is ServerStatus.Starting || serverStatus is ServerStatus.Stopping,
                 buttonEnabled = mcpStartStopButtonEnabled(serverStatus, startEnabled, mcpStartBlockedMessage != null),
@@ -85,8 +86,8 @@ fun ServerStatusCard(
             if (mcpStartBlockedVisible(serverStatus, mcpStartBlockedMessage)) {
                 Text(
                     text = stringResource(R.string.server_start_blocked, mcpStartBlockedMessage.orEmpty()),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.error,
                 )
             }
 
@@ -96,7 +97,7 @@ fun ServerStatusCard(
             ServiceRow(
                 label = stringResource(R.string.event_channel_name),
                 statusText = channelStatusToText(channelStatus, channelEnabled),
-                statusColor = channelStatusToColor(channelStatus, channelEnabled, isSystemInDarkTheme()),
+                statusColor = channelStatusToColor(channelStatus, channelEnabled, isInDarkTheme()),
                 running = channelEnabled,
                 statusKnown = channelStatusKnown,
                 buttonEnabled = channelStartStopButtonEnabled(channelEnabled, startEnabled),
@@ -191,26 +192,27 @@ private fun ServiceRow(
             ) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MiuixTheme.textStyles.body1,
                 )
                 Text(
                     text = statusText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
         }
 
-        FilledTonalButton(
+        Button(
             onClick = onButtonClick,
             enabled = buttonEnabled,
+            colors = if (running) ButtonDefaults.buttonColors() else ButtonDefaults.buttonColorsPrimary(),
         ) {
             if (busy) {
                 // Decorative: the button still is what it says, and what is going on is written on the screen
-                CircularProgressIndicator(
-                    modifier = Modifier.size(BUTTON_PROGRESS_SIZE_DP.dp).clearAndSetSemantics {},
+                InfiniteProgressIndicator(
+                    modifier = Modifier.clearAndSetSemantics {},
                     color = LocalContentColor.current,
-                    strokeWidth = 2.dp,
+                    size = BUTTON_PROGRESS_SIZE_DP.dp,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }

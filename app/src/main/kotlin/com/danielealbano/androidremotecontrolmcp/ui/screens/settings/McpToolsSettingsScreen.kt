@@ -6,22 +6,11 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -43,10 +32,16 @@ import com.danielealbano.androidremotecontrolmcp.data.model.OptionalToolPermissi
 import com.danielealbano.androidremotecontrolmcp.data.model.OptionalToolPermissions
 import com.danielealbano.androidremotecontrolmcp.data.model.ServerStatus
 import com.danielealbano.androidremotecontrolmcp.data.model.ToolPermissionsConfig
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixLazyPage
+import com.danielealbano.androidremotecontrolmcp.ui.components.SwitchOnlyPreference
 import com.danielealbano.androidremotecontrolmcp.ui.theme.WarningAmber
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private data class ParamEntry(
     val paramName: String,
@@ -215,7 +210,6 @@ private val ALL_TOOL_CATEGORIES: List<ToolCategory> =
         ),
     )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun McpToolsSettingsScreen(
     onBack: () -> Unit,
@@ -255,42 +249,43 @@ fun McpToolsSettingsScreen(
         )
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.settings_mcp_tools_title)) },
-            navigationIcon = { TopBarBackButton(onClick = onBack) },
-            windowInsets = WindowInsets(0),
-        )
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            item {
-                Text(
-                    text = stringResource(R.string.settings_mcp_tools_restart_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
-            ALL_TOOL_CATEGORIES.forEach { category ->
-                val categoryPermissions =
-                    category.tools.mapNotNull { OptionalToolPermissions.permissionForTool(it.toolName) }.distinct()
-                item(key = "header_${category.header}") {
+    MiuixLazyPage(
+        title = stringResource(R.string.settings_mcp_tools_title),
+        modifier = modifier,
+        onBack = onBack,
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.settings_mcp_tools_restart_note),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
+        ALL_TOOL_CATEGORIES.forEach { category ->
+            val categoryPermissions =
+                category.tools.mapNotNull { OptionalToolPermissions.permissionForTool(it.toolName) }.distinct()
+            item(key = "category_${category.header}") {
+                Column {
                     ToolCategoryHeader(
                         header = stringResource(category.header),
                         missingPermission = categoryPermissions.any { !isGranted(it) },
                         onNavigateToPermissions = onNavigateToPermissions,
                     )
-                }
-                items(category.tools, key = { it.toolName }) { tool ->
-                    ToolRow(
-                        tool = tool,
-                        perms = perms,
-                        controlsEnabled = controlsEnabled,
-                        categoryGranted = categoryPermissions.all { isGranted(it) },
-                        isGranted = isGranted,
-                        onNavigateToPermissions = onNavigateToPermissions,
-                        onToolToggle = viewModel::updateToolEnabled,
-                        onParamToggle = viewModel::updateParamEnabled,
-                    )
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        category.tools.forEach { tool ->
+                            ToolRow(
+                                tool = tool,
+                                perms = perms,
+                                controlsEnabled = controlsEnabled,
+                                categoryGranted = categoryPermissions.all { isGranted(it) },
+                                isGranted = isGranted,
+                                onNavigateToPermissions = onNavigateToPermissions,
+                                onToolToggle = viewModel::updateToolEnabled,
+                                onParamToggle = viewModel::updateParamEnabled,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -321,14 +316,14 @@ private fun ToolCategoryHeader(
     // Match the warning triangle to the header text size (respects font scaling).
     val warningIconSize =
         with(LocalDensity.current) {
-            MaterialTheme.typography.titleMedium.fontSize
+            MiuixTheme.textStyles.headline2.fontSize
                 .toDp()
         }
     if (!missingPermission) {
         Text(
             text = header,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
+            style = MiuixTheme.textStyles.headline2,
+            color = MiuixTheme.colorScheme.primary,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
         )
         return
@@ -345,8 +340,8 @@ private fun ToolCategoryHeader(
         ) {
             Text(
                 text = header,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
+                style = MiuixTheme.textStyles.headline2,
+                color = MiuixTheme.colorScheme.primary,
                 modifier = Modifier.padding(end = 8.dp),
             )
             Icon(
@@ -358,8 +353,8 @@ private fun ToolCategoryHeader(
         }
         Text(
             text = stringResource(R.string.settings_mcp_tools_missing_permission),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
         )
     }
@@ -377,16 +372,11 @@ private fun ToolRow(
     onParamToggle: (String, String, Boolean) -> Unit,
 ) {
     val toolEnabled = perms.isToolEnabled(tool.toolName)
-    ListItem(
-        headlineContent = { Text(stringResource(tool.displayName)) },
-        trailingContent = {
-            Switch(
-                checked = toolEnabled,
-                onCheckedChange = { onToolToggle(tool.toolName, it) },
-                enabled = controlsEnabled && categoryGranted,
-                modifier = Modifier.minimumInteractiveComponentSize(),
-            )
-        },
+    SwitchOnlyPreference(
+        title = stringResource(tool.displayName),
+        checked = toolEnabled,
+        onCheckedChange = { onToolToggle(tool.toolName, it) },
+        enabled = controlsEnabled && categoryGranted,
     )
     if (toolEnabled) {
         tool.params.forEach { param ->
@@ -420,16 +410,12 @@ private fun ToolParamRow(
     val showParamNote = categoryGranted && !paramGranted
     val leadingIcon: (@Composable () -> Unit)? =
         if (showParamNote) {
-            { Icon(imageVector = Icons.Default.Warning, contentDescription = null, tint = WarningAmber) }
-        } else {
-            null
-        }
-    val supportingNote: (@Composable () -> Unit)? =
-        if (showParamNote) {
             {
-                Text(
-                    text = stringResource(R.string.settings_mcp_tools_param_missing_permission),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = WarningAmber,
+                    modifier = Modifier.padding(end = 12.dp),
                 )
             }
         } else {
@@ -440,29 +426,21 @@ private fun ToolParamRow(
     val onToggle: (Boolean) -> Unit = { onParamToggle(toolName, param.paramName, it) }
     val openPermissions = stringResource(R.string.a11y_action_open_permissions)
     val paramName = stringResource(param.displayName)
-    ListItem(
-        headlineContent = { Text(paramName) },
+    BasicComponent(
+        title = paramName,
+        summary = if (showParamNote) stringResource(R.string.settings_mcp_tools_param_missing_permission) else null,
         // Without its permission the row opens the permission settings and the switch stands alone, named after the
         // row; otherwise only the switch itself toggles
-        modifier =
-            if (showParamNote) {
-                Modifier.padding(start = 32.dp).clickable(onClickLabel = openPermissions) { onNavigateToPermissions() }
-            } else {
-                Modifier.padding(start = 32.dp)
-            },
-        leadingContent = leadingIcon,
-        supportingContent = supportingNote,
-        trailingContent = {
+        modifier = Modifier.padding(start = 24.dp),
+        startAction = leadingIcon,
+        onClick = if (showParamNote) onNavigateToPermissions else null,
+        onClickLabel = if (showParamNote) openPermissions else null,
+        endActions = {
             Switch(
                 checked = paramEnabled,
                 onCheckedChange = onToggle,
                 enabled = switchEnabled,
-                modifier =
-                    if (showParamNote) {
-                        Modifier.semantics { contentDescription = paramName }
-                    } else {
-                        Modifier.minimumInteractiveComponentSize()
-                    },
+                modifier = if (showParamNote) Modifier.semantics { contentDescription = paramName } else Modifier,
             )
         },
     )

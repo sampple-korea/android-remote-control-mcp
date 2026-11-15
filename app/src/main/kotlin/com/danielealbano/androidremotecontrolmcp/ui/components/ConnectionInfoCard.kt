@@ -2,6 +2,7 @@
 
 package com.danielealbano.androidremotecontrolmcp.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -17,13 +18,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +44,13 @@ import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTu
 import com.danielealbano.androidremotecontrolmcp.ui.theme.AndroidRemoteControlMcpTheme
 import com.danielealbano.androidremotecontrolmcp.ui.theme.WarningAmber
 import com.danielealbano.androidremotecontrolmcp.utils.NetworkUtils
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val TOKEN_MASK = "********-****-****-****-************"
 
@@ -194,7 +195,7 @@ fun ConnectionInfoCard(
 
     val rowContent = tunnelRowContent(tunnelEnabled, serverStatus, tunnelStatus, renewal)
 
-    val labelStyle = MaterialTheme.typography.bodyMedium
+    val labelStyle = MiuixTheme.textStyles.body2
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
 
@@ -219,7 +220,7 @@ fun ConnectionInfoCard(
             }
         }
 
-    ElevatedCard(
+    Card(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
@@ -227,19 +228,19 @@ fun ConnectionInfoCard(
         ) {
             Text(
                 text = stringResource(R.string.connection_info_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MiuixTheme.textStyles.title3,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             ConnectionInfoRow(label = ipLabel, labelWidth = labelColumnWidth) {
-                Text(text = displayAddress.orEmpty(), style = MaterialTheme.typography.bodyMedium)
+                Text(text = displayAddress.orEmpty(), style = MiuixTheme.textStyles.body2)
             }
             ConnectionInfoRow(label = portLabel, labelWidth = labelColumnWidth) {
-                Text(text = port.toString(), style = MaterialTheme.typography.bodyMedium)
+                Text(text = port.toString(), style = MiuixTheme.textStyles.body2)
             }
             ConnectionInfoRow(label = urlLabel, labelWidth = labelColumnWidth) {
-                Text(text = serverUrl.orEmpty(), style = MaterialTheme.typography.bodyMedium)
+                Text(text = serverUrl.orEmpty(), style = MiuixTheme.textStyles.body2)
             }
             if (rowContent != null) {
                 ConnectionInfoRow(label = publicUrlLabel, labelWidth = labelColumnWidth) {
@@ -255,7 +256,7 @@ fun ConnectionInfoCard(
                 ConnectionInfoRow(label = tokenLabel, labelWidth = labelColumnWidth) {
                     Text(
                         text = displayToken,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MiuixTheme.textStyles.body2,
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = { showToken = !showToken }) {
@@ -287,8 +288,9 @@ fun ConnectionInfoCard(
                 )
             Row(
                 modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                TextButton(onClick = { onCopyAll(connectionString) }) {
+                Button(onClick = { onCopyAll(connectionString) }) {
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
                         contentDescription = null,
@@ -298,7 +300,7 @@ fun ConnectionInfoCard(
                         modifier = Modifier.padding(start = 4.dp),
                     )
                 }
-                TextButton(onClick = { onShare(connectionString) }) {
+                Button(onClick = { onShare(connectionString) }) {
                     Icon(
                         imageVector = Icons.Default.Share,
                         contentDescription = null,
@@ -322,12 +324,10 @@ private fun RowScope.TunnelRowValue(
     when (content) {
         TunnelRowContent.Loading -> {
             val connectingDescription = stringResource(R.string.remote_access_status_connecting)
-            CircularProgressIndicator(
-                modifier =
-                    Modifier
-                        .size(16.dp)
-                        .semantics { contentDescription = connectingDescription },
-                strokeWidth = 2.dp,
+            InfiniteProgressIndicator(
+                modifier = Modifier.semantics { contentDescription = connectingDescription },
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                size = 16.dp,
             )
         }
 
@@ -343,7 +343,7 @@ private fun RowScope.TunnelRowValue(
                         )
                         Text(
                             text = stringResource(R.string.remote_access_no_route_configured),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MiuixTheme.textStyles.body2,
                             modifier = Modifier.padding(start = 4.dp),
                         )
                     }
@@ -352,7 +352,7 @@ private fun RowScope.TunnelRowValue(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "${endpoint.url}/mcp",
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MiuixTheme.textStyles.body2,
                                 modifier = Modifier.weight(1f),
                             )
                             if (!endpoint.valid) {
@@ -373,8 +373,8 @@ private fun RowScope.TunnelRowValue(
         is TunnelRowContent.Failed -> {
             Text(
                 text = stringResource(R.string.remote_access_status_error, content.message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.error,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -406,8 +406,8 @@ private fun ConnectionInfoRow(
         Text(
             text = label,
             modifier = Modifier.width(labelWidth),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
         Spacer(modifier = Modifier.width(12.dp))
         value()

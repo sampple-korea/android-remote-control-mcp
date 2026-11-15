@@ -3,41 +3,32 @@
 package com.danielealbano.androidremotecontrolmcp.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
 
+/**
+ * The app theme: the Miuix design language (HyperOS look), following the system light/dark setting.
+ */
 @Composable
 fun AndroidRemoteControlMcpTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme =
-        when {
-            dynamicColor -> {
-                val context = LocalContext.current
-                if (darkTheme) {
-                    dynamicDarkColorScheme(context)
-                } else {
-                    dynamicLightColorScheme(context)
-                }
-            }
-
-            darkTheme -> {
-                DarkColorScheme
-            }
-
-            else -> {
-                LightColorScheme
-            }
+    val controller =
+        remember(darkTheme) {
+            ThemeController(
+                colorSchemeMode = if (darkTheme) ColorSchemeMode.Dark else ColorSchemeMode.Light,
+                isDark = darkTheme,
+            )
         }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = AppTypography,
-        content = content,
-    )
+    MiuixTheme(controller = controller, content = content)
 }
+
+/** Whether the current Miuix color scheme is the dark one. */
+@Composable
+@ReadOnlyComposable
+fun isInDarkTheme(): Boolean = MiuixTheme.colorSchemeMode == ColorSchemeMode.Dark

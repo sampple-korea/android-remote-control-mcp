@@ -8,10 +8,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +22,9 @@ import androidx.navigation.NavHostController
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.ui.navigation.GeofenceRoutes
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.GeofenceSettingsViewModel
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
 
 /** gms flavor: the "Geofence Events" row in the Event Channel settings list. */
 fun LazyListScope.geofenceEventSourceItem(navController: NavHostController) {

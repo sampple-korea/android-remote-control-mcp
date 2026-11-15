@@ -334,6 +334,9 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.extended)
+    implementation(libs.miuix.ui)
+    implementation(libs.miuix.preference)
+    implementation(libs.miuix.blur)
     implementation(libs.compose.navigation)
     debugImplementation(libs.compose.ui.tooling)
 

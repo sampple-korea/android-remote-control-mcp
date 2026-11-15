@@ -9,18 +9,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,9 +26,21 @@ import androidx.compose.ui.unit.dp
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.data.model.ShellConfig
 import com.danielealbano.androidremotecontrolmcp.services.shell.ShizukuState
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppTextField
 import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ShellSwitch
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.SuStatus
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun ShellElevationSection(
@@ -50,34 +54,39 @@ internal fun ShellElevationSection(
     onAddAllowlistPattern: (String) -> Unit,
     onRemoveAllowlistPattern: (String) -> Unit,
 ) {
-    Text(stringResource(R.string.shell_elevation_title), style = MaterialTheme.typography.titleMedium)
-    ShellSwitchRow(
-        titleRes = R.string.shell_elevation_switch,
-        descriptionRes = R.string.shell_elevation_switch_description,
-        checked = config.elevationEnabled,
-    ) { onSwitch(ShellSwitch.ELEVATION, it) }
-    AnimatedVisibility(visible = config.elevationEnabled) {
-        Column {
-            ShizukuStatusRow(shizukuState, onGrantShizuku, onRestartApp)
-            SuStatusRow(suStatus, onTestSu)
+    Column {
+        SmallTitle(text = stringResource(R.string.shell_elevation_title))
+        Card(modifier = Modifier.fillMaxWidth()) {
             ShellSwitchRow(
-                titleRes = R.string.shell_auto_allow_switch,
-                descriptionRes = R.string.shell_auto_allow_description,
-                checked = config.autoAllowElevation,
-            ) { onSwitch(ShellSwitch.AUTO_ALLOW, it) }
-            if (!config.autoAllowElevation) {
-                ShellPatternListEditor(
-                    titleRes = R.string.shell_allowlist_title,
-                    descriptionRes = R.string.shell_allowlist_description,
-                    patterns = config.allowlist,
-                    onAdd = onAddAllowlistPattern,
-                    onRemove = onRemoveAllowlistPattern,
-                )
+                titleRes = R.string.shell_elevation_switch,
+                descriptionRes = R.string.shell_elevation_switch_description,
+                checked = config.elevationEnabled,
+            ) { onSwitch(ShellSwitch.ELEVATION, it) }
+            AnimatedVisibility(visible = config.elevationEnabled) {
+                Column {
+                    ShizukuStatusRow(shizukuState, onGrantShizuku, onRestartApp)
+                    SuStatusRow(suStatus, onTestSu)
+                    ShellSwitchRow(
+                        titleRes = R.string.shell_auto_allow_switch,
+                        descriptionRes = R.string.shell_auto_allow_description,
+                        checked = config.autoAllowElevation,
+                    ) { onSwitch(ShellSwitch.AUTO_ALLOW, it) }
+                    if (!config.autoAllowElevation) {
+                        ShellPatternListEditor(
+                            titleRes = R.string.shell_allowlist_title,
+                            descriptionRes = R.string.shell_allowlist_description,
+                            patterns = config.allowlist,
+                            onAdd = onAddAllowlistPattern,
+                            onRemove = onRemoveAllowlistPattern,
+                        )
+                    }
+                }
             }
         }
     }
 }
 
+/** A pattern list with its add field, laid out to sit inside a card. */
 @Composable
 internal fun ShellPatternListEditor(
     @StringRes titleRes: Int,
@@ -87,40 +96,48 @@ internal fun ShellPatternListEditor(
     onRemove: (String) -> Unit,
 ) {
     var input by rememberSaveable { mutableStateOf("") }
-    Spacer(Modifier.height(12.dp))
-    Text(stringResource(titleRes), style = MaterialTheme.typography.titleSmall)
-    Text(
-        stringResource(descriptionRes),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    if (patterns.isEmpty()) {
-        Text(stringResource(R.string.shell_patterns_empty), style = MaterialTheme.typography.bodyMedium)
-    }
-    patterns.forEach { pattern ->
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(pattern, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
-            IconButton(onClick = { onRemove(pattern) }) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.shell_pattern_remove, pattern))
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Text(stringResource(titleRes), style = MiuixTheme.textStyles.headline2)
+        Text(
+            stringResource(descriptionRes),
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+        Spacer(Modifier.height(8.dp))
+        if (patterns.isEmpty()) {
+            Text(
+                stringResource(R.string.shell_patterns_empty),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        patterns.forEach { pattern ->
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(pattern, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
+                IconButton(onClick = { onRemove(pattern) }) {
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.shell_pattern_remove, pattern))
+                }
             }
         }
-    }
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = input,
-            onValueChange = { input = it },
-            label = { Text(stringResource(R.string.shell_pattern_input_label)) },
-            singleLine = true,
-            modifier = Modifier.weight(1f).hideSoftKeyboardOnFocus(),
-        )
-        Spacer(Modifier.width(8.dp))
-        Button(
-            onClick = {
-                onAdd(input)
-                input = ""
-            },
-            enabled = input.isNotBlank(),
-        ) { Text(stringResource(R.string.shell_pattern_add)) }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            AppTextField(
+                value = input,
+                onValueChange = { input = it },
+                label = stringResource(R.string.shell_pattern_input_label),
+                modifier = Modifier.weight(1f),
+                fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
+            )
+            Spacer(Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    onAdd(input)
+                    input = ""
+                },
+                enabled = input.isNotBlank(),
+                colors = ButtonDefaults.buttonColorsPrimary(),
+            ) { Text(stringResource(R.string.shell_pattern_add)) }
+        }
     }
 }
 
@@ -133,20 +150,11 @@ private fun ShellSwitchRow(
 ) {
     // Only the switch itself toggles: a whole-row toggleable flipped these safety switches when a touch
     // merely grazed the row (e.g. while scrolling the Shell settings), which silently turned elevation off.
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(stringResource(titleRes), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                stringResource(descriptionRes),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(checked = checked, onCheckedChange = onChange, modifier = Modifier.minimumInteractiveComponentSize())
-    }
+    BasicComponent(
+        title = stringResource(titleRes),
+        summary = stringResource(descriptionRes),
+        endActions = { Switch(checked = checked, onCheckedChange = onChange) },
+    )
 }
 
 @Composable
@@ -155,19 +163,26 @@ private fun ShizukuStatusRow(
     onGrant: () -> Unit,
     onRestart: () -> Unit,
 ) {
-    Spacer(Modifier.height(12.dp))
-    Text(stringResource(R.string.shell_shizuku_label), style = MaterialTheme.typography.bodyLarge)
-    Text(
-        shizukuStatusText(state),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    BasicComponent(
+        title = stringResource(R.string.shell_shizuku_label),
+        summary = shizukuStatusText(state),
+        endActions = {
+            if (state == ShizukuState.NotGranted) {
+                TextButton(
+                    text = stringResource(R.string.shell_shizuku_grant),
+                    onClick = onGrant,
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
+            if (state == ShizukuState.NeedsRestart) {
+                TextButton(
+                    text = stringResource(R.string.shell_shizuku_restart),
+                    onClick = onRestart,
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
+        },
     )
-    if (state == ShizukuState.NotGranted) {
-        Button(onClick = onGrant) { Text(stringResource(R.string.shell_shizuku_grant)) }
-    }
-    if (state == ShizukuState.NeedsRestart) {
-        Button(onClick = onRestart) { Text(stringResource(R.string.shell_shizuku_restart)) }
-    }
 }
 
 @Composable
@@ -175,16 +190,15 @@ private fun SuStatusRow(
     status: SuStatus,
     onTest: () -> Unit,
 ) {
-    Spacer(Modifier.height(12.dp))
-    Text(stringResource(R.string.shell_su_label), style = MaterialTheme.typography.bodyLarge)
-    Text(
-        suStatusText(status),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    BasicComponent(
+        title = stringResource(R.string.shell_su_label),
+        summary = suStatusText(status),
+        endActions = {
+            if (status !is SuStatus.NotFound && status !is SuStatus.Testing) {
+                TextButton(text = stringResource(R.string.shell_su_test), onClick = onTest)
+            }
+        },
     )
-    if (status !is SuStatus.NotFound && status !is SuStatus.Testing) {
-        OutlinedButton(onClick = onTest) { Text(stringResource(R.string.shell_su_test)) }
-    }
 }
 
 @Composable

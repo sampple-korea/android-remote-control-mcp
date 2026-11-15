@@ -5,22 +5,15 @@ package com.danielealbano.androidremotecontrolmcp.ui.screens.settings
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,8 +29,13 @@ import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
 import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ChannelViewModel
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WifiMonitorScreen(
     viewModel: ChannelViewModel,
@@ -100,7 +98,7 @@ fun WifiMonitorScreen(
                         Switch(
                             checked = config.wifi.notifyOnDiscovered,
                             onCheckedChange = { viewModel.updateWifiNotifyOnDiscovered(it) },
-                            modifier = Modifier.minimumInteractiveComponentSize(),
+                            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                         )
                     },
                 )
@@ -113,7 +111,7 @@ fun WifiMonitorScreen(
                         Switch(
                             checked = config.wifi.notifyOnLost,
                             onCheckedChange = { viewModel.updateWifiNotifyOnLost(it) },
-                            modifier = Modifier.minimumInteractiveComponentSize(),
+                            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                         )
                     },
                 )
@@ -126,7 +124,7 @@ fun WifiMonitorScreen(
                         Switch(
                             checked = config.wifi.notifyOnConnected,
                             onCheckedChange = { viewModel.updateWifiNotifyOnConnected(it) },
-                            modifier = Modifier.minimumInteractiveComponentSize(),
+                            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                         )
                     },
                 )
@@ -139,7 +137,7 @@ fun WifiMonitorScreen(
                         Switch(
                             checked = config.wifi.notifyOnDisconnected,
                             onCheckedChange = { viewModel.updateWifiNotifyOnDisconnected(it) },
-                            modifier = Modifier.minimumInteractiveComponentSize(),
+                            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                         )
                     },
                 )

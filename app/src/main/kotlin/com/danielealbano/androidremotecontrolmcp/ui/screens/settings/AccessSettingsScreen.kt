@@ -2,38 +2,16 @@
 
 package com.danielealbano.androidremotecontrolmcp.ui.screens.settings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,12 +27,21 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppDialog
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppTextField
+import com.danielealbano.androidremotecontrolmcp.ui.components.CardContentPadding
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixPage
+import com.danielealbano.androidremotecontrolmcp.ui.components.NavigationPreference
+import com.danielealbano.androidremotecontrolmcp.ui.components.SwitchOnlyPreference
 import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.AccessViewModel
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccessSettingsScreen(
     onBack: () -> Unit,
@@ -71,113 +58,63 @@ fun AccessSettingsScreen(
     var showToken by remember { mutableStateOf(false) }
 
     if (showDisableDialog) {
-        AlertDialog(
+        AppDialog(
+            title = stringResource(R.string.access_disable_auth_dialog_title),
+            message = stringResource(R.string.access_disable_auth_dialog_body),
+            confirmText = stringResource(R.string.access_disable_auth_confirm),
+            onConfirm = viewModel::confirmDisableLastAuth,
+            dismissText = stringResource(R.string.access_disable_auth_cancel),
             onDismissRequest = viewModel::dismissDisableAuthDialog,
-            title = { Text(stringResource(R.string.access_disable_auth_dialog_title)) },
-            text = { Text(stringResource(R.string.access_disable_auth_dialog_body)) },
-            confirmButton = {
-                TextButton(onClick = viewModel::confirmDisableLastAuth) {
-                    Text(stringResource(R.string.access_disable_auth_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissDisableAuthDialog) {
-                    Text(stringResource(R.string.access_disable_auth_cancel))
-                }
-            },
         )
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.access_title)) },
-            navigationIcon = { TopBarBackButton(onClick = onBack) },
-            windowInsets = WindowInsets(0),
-        )
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-        ) {
-            if (!serverConfig.oauthEnabled && !serverConfig.bearerTokenEnabled) {
+    MiuixPage(
+        title = stringResource(R.string.access_title),
+        modifier = modifier,
+        onBack = onBack,
+    ) {
+        if (!serverConfig.oauthEnabled && !serverConfig.bearerTokenEnabled) {
+            WarningCard(
+                title = stringResource(R.string.access_no_auth_warning_title),
+                body = stringResource(R.string.access_no_auth_warning_body),
+            )
+            if (serverConfig.tunnelEnabled) {
                 WarningCard(
-                    title = stringResource(R.string.access_no_auth_warning_title),
-                    body = stringResource(R.string.access_no_auth_warning_body),
+                    title = stringResource(R.string.access_internet_exposure_warning_title),
+                    body = stringResource(R.string.access_internet_exposure_warning_body),
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                if (serverConfig.tunnelEnabled) {
-                    WarningCard(
-                        title = stringResource(R.string.access_internet_exposure_warning_title),
-                        body = stringResource(R.string.access_internet_exposure_warning_body),
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
             }
+        }
 
+        Card(modifier = Modifier.fillMaxWidth()) {
             // OAuth toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.access_oauth_label), style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        stringResource(R.string.access_oauth_supporting),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = serverConfig.oauthEnabled,
-                    onCheckedChange = viewModel::requestSetOauthEnabled,
-                    modifier = Modifier.minimumInteractiveComponentSize(),
-                )
-            }
-
+            SwitchOnlyPreference(
+                title = stringResource(R.string.access_oauth_label),
+                summary = stringResource(R.string.access_oauth_supporting),
+                checked = serverConfig.oauthEnabled,
+                onCheckedChange = viewModel::requestSetOauthEnabled,
+            )
             if (serverConfig.oauthEnabled) {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.access_connected_clients)) },
-                    trailingContent = {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                    },
-                    modifier =
-                        Modifier.clickable(
-                            onClickLabel = stringResource(R.string.a11y_action_open),
-                            onClick = onNavigateClients,
-                        ),
+                NavigationPreference(
+                    title = stringResource(R.string.access_connected_clients),
+                    onClick = onNavigateClients,
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
+        Card(modifier = Modifier.fillMaxWidth()) {
             // Bearer toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.access_bearer_label),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = serverConfig.bearerTokenEnabled,
-                    onCheckedChange = viewModel::requestSetBearerTokenEnabled,
-                    modifier = Modifier.minimumInteractiveComponentSize(),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
+            SwitchOnlyPreference(
+                title = stringResource(R.string.access_bearer_label),
+                checked = serverConfig.bearerTokenEnabled,
+                onCheckedChange = viewModel::requestSetBearerTokenEnabled,
+            )
+            AppTextField(
                 value = serverConfig.bearerToken,
                 onValueChange = {},
                 readOnly = true,
-                singleLine = true,
                 enabled = serverConfig.bearerTokenEnabled,
-                label = { Text(stringResource(R.string.access_bearer_token_field_label)) },
+                label = stringResource(R.string.access_bearer_token_field_label),
                 visualTransformation =
                     if (showToken) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -213,22 +150,21 @@ fun AccessSettingsScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
             )
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
+        Card(modifier = Modifier.fillMaxWidth(), insideMargin = CardContentPadding) {
             // Public URL override
-            OutlinedTextField(
+            AppTextField(
                 value = publicUrlOverride,
                 onValueChange = viewModel::setPublicUrlOverride,
-                label = { Text(stringResource(R.string.access_public_url_label)) },
-                supportingText = {
-                    Text(publicUrlError ?: stringResource(R.string.access_public_url_supporting))
-                },
-                isError = publicUrlError != null,
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
+                label = stringResource(R.string.access_public_url_label),
+                error = publicUrlError,
+                supportingText = stringResource(R.string.access_public_url_supporting),
+                modifier = Modifier.fillMaxWidth(),
+                fieldModifier = Modifier.hideSoftKeyboardOnFocus(),
             )
         }
     }
@@ -240,25 +176,29 @@ private fun WarningCard(
     body: String,
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        colors =
+            CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.errorContainer,
+                contentColor = MiuixTheme.colorScheme.onErrorContainer,
+            ),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.Warning,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onErrorContainer,
+                tint = MiuixTheme.colorScheme.onErrorContainer,
             )
             Column(modifier = Modifier.padding(start = 12.dp)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MiuixTheme.textStyles.subtitle,
+                    color = MiuixTheme.colorScheme.onErrorContainer,
                 )
                 Text(
                     text = body,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onErrorContainer,
                 )
             }
         }

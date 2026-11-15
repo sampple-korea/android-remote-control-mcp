@@ -7,26 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,16 +38,20 @@ import coil3.request.ImageRequest
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.mcp.oauth.LogoUrlPolicy
 import com.danielealbano.androidremotecontrolmcp.mcp.oauth.OAuthClient
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppDialog
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixLazyPage
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.OAuthClientsViewModel
 import okhttp3.OkHttpClient
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.net.URI
 import java.text.DateFormat
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OAuthClientsScreen(
     onBack: () -> Unit,
@@ -68,22 +60,23 @@ fun OAuthClientsScreen(
 ) {
     val clients by viewModel.clients.collectAsStateWithLifecycle()
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.oauth_clients_title)) },
-            navigationIcon = { TopBarBackButton(onClick = onBack) },
-            windowInsets = WindowInsets(0),
-        )
+    MiuixLazyPage(
+        title = stringResource(R.string.oauth_clients_title),
+        modifier = modifier,
+        onBack = onBack,
+    ) {
         if (clients.isEmpty()) {
-            Text(
-                text = stringResource(R.string.oauth_clients_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp),
-            )
+            item {
+                Text(
+                    text = stringResource(R.string.oauth_clients_empty),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
         } else {
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(clients, key = { it.clientId }) { client ->
+            items(clients, key = { it.clientId }) { client ->
+                Card(modifier = Modifier.fillMaxWidth()) {
                     ClientRow(client = client, onRevoke = { viewModel.revoke(client.clientId) })
                 }
             }
@@ -100,21 +93,16 @@ private fun ClientRow(
     val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
 
     if (showConfirm) {
-        AlertDialog(
+        AppDialog(
+            title = stringResource(R.string.oauth_clients_revoke_dialog_title),
+            message = stringResource(R.string.oauth_clients_revoke_dialog_body),
+            confirmText = stringResource(R.string.oauth_clients_revoke_confirm),
+            onConfirm = {
+                showConfirm = false
+                onRevoke()
+            },
+            dismissText = stringResource(R.string.oauth_clients_revoke_cancel),
             onDismissRequest = { showConfirm = false },
-            title = { Text(stringResource(R.string.oauth_clients_revoke_dialog_title)) },
-            text = { Text(stringResource(R.string.oauth_clients_revoke_dialog_body)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showConfirm = false
-                    onRevoke()
-                }) { Text(stringResource(R.string.oauth_clients_revoke_confirm)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showConfirm = false }) {
-                    Text(stringResource(R.string.oauth_clients_revoke_cancel))
-                }
-            },
         )
     }
 
@@ -131,22 +119,24 @@ private fun ClientRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = clientLabel,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MiuixTheme.textStyles.body1,
             )
             Text(
                 text = client.applicationType ?: "—",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = stringResource(R.string.oauth_clients_created, dateFormat.format(Date(client.createdAtMs))),
-                style = MaterialTheme.typography.labelSmall,
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             Text(
                 text = stringResource(R.string.oauth_clients_last_used, dateFormat.format(Date(client.lastUsedAtMs))),
-                style = MaterialTheme.typography.labelSmall,
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
         }
         IconButton(onClick = { showConfirm = true }) {

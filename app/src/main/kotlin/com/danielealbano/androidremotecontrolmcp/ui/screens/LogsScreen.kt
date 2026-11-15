@@ -17,14 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,6 +38,12 @@ import com.danielealbano.androidremotecontrolmcp.data.repository.ServerLogIndexE
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.LogsViewModel
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -64,7 +63,6 @@ private val CHIP_DISPLAY_ORDER =
         ServerLogEntry.Type.SHELL,
     )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogsScreen(
     onBack: () -> Unit,
@@ -110,8 +108,8 @@ fun LogsScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.server_logs_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
         } else {
@@ -167,36 +165,36 @@ private fun LogEntryRow(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = timeFormat.format(Date(ref.timestamp)),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = typeLabel(ref.type),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f),
             )
             if (ref.type == ServerLogEntry.Type.TOOL_CALL) {
                 Text(
                     text = stringResource(R.string.server_logs_duration_ms, ref.durationMs ?: 0),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
         }
         if (ref.type == ServerLogEntry.Type.TOOL_CALL) {
             Text(
                 text = entry?.toolName ?: "…",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MiuixTheme.textStyles.body2,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             if (!entry?.message.isNullOrEmpty()) {
                 Text(
                     text = entry.message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.error,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -204,7 +202,7 @@ private fun LogEntryRow(
         } else {
             Text(
                 text = entry?.message.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MiuixTheme.textStyles.body2,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )

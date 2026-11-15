@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -30,17 +31,8 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.ReportProblem
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -66,8 +58,14 @@ import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
 import com.danielealbano.androidremotecontrolmcp.ui.components.rememberChangedSinceShown
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.UpdateCheckUiState
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.UpdateViewModel
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
     modifier: Modifier = Modifier,
@@ -112,14 +110,14 @@ fun AboutScreen(
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MiuixTheme.textStyles.title3,
                     textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
 
@@ -143,20 +141,20 @@ fun AboutScreen(
             // Author section
             Text(
                 text = stringResource(R.string.about_author_section),
-                style = MaterialTheme.typography.titleMedium,
+                style = MiuixTheme.textStyles.headline2,
             )
             Spacer(Modifier.height(8.dp))
 
             Text(
                 text = stringResource(R.string.about_author_name),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MiuixTheme.textStyles.body1,
             )
             Spacer(Modifier.height(4.dp))
 
             Text(
                 text = stringResource(R.string.about_author_linkedin),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.primary,
                 modifier =
                     Modifier.clickable(onClickLabel = openLink) {
                         runCatching {
@@ -168,8 +166,8 @@ fun AboutScreen(
 
             Text(
                 text = stringResource(R.string.about_author_x),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.primary,
                 modifier =
                     Modifier.clickable(onClickLabel = openLink) {
                         runCatching {
@@ -185,7 +183,7 @@ fun AboutScreen(
             // Links section
             Text(
                 text = stringResource(R.string.about_links_section),
-                style = MaterialTheme.typography.titleMedium,
+                style = MiuixTheme.textStyles.headline2,
             )
             Spacer(Modifier.height(8.dp))
 
@@ -211,13 +209,13 @@ fun AboutScreen(
             // Attributions section
             Text(
                 text = stringResource(R.string.about_attributions_section),
-                style = MaterialTheme.typography.titleMedium,
+                style = MiuixTheme.textStyles.headline2,
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.about_attribution_dbip),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.primary,
                 modifier =
                     Modifier.clickable(onClickLabel = openLink) {
                         runCatching {
@@ -228,8 +226,8 @@ fun AboutScreen(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.about_attribution_privacy_model),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.primary,
                 modifier =
                     Modifier.clickable(onClickLabel = openLink) {
                         runCatching {
@@ -240,8 +238,8 @@ fun AboutScreen(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.about_attribution_android_robot),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
 
             Spacer(Modifier.height(24.dp))
@@ -249,8 +247,8 @@ fun AboutScreen(
             // Footer
             Text(
                 text = stringResource(R.string.about_footer),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -287,7 +285,7 @@ private fun UpdateSettingsSection(
 
     Text(
         text = stringResource(R.string.about_updates_section),
-        style = MaterialTheme.typography.titleMedium,
+        style = MiuixTheme.textStyles.headline2,
     )
     Spacer(Modifier.height(8.dp))
 
@@ -296,18 +294,18 @@ private fun UpdateSettingsSection(
     ) {
         Text(
             text = stringResource(R.string.about_auto_update_label),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MiuixTheme.textStyles.body1,
             modifier = Modifier.weight(1f),
         )
         Switch(
             checked = autoCheckEnabled,
             onCheckedChange = viewModel::setAutoCheckEnabled,
-            modifier = Modifier.minimumInteractiveComponentSize(),
+            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
         )
     }
 
     Spacer(Modifier.height(8.dp))
-    OutlinedButton(
+    Button(
         onClick = viewModel::checkNow,
         enabled = checkState !is UpdateCheckUiState.Checking,
     ) {
@@ -372,7 +370,7 @@ private fun UpdateCheckStatusText(
             val colors = MaterialTheme.colorScheme
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MiuixTheme.textStyles.body2,
                 color = if (found != null) colors.primary else colors.onSurfaceVariant,
             )
         }

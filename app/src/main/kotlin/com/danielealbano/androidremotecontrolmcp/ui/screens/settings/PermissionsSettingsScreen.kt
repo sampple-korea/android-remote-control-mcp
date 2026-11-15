@@ -4,28 +4,17 @@ package com.danielealbano.androidremotecontrolmcp.ui.screens.settings
 
 import android.content.Intent
 import android.provider.Settings
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -44,18 +33,23 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixPage
+import com.danielealbano.androidremotecontrolmcp.ui.theme.isInDarkTheme
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 import com.danielealbano.androidremotecontrolmcp.utils.PermissionUtils
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-private fun enabledColor(): Color = if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF4CAF50)
+private fun enabledColor(): Color = if (isInDarkTheme()) Color(0xFF81C784) else Color(0xFF4CAF50)
 
 @Composable
-private fun disabledColor(): Color = if (isSystemInDarkTheme()) Color(0xFFEF5350) else Color(0xFFF44336)
+private fun disabledColor(): Color = if (isInDarkTheme()) Color(0xFFEF5350) else Color(0xFFF44336)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PermissionsSettingsScreen(
     onBack: () -> Unit,
@@ -90,24 +84,17 @@ fun PermissionsSettingsScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.settings_permissions_title)) },
-            navigationIcon = { TopBarBackButton(onClick = onBack) },
-            windowInsets = WindowInsets(0),
+    MiuixPage(
+        title = stringResource(R.string.settings_permissions_title),
+        modifier = modifier,
+        onBack = onBack,
+    ) {
+        // ---- Required ----
+        PermissionSectionHeader(
+            title = stringResource(R.string.permission_section_required_title),
+            subtitle = stringResource(R.string.permission_section_required_subtitle),
         )
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-        ) {
-            // ---- Required ----
-            PermissionSectionHeader(
-                title = stringResource(R.string.permission_section_required_title),
-                subtitle = stringResource(R.string.permission_section_required_subtitle),
-            )
+        Card(modifier = Modifier.fillMaxWidth()) {
             PermissionRow(
                 label = stringResource(R.string.permission_accessibility),
                 rationale = stringResource(R.string.permission_accessibility_rationale),
@@ -121,14 +108,14 @@ fun PermissionsSettingsScreen(
                 onAction = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                 actionEnabled = !isAccessibilityEnabled,
             )
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ---- Required if you use a feature ----
-            PermissionSectionHeader(
-                title = stringResource(R.string.permission_section_required_if_title),
-                subtitle = stringResource(R.string.permission_section_required_if_subtitle),
-            )
+        // ---- Required if you use a feature ----
+        PermissionSectionHeader(
+            title = stringResource(R.string.permission_section_required_if_title),
+            subtitle = stringResource(R.string.permission_section_required_if_subtitle),
+        )
+        Card(modifier = Modifier.fillMaxWidth()) {
             PermissionRow(
                 label = stringResource(R.string.permission_notifications),
                 rationale = stringResource(R.string.permission_notifications_rationale),
@@ -142,8 +129,6 @@ fun PermissionsSettingsScreen(
                 onAction = onRequestNotificationPermission,
                 actionEnabled = !isNotificationPermissionGranted,
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             PermissionRow(
                 label = stringResource(R.string.permission_notification_listener),
@@ -159,8 +144,6 @@ fun PermissionsSettingsScreen(
                 actionEnabled = !isNotificationListenerEnabled,
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             PermissionRow(
                 label = stringResource(R.string.permission_camera),
                 rationale = stringResource(R.string.permission_camera_rationale),
@@ -174,8 +157,6 @@ fun PermissionsSettingsScreen(
                 onAction = onRequestCameraPermission,
                 actionEnabled = !isCameraPermissionGranted,
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             PermissionRow(
                 label = stringResource(R.string.permission_location),
@@ -192,16 +173,15 @@ fun PermissionsSettingsScreen(
             )
 
             // Background Location is geofence-only; rendered via a flavor seam (gms only).
-            // The gms seam owns its own leading spacer so foss shows no dangling gap.
             BackgroundLocationPermissionRow()
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ---- Optional ----
-            PermissionSectionHeader(
-                title = stringResource(R.string.permission_section_optional_title),
-                subtitle = stringResource(R.string.permission_section_optional_subtitle),
-            )
+        // ---- Optional ----
+        PermissionSectionHeader(
+            title = stringResource(R.string.permission_section_optional_title),
+            subtitle = stringResource(R.string.permission_section_optional_subtitle),
+        )
+        Card(modifier = Modifier.fillMaxWidth()) {
             PermissionRow(
                 label = stringResource(R.string.permission_microphone),
                 rationale = stringResource(R.string.permission_microphone_rationale),
@@ -233,7 +213,7 @@ internal fun PermissionRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Decorative: the button says the state ("Granted", "Grant", ...), or a [spokenButtonText] does
@@ -245,16 +225,16 @@ internal fun PermissionRow(
         )
         Spacer(modifier = Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = label, style = MaterialTheme.typography.bodyLarge)
+            Text(text = label, style = MiuixTheme.textStyles.body1)
             Text(
                 text = rationale,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
         val actionDescription = stringResource(R.string.permission_action_description, label, spokenButtonText)
-        OutlinedButton(onClick = onAction, enabled = actionEnabled) {
+        Button(onClick = onAction, enabled = actionEnabled, colors = ButtonDefaults.buttonColorsPrimary()) {
             // On the text: the button reads its content, and the description replaces the bare "Grant"
             Text(text = buttonText, modifier = Modifier.semantics { contentDescription = actionDescription })
         }
@@ -266,16 +246,18 @@ private fun PermissionSectionHeader(
     title: String,
     subtitle: String,
 ) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        modifier = Modifier.semantics { heading() },
-    )
-    Spacer(modifier = Modifier.height(2.dp))
-    Text(
-        text = subtitle,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.subtitle,
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            modifier = Modifier.semantics { heading() },
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = subtitle,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
 }

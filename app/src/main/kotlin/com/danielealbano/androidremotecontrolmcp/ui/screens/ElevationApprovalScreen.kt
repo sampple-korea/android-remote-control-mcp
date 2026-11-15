@@ -14,11 +14,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -30,6 +25,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.services.shell.approval.PendingElevation
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ElevationApprovalViewModel
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun ElevationApprovalScreen(
@@ -47,7 +46,7 @@ fun ElevationApprovalScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
         ) {
-            Text(stringResource(R.string.elevation_approval_title), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.elevation_approval_title), style = MiuixTheme.textStyles.title3)
             Spacer(Modifier.height(16.dp))
             if (request == null) {
                 Text(stringResource(R.string.elevation_approval_gone))
@@ -62,7 +61,7 @@ fun ElevationApprovalScreen(
                 ElevationRequestDetails(request)
                 Spacer(Modifier.height(24.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
+                    Button(
                         onClick = {
                             viewModel.deny(request.id)
                             onDone()
@@ -84,14 +83,14 @@ fun ElevationApprovalScreen(
 
 @Composable
 private fun ElevationRequestDetails(request: PendingElevation) {
-    Text(stringResource(R.string.elevation_approval_reason_label), style = MaterialTheme.typography.labelLarge)
-    Text(request.justification, style = MaterialTheme.typography.bodyLarge)
+    Text(stringResource(R.string.elevation_approval_reason_label), style = MiuixTheme.textStyles.subtitle)
+    Text(request.justification, style = MiuixTheme.textStyles.body1)
     Spacer(Modifier.height(16.dp))
-    Text(stringResource(R.string.elevation_approval_command_label), style = MaterialTheme.typography.labelLarge)
+    Text(stringResource(R.string.elevation_approval_command_label), style = MiuixTheme.textStyles.subtitle)
     SelectionContainer {
         Text(
             request.displayCommand,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MiuixTheme.textStyles.body2,
             fontFamily = FontFamily.Monospace,
         )
     }

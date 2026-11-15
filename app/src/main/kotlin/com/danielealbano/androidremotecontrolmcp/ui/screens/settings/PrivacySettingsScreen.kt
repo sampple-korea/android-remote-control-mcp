@@ -11,20 +11,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -43,8 +36,13 @@ import com.danielealbano.androidremotecontrolmcp.privacy.model.DownloadState
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
 import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.PrivacyViewModel
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
+import top.yukonga.miuix.kmp.basic.RadioButton
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrivacySettingsScreen(
     onBack: () -> Unit,
@@ -99,7 +97,7 @@ fun PrivacySettingsScreen(
             ) {
                 Text(
                     text = stringResource(R.string.privacy_enable_label),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MiuixTheme.textStyles.body1,
                     modifier = Modifier.weight(1f),
                 )
                 Switch(
@@ -115,7 +113,7 @@ fun PrivacySettingsScreen(
                     // just while DownloadState reports progress; stays usable during the benchmark,
                     // which finishes and stores its result even if Privacy Mode is toggled off.
                     enabled = !downloadInProgress && !enableInProgress,
-                    modifier = Modifier.minimumInteractiveComponentSize(),
+                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                 )
             }
 
@@ -135,7 +133,7 @@ fun PrivacySettingsScreen(
             // 4. Protected categories
             Text(
                 text = stringResource(R.string.privacy_categories_header),
-                style = MaterialTheme.typography.titleSmall,
+                style = MiuixTheme.textStyles.subtitle,
             )
             PiiCategory.entries.forEach { category ->
                 Row(
@@ -147,7 +145,7 @@ fun PrivacySettingsScreen(
                 ) {
                     Text(
                         text = stringResource(categoryLabel(category)),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MiuixTheme.textStyles.body1,
                         modifier = Modifier.weight(1f),
                     )
                     Switch(
@@ -157,7 +155,7 @@ fun PrivacySettingsScreen(
                         // toggling them while disabled or during the download would silently change
                         // what gets protected once the mode comes up.
                         enabled = config.enabled && !downloadInProgress && !enableInProgress,
-                        modifier = Modifier.minimumInteractiveComponentSize(),
+                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                     )
                 }
             }
@@ -167,7 +165,7 @@ fun PrivacySettingsScreen(
             // 5. Redaction style + placeholder format
             Text(
                 text = stringResource(R.string.privacy_mode_header),
-                style = MaterialTheme.typography.titleSmall,
+                style = MiuixTheme.textStyles.subtitle,
             )
             Column(Modifier.selectableGroup()) {
                 RedactionModeOption(
@@ -187,7 +185,7 @@ fun PrivacySettingsScreen(
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.privacy_format_header),
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MiuixTheme.textStyles.subtitle,
                     )
                     Column(Modifier.selectableGroup()) {
                         RedactionModeOption(
@@ -209,12 +207,12 @@ fun PrivacySettingsScreen(
             // 6. Disclaimer
             Text(
                 text = stringResource(R.string.privacy_disclaimer),
-                style = MaterialTheme.typography.bodySmall,
+                style = MiuixTheme.textStyles.footnote1,
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.privacy_shell_not_covered),
-                style = MaterialTheme.typography.bodySmall,
+                style = MiuixTheme.textStyles.footnote1,
             )
 
             Spacer(Modifier.height(16.dp))
@@ -229,7 +227,7 @@ fun PrivacySettingsScreen(
 private fun DetectionRatesSection() {
     Text(
         text = stringResource(R.string.privacy_detection_rates_header),
-        style = MaterialTheme.typography.titleSmall,
+        style = MiuixTheme.textStyles.subtitle,
     )
     Spacer(Modifier.height(8.dp))
     PiiCategory.entries
@@ -242,20 +240,20 @@ private fun DetectionRatesSection() {
             ) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MiuixTheme.textStyles.body2,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
                     text = MEASURED_DETECTION_RATES.getValue(category),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MiuixTheme.textStyles.body2,
                 )
             }
         }
     Spacer(Modifier.height(8.dp))
     Text(
         text = stringResource(R.string.privacy_detection_rates_caption),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MiuixTheme.textStyles.footnote1,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
     )
 }
 
@@ -269,7 +267,7 @@ private fun PrivacyProgressSection(
 ) {
     Text(
         text = statusText(status),
-        style = MaterialTheme.typography.bodyMedium,
+        style = MiuixTheme.textStyles.body2,
     )
     when (downloadState) {
         is DownloadState.Downloading -> {
@@ -280,7 +278,7 @@ private fun PrivacyProgressSection(
             )
             Text(
                 text = stringResource(R.string.privacy_download_progress, downloadState.progressPercent),
-                style = MaterialTheme.typography.bodySmall,
+                style = MiuixTheme.textStyles.footnote1,
             )
         }
 
@@ -289,15 +287,15 @@ private fun PrivacyProgressSection(
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Text(
                 text = stringResource(R.string.privacy_download_verifying),
-                style = MaterialTheme.typography.bodySmall,
+                style = MiuixTheme.textStyles.footnote1,
             )
         }
 
         is DownloadState.Failed -> {
             Text(
                 text = stringResource(R.string.privacy_download_failed, downloadState.reason),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.error,
             )
         }
 
@@ -310,7 +308,7 @@ private fun PrivacyProgressSection(
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Text(
                     text = stringResource(R.string.privacy_enable_preparing),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MiuixTheme.textStyles.footnote1,
                 )
             }
         }
@@ -321,7 +319,7 @@ private fun PrivacyProgressSection(
         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         Text(
             text = stringResource(R.string.privacy_benchmark_running),
-            style = MaterialTheme.typography.bodySmall,
+            style = MiuixTheme.textStyles.footnote1,
         )
     }
     benchmarkEstimate?.let { estimate ->
@@ -332,7 +330,7 @@ private fun PrivacyProgressSection(
                     R.string.privacy_benchmark_estimate,
                     formatEstimate(estimate),
                 ),
-            style = MaterialTheme.typography.bodySmall,
+            style = MiuixTheme.textStyles.footnote1,
         )
     }
 }
@@ -355,7 +353,7 @@ private fun RedactionModeOption(
         Spacer(Modifier.height(0.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MiuixTheme.textStyles.body1,
             modifier = Modifier.padding(start = 8.dp),
         )
     }

@@ -25,12 +25,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -70,8 +64,11 @@ import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.PrivacyViewModel
 import com.danielealbano.androidremotecontrolmcp.utils.NetworkUtils
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServerScreen(
     onNavigateToPermissions: () -> Unit,
@@ -281,15 +278,9 @@ private fun NetworkAccessSuggestionCard(
         icon = Icons.Default.Info,
         title = stringResource(R.string.server_network_access_suggestion_title),
     ) {
-        TextButton(onClick = onEnableFreeTunnel, enabled = enabled) {
-            Text(stringResource(R.string.server_network_access_suggestion_arc_tunnel))
-        }
-        TextButton(onClick = onEnableWifi, enabled = enabled) {
-            Text(stringResource(R.string.server_network_access_suggestion_wifi))
-        }
-        TextButton(onClick = onOtherTunnels, enabled = enabled) {
-            Text(stringResource(R.string.server_network_access_suggestion_other_tunnels))
-        }
+        TextButton(text = stringResource(R.string.server_network_access_suggestion_arc_tunnel), onClick = onEnableFreeTunnel, enabled = enabled)
+        TextButton(text = stringResource(R.string.server_network_access_suggestion_wifi), onClick = onEnableWifi, enabled = enabled)
+        TextButton(text = stringResource(R.string.server_network_access_suggestion_other_tunnels), onClick = onOtherTunnels, enabled = enabled)
     }
 }
 
@@ -338,12 +329,8 @@ private fun ArcTunnelCtAlertCard(
         title = stringResource(R.string.server_arc_tunnel_ct_alert_title),
         body = stringResource(R.string.server_arc_tunnel_ct_alert_body, alert.fqdn),
     ) {
-        TextButton(onClick = onChangeName) {
-            Text(stringResource(R.string.server_arc_tunnel_ct_alert_change_name))
-        }
-        TextButton(onClick = onDismiss) {
-            Text(stringResource(R.string.server_arc_tunnel_ct_alert_dismiss))
-        }
+        TextButton(text = stringResource(R.string.server_arc_tunnel_ct_alert_change_name), onClick = onChangeName)
+        TextButton(text = stringResource(R.string.server_arc_tunnel_ct_alert_dismiss), onClick = onDismiss)
     }
     Spacer(Modifier.height(16.dp))
 }
@@ -357,9 +344,7 @@ private fun PendingApprovalsCard(
         icon = Icons.Default.Notifications,
         title = stringResource(R.string.server_pending_approvals_title, count),
     ) {
-        TextButton(onClick = onClick) {
-            Text(stringResource(R.string.server_pending_approvals_action))
-        }
+        TextButton(text = stringResource(R.string.server_pending_approvals_action), onClick = onClick)
     }
 }
 
@@ -369,8 +354,6 @@ private fun PermissionWarningCard(onClick: () -> Unit) {
         icon = Icons.Default.Warning,
         title = stringResource(R.string.permission_warning_title),
     ) {
-        TextButton(onClick = onClick) {
-            Text(stringResource(R.string.permission_warning_action))
-        }
+        TextButton(text = stringResource(R.string.permission_warning_action), onClick = onClick)
     }
 }

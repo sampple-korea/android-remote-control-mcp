@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,20 +26,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -68,8 +57,17 @@ import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
 import com.danielealbano.androidremotecontrolmcp.ui.components.hideSoftKeyboardOnFocus
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.SnackbarHost
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StorageSettingsScreen(
     onBack: () -> Unit,
@@ -153,12 +151,12 @@ fun StorageSettingsScreen(
                 // ── Built-in Locations Section ──────────────────────────────
                 Text(
                     text = stringResource(R.string.storage_builtin_locations_title),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MiuixTheme.textStyles.title3,
                 )
                 Text(
                     text = stringResource(R.string.storage_builtin_locations_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -196,17 +194,17 @@ fun StorageSettingsScreen(
                 // ── User Locations Section ──────────────────────────────────
                 Text(
                     text = stringResource(R.string.storage_user_locations_title),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MiuixTheme.textStyles.title3,
                 )
                 Text(
                     text = stringResource(R.string.storage_locations_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedButton(onClick = {
+                Button(onClick = {
                     addDialogDescription = ""
                     addDialogSelectedUri = null
                     addDialogSelectedName = null
@@ -224,8 +222,8 @@ fun StorageSettingsScreen(
                 if (userLocations.isEmpty()) {
                     Text(
                         text = stringResource(R.string.storage_location_no_locations),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 } else {
                     userLocations.forEach { location ->
@@ -287,18 +285,18 @@ fun StorageSettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.storage_allow_http_downloads_label),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MiuixTheme.textStyles.body1,
                         )
                         Text(
                             text = stringResource(R.string.storage_allow_http_downloads_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                     }
                     Switch(
                         checked = serverConfig.allowHttpDownloads,
                         onCheckedChange = viewModel::updateAllowHttpDownloads,
-                        modifier = Modifier.minimumInteractiveComponentSize(),
+                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                     )
                 }
 
@@ -311,18 +309,18 @@ fun StorageSettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.storage_allow_unverified_https_label),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MiuixTheme.textStyles.body1,
                         )
                         Text(
                             text = stringResource(R.string.storage_allow_unverified_https_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                     }
                     Switch(
                         checked = serverConfig.allowUnverifiedHttpsCerts,
                         onCheckedChange = viewModel::updateAllowUnverifiedHttpsCerts,
-                        modifier = Modifier.minimumInteractiveComponentSize(),
+                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                     )
                 }
 
@@ -335,18 +333,18 @@ fun StorageSettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.storage_block_local_network_downloads_label),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MiuixTheme.textStyles.body1,
                         )
                         Text(
                             text = stringResource(R.string.storage_block_local_network_downloads_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                     }
                     Switch(
                         checked = serverConfig.blockLocalNetworkDownloads,
                         onCheckedChange = viewModel::updateBlockLocalNetworkDownloads,
-                        modifier = Modifier.minimumInteractiveComponentSize(),
+                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                     )
                 }
             }
@@ -386,7 +384,7 @@ fun StorageSettingsScreen(
                         modifier = Modifier.fillMaxWidth().hideSoftKeyboardOnFocus(),
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedButton(
+                    Button(
                         onClick = { documentTreeLauncher.launch(null) },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -400,20 +398,20 @@ fun StorageSettingsScreen(
                                     R.string.storage_location_add_dialog_selected,
                                     addDialogSelectedName!!,
                                 ),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MiuixTheme.textStyles.body2,
                         )
                     } else {
                         Text(
                             text = stringResource(R.string.storage_location_add_dialog_no_selection),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                     }
                     if (addDialogDuplicateError) {
                         Text(
                             text = stringResource(R.string.storage_location_add_dialog_duplicate),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.error,
                         )
                     }
                 }
@@ -514,7 +512,7 @@ fun StorageSettingsScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.storage_location_delete_dialog_confirm),
-                        color = MaterialTheme.colorScheme.error,
+                        color = MiuixTheme.colorScheme.error,
                     )
                 }
             },
@@ -549,19 +547,19 @@ private fun StorageLocationRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = location.name,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
                     text = location.path,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 if (location.description.isNotEmpty()) {
                     Text(
                         text = location.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         fontStyle = FontStyle.Italic,
                     )
                 }
@@ -594,8 +592,8 @@ private fun StorageLocationRow(
             ) {
                 Text(
                     text = stringResource(R.string.storage_location_allow_write_label),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Switch(
@@ -610,8 +608,8 @@ private fun StorageLocationRow(
             ) {
                 Text(
                     text = stringResource(R.string.storage_location_allow_delete_label),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Switch(
@@ -643,13 +641,13 @@ private fun BuiltinStorageLocationRow(
     ) {
         Text(
             text = location.name,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
         )
         Text(
             text = location.path,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
         Row(
             modifier =
@@ -666,8 +664,8 @@ private fun BuiltinStorageLocationRow(
             ) {
                 Text(
                     text = stringResource(R.string.storage_location_allow_write_label),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Switch(
@@ -682,8 +680,8 @@ private fun BuiltinStorageLocationRow(
             ) {
                 Text(
                     text = stringResource(R.string.storage_location_allow_delete_label),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Switch(
@@ -694,7 +692,7 @@ private fun BuiltinStorageLocationRow(
             }
         }
         if (readMediaPermissions.isNotEmpty()) {
-            OutlinedButton(
+            Button(
                 onClick = { onRequestPermission(requestPermissions) },
                 enabled = builtinGrantButtonEnabled(accessLevel),
                 modifier = Modifier.fillMaxWidth(),

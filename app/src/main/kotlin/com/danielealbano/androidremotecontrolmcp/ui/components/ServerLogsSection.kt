@@ -10,11 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -26,6 +21,11 @@ import androidx.compose.ui.unit.dp
 import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.data.model.ServerLogEntry
 import com.danielealbano.androidremotecontrolmcp.ui.theme.AndroidRemoteControlMcpTheme
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -38,7 +38,7 @@ fun ServerLogsSection(
     onShowMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(
+    Card(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
@@ -46,7 +46,7 @@ fun ServerLogsSection(
         ) {
             Text(
                 text = stringResource(R.string.server_logs_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MiuixTheme.textStyles.title3,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -54,8 +54,8 @@ fun ServerLogsSection(
             if (logs.isEmpty()) {
                 Text(
                     text = stringResource(R.string.server_logs_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.padding(vertical = 16.dp),
                 )
             } else {
@@ -72,9 +72,7 @@ fun ServerLogsSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                TextButton(onClick = onShowMore) {
-                    Text(stringResource(R.string.server_logs_show_more))
-                }
+                TextButton(text = stringResource(R.string.server_logs_show_more), onClick = onShowMore)
             }
         }
     }
@@ -96,13 +94,13 @@ private fun ServerLogEntryRow(entry: ServerLogEntry) {
             ) {
                 Text(
                     text = timeString,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = entry.toolName ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MiuixTheme.textStyles.body2,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -110,15 +108,15 @@ private fun ServerLogEntryRow(entry: ServerLogEntry) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "${entry.durationMs ?: 0}ms",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
             if (entry.message.isNotEmpty()) {
                 Text(
                     text = entry.message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.error,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -143,13 +141,13 @@ private fun ServerLogEntryRow(entry: ServerLogEntry) {
             ) {
                 Text(
                     text = timeString,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = entry.message,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MiuixTheme.textStyles.body2,
                     modifier = Modifier.weight(1f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

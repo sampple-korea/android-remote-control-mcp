@@ -4,20 +4,9 @@ package com.danielealbano.androidremotecontrolmcp.ui.screens.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -36,13 +25,17 @@ import com.danielealbano.androidremotecontrolmcp.R
 import com.danielealbano.androidremotecontrolmcp.data.model.SHELL_OUTPUT_MEMORY_CAP_MIB
 import com.danielealbano.androidremotecontrolmcp.data.model.ShellLimit
 import com.danielealbano.androidremotecontrolmcp.data.model.ShellPatternKind
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarBackButton
-import com.danielealbano.androidremotecontrolmcp.ui.components.TopBarTitle
+import com.danielealbano.androidremotecontrolmcp.ui.components.AppTextField
+import com.danielealbano.androidremotecontrolmcp.ui.components.CardContentPadding
+import com.danielealbano.androidremotecontrolmcp.ui.components.MiuixPage
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ShellLimitField
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ShellLimitInputError
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ShellSettingsViewModel
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShellSettingsScreen(
     onBack: () -> Unit,
@@ -62,31 +55,23 @@ fun ShellSettingsScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { TopBarTitle(stringResource(R.string.settings_shell_title)) },
-            navigationIcon = { TopBarBackButton(onClick = onBack) },
-            windowInsets = WindowInsets(0),
+    MiuixPage(
+        title = stringResource(R.string.settings_shell_title),
+        modifier = modifier,
+        onBack = onBack,
+    ) {
+        ShellElevationSection(
+            config = config,
+            shizukuState = shizukuState,
+            suStatus = suStatus,
+            onSwitch = viewModel::setSwitch,
+            onGrantShizuku = viewModel::requestShizukuPermission,
+            onRestartApp = viewModel::restartApp,
+            onTestSu = viewModel::testSu,
+            onAddAllowlistPattern = { viewModel.addPattern(ShellPatternKind.ALLOWLIST, it) },
+            onRemoveAllowlistPattern = { viewModel.removePattern(ShellPatternKind.ALLOWLIST, it) },
         )
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-        ) {
-            ShellElevationSection(
-                config = config,
-                shizukuState = shizukuState,
-                suStatus = suStatus,
-                onSwitch = viewModel::setSwitch,
-                onGrantShizuku = viewModel::requestShizukuPermission,
-                onRestartApp = viewModel::restartApp,
-                onTestSu = viewModel::testSu,
-                onAddAllowlistPattern = { viewModel.addPattern(ShellPatternKind.ALLOWLIST, it) },
-                onRemoveAllowlistPattern = { viewModel.removePattern(ShellPatternKind.ALLOWLIST, it) },
-            )
-            Spacer(Modifier.height(24.dp))
+        Card(modifier = Modifier.fillMaxWidth()) {
             ShellPatternListEditor(
                 titleRes = R.string.shell_blocklist_title,
                 descriptionRes = R.string.shell_blocklist_description,
@@ -94,13 +79,12 @@ fun ShellSettingsScreen(
                 onAdd = { viewModel.addPattern(ShellPatternKind.BLOCKLIST, it) },
                 onRemove = { viewModel.removePattern(ShellPatternKind.BLOCKLIST, it) },
             )
-            Spacer(Modifier.height(24.dp))
-            ShellLimitsSection(
-                fields = fields,
-                onChange = viewModel::updateLimit,
-                onCommit = viewModel::commitLimit,
-            )
         }
+        ShellLimitsSection(
+            fields = fields,
+            onChange = viewModel::updateLimit,
+            onCommit = viewModel::commitLimit,
+        )
     }
 }
 
@@ -111,37 +95,37 @@ private fun ShellLimitsSection(
     onCommit: (ShellLimit) -> Unit,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
-    Text(stringResource(R.string.shell_limits_title), style = MaterialTheme.typography.titleMedium)
-    Text(
-        stringResource(R.string.shell_limits_memory_note),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    ShellLimit.entries.forEach { limit ->
-        val field = fields[limit] ?: return@forEach
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = field.text,
-            onValueChange = { onChange(limit, it) },
-            label = { Text(stringResource(limitLabel(limit))) },
-            isError = field.error != null,
-            supportingText = field.error?.let { error -> { Text(limitErrorText(limit, error)) } },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            // A limit is stored only when its field loses focus, so what gets saved is the
-            // final value the user settled on, not every intermediate keystroke state. Gaining
-            // focus hides the soft keyboard instead of showing it (see hideSoftKeyboardOnFocus).
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { focusState ->
-                        if (focusState.isFocused) {
-                            keyboardController?.hide()
-                        } else {
-                            onCommit(limit)
-                        }
-                    },
-        )
+    Column {
+        SmallTitle(text = stringResource(R.string.shell_limits_title))
+        Card(modifier = Modifier.fillMaxWidth(), insideMargin = CardContentPadding) {
+            Text(
+                stringResource(R.string.shell_limits_memory_note),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+            ShellLimit.entries.forEach { limit ->
+                val field = fields[limit] ?: return@forEach
+                AppTextField(
+                    value = field.text,
+                    onValueChange = { onChange(limit, it) },
+                    label = stringResource(limitLabel(limit)),
+                    error = field.error?.let { error -> limitErrorText(limit, error) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    // A limit is stored only when its field loses focus, so what gets saved is the
+                    // final value the user settled on, not every intermediate keystroke state. Gaining
+                    // focus hides the soft keyboard instead of showing it (see hideSoftKeyboardOnFocus).
+                    fieldModifier =
+                        Modifier.onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                keyboardController?.hide()
+                            } else {
+                                onCommit(limit)
+                            }
+                        },
+                )
+            }
+        }
     }
 }
 

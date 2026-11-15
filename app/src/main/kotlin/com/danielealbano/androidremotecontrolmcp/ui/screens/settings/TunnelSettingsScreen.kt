@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -23,17 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,10 +59,16 @@ import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelRenewalV
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.RadioButton
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val STATUS_INDICATOR_SIZE_DP = 16
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TunnelSettingsScreen(
     onBack: () -> Unit,
@@ -112,8 +110,8 @@ fun TunnelSettingsScreen(
             if (serverConfig.httpsEnabled && arcSelected) {
                 Text(
                     text = stringResource(R.string.remote_access_https_note_arc_tunnel),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
             }
@@ -125,7 +123,7 @@ fun TunnelSettingsScreen(
             ) {
                 Text(
                     text = stringResource(R.string.remote_access_enabled_label),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MiuixTheme.textStyles.body1,
                     modifier = Modifier.weight(1f),
                 )
                 Switch(
@@ -135,7 +133,7 @@ fun TunnelSettingsScreen(
                         if (on && arcSelected) arcViewModel.requestEnrollment()
                     },
                     enabled = isEnabled,
-                    modifier = Modifier.minimumInteractiveComponentSize(),
+                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                 )
             }
 
@@ -144,7 +142,7 @@ fun TunnelSettingsScreen(
             // Tunnel Provider Selector
             Text(
                 text = stringResource(R.string.remote_access_provider_label),
-                style = MaterialTheme.typography.labelLarge,
+                style = MiuixTheme.textStyles.subtitle,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Column(modifier = Modifier.selectableGroup()) {
@@ -171,21 +169,21 @@ fun TunnelSettingsScreen(
                             Column {
                                 Text(
                                     text = stringResource(R.string.remote_access_provider_arc_tunnel),
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MiuixTheme.textStyles.body1,
                                 )
                                 Text(
                                     text = stringResource(R.string.remote_access_provider_arc_tunnel_desc),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
                             }
                         } else {
-                            Text(text = providerTitle(provider), style = MaterialTheme.typography.bodyLarge)
+                            Text(text = providerTitle(provider), style = MiuixTheme.textStyles.body1)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = providerDescription(provider),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                         }
                     }
@@ -338,7 +336,7 @@ private fun NgrokConfigFields(
     Column {
         Text(
             text = stringResource(R.string.remote_access_ngrok_authtoken_label),
-            style = MaterialTheme.typography.labelLarge,
+            style = MiuixTheme.textStyles.subtitle,
         )
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
@@ -379,7 +377,7 @@ private fun NgrokConfigFields(
 
         Text(
             text = stringResource(R.string.remote_access_ngrok_domain_label),
-            style = MaterialTheme.typography.labelLarge,
+            style = MiuixTheme.textStyles.subtitle,
         )
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
@@ -403,7 +401,7 @@ private fun CloudflareModeSelector(
 ) {
     Text(
         text = stringResource(R.string.remote_access_cloudflare_mode_label),
-        style = MaterialTheme.typography.labelLarge,
+        style = MiuixTheme.textStyles.subtitle,
     )
     Spacer(modifier = Modifier.height(4.dp))
     Column(modifier = Modifier.selectableGroup()) {
@@ -437,7 +435,7 @@ private fun CloudflareModeSelector(
                                 stringResource(R.string.remote_access_cloudflare_mode_token)
                             }
                         },
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MiuixTheme.textStyles.body1,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -451,8 +449,8 @@ private fun CloudflareModeSelector(
                                 stringResource(R.string.remote_access_cloudflare_mode_token_desc)
                             }
                         },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
         }
@@ -473,7 +471,7 @@ private fun CloudflareTokenFields(
     Column {
         Text(
             text = stringResource(R.string.remote_access_cloudflare_token_label),
-            style = MaterialTheme.typography.labelLarge,
+            style = MiuixTheme.textStyles.subtitle,
         )
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
@@ -512,14 +510,14 @@ private fun CloudflareTokenFields(
 
         Text(
             text = stringResource(R.string.remote_access_cloudflare_service_url_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = serviceUrl,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MiuixTheme.textStyles.body2,
                 modifier = Modifier.weight(1f),
             )
             IconButton(
@@ -547,7 +545,7 @@ private fun CloudflareExtraArgsField(
     Column {
         Text(
             text = stringResource(R.string.remote_access_cloudflare_extra_args_label),
-            style = MaterialTheme.typography.labelLarge,
+            style = MiuixTheme.textStyles.subtitle,
         )
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
@@ -563,8 +561,8 @@ private fun CloudflareExtraArgsField(
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = stringResource(R.string.remote_access_cloudflare_extra_args_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
     }
 }
@@ -582,8 +580,8 @@ private fun TunnelStatusIndicator(
             is TunnelStatus.Disconnected -> {
                 Text(
                     text = stringResource(R.string.remote_access_status_disconnected),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
 
@@ -595,24 +593,24 @@ private fun TunnelStatusIndicator(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.remote_access_status_connecting),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.tertiary,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.primary,
                 )
             }
 
             is TunnelStatus.Connected -> {
                 Text(
                     text = stringResource(R.string.remote_access_status_connected),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.primary,
                 )
             }
 
             is TunnelStatus.Error -> {
                 Text(
                     text = stringResource(R.string.remote_access_status_error, status.message),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.error,
                 )
             }
         }
