@@ -1,5 +1,6 @@
 package com.danielealbano.androidremotecontrolmcp.mcp.tools
 
+import android.content.Context
 import com.danielealbano.androidremotecontrolmcp.data.model.ServerLogEntry
 import com.danielealbano.androidremotecontrolmcp.data.model.ShellLimit
 import com.danielealbano.androidremotecontrolmcp.data.model.ToolPermissionsConfig
@@ -20,6 +21,8 @@ import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import java.io.File
+import java.security.MessageDigest
 
 private const val MILLIS_PER_SECOND = 1000L
 
@@ -36,6 +39,7 @@ internal object RootToolNames {
     const val REBOOT_DEVICE = "reboot_device"
     const val READ_LOGCAT = "read_logcat"
     const val READ_ROOT_FILE = "read_root_file"
+    const val TYPE_VIRTUAL_KEYBOARD = "type_virtual_keyboard"
 }
 
 private val PACKAGE_ID_PATTERN = Regex("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*$")
@@ -495,9 +499,123 @@ internal class ReadRootFileHandler(
     }
 }
 
+private const val MAX_VIRTUAL_KEYBOARD_TEXT_LENGTH = 500
+private const val VIRTUAL_KEYBOARD_ASSET = "vkbd"
+private const val VIRTUAL_KEYBOARD_BINARY_NAME = "vkbd"
+private const val VIRTUAL_KEYBOARD_INPUT_NAME = "vkbd-input.txt"
+
+/**
+ * MCP tool: type_virtual_keyboard
+ *
+ * Types text into the currently focused field as a virtual USB keyboard created through
+ * /dev/uinput, running as root through the standard elevation authorization. The key events
+ * travel the input pipeline exactly like a hardware keyboard, so they also reach fields that
+ * only accept IME-committed text — notably WebView inputs while every soft keyboard is
+ * disabled, where edit_text (an accessibility content set) cannot type. The text itself never
+ * appears on the command line, in the result or in the server log: the handler writes it to a
+ * file in the app's private storage and the bundled vkbd helper (assets/vkbd, source in
+ * scripts/vkbd/) reads it from stdin. Only printable ASCII and '\n' (typed as Enter) can be
+ * typed; any other character is rejected up front so a call never silently drops part of the
+ * text.
+ */
+internal class TypeVirtualKeyboardHandler(
+    private val appContext: Context,
+    private val runner: ElevatedCommandRunner,
+) {
+    suspend fun execute(arguments: JsonObject?): CallToolResult {
+        val text = McpToolUtils.requireString(arguments, "text")
+        if (text.isEmpty()) {
+            throw McpToolException.InvalidParams("Parameter 'text' must be non-empty")
+        }
+        if (text.length > MAX_VIRTUAL_KEYBOARD_TEXT_LENGTH) {
+            throw McpToolException.InvalidParams(
+                "Parameter 'text' must be at most $MAX_VIRTUAL_KEYBOARD_TEXT_LENGTH characters, got: ${text.length}",
+            )
+        }
+        if (text.any { it.code !in ' '.code..'~'.code && it != '\n' }) {
+            throw McpToolException.InvalidParams(
+                "Parameter 'text' contains characters the virtual keyboard cannot type: " +
+                    "only printable ASCII and newline are supported",
+            )
+        }
+        val justification = requireJustification(arguments)
+
+        val binary = ensureVirtualKeyboardBinary()
+        val inputFile = File(appContext.filesDir, VIRTUAL_KEYBOARD_INPUT_NAME)
+        inputFile.writeText(text, Charsets.UTF_8)
+        val command =
+            "${ShellScriptBuilder.quoteForShell(binary.absolutePath)} - < " +
+                ShellScriptBuilder.quoteForShell(inputFile.absolutePath)
+        val page = runner.run(command, justification)
+        val output = page.outputOrFailure("Typing with the virtual keyboard")
+        if (page.snapshot.exitCode != 0) {
+            throw McpToolException.ActionFailed(
+                "The virtual keyboard helper failed (exit code ${page.snapshot.exitCode}): ${output.trim()}",
+            )
+        }
+        return McpToolUtils.textResult("Typed ${text.length} characters with the virtual keyboard.")
+    }
+
+    /**
+     * Extracts the bundled vkbd helper into the app's private storage and returns it. Keyed on
+     * the asset's SHA-256, so an app update shipping a new helper replaces the old copy while
+     * repeat calls only cost one hash of each side.
+     */
+    private fun ensureVirtualKeyboardBinary(): File {
+        val target = File(appContext.filesDir, VIRTUAL_KEYBOARD_BINARY_NAME)
+        val bytes = appContext.assets.open(VIRTUAL_KEYBOARD_ASSET).use { it.readBytes() }
+        if (!target.isFile || sha256(target.readBytes()) != sha256(bytes)) {
+            target.writeBytes(bytes)
+        }
+        target.setExecutable(true, false)
+        return target
+    }
+
+    private fun sha256(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+
+    fun register(
+        registrar: LoggedToolRegistrar,
+        toolNamePrefix: String,
+    ) {
+        registrar.addTool(
+            toolName = RootToolNames.TYPE_VIRTUAL_KEYBOARD,
+            name = "$toolNamePrefix${RootToolNames.TYPE_VIRTUAL_KEYBOARD}",
+            description =
+                "Type text into the currently focused field as a virtual USB keyboard (root, " +
+                    "via /dev/uinput): the key events travel the input pipeline like a hardware " +
+                    "keyboard, so they reach fields that only accept IME-committed text — " +
+                    "notably WebView inputs while every soft keyboard is disabled, where " +
+                    "edit_text cannot type. No soft keyboard is shown. The field must already " +
+                    "be focused (tap it first). Only printable ASCII and newline (typed as " +
+                    "Enter) are supported; max $MAX_VIRTUAL_KEYBOARD_TEXT_LENGTH characters " +
+                    "per call — split longer text across calls. Goes through the same elevation " +
+                    "authorization as an elevated shell command. The typed text is never " +
+                    "echoed back.",
+            inputSchema =
+                ToolSchema(
+                    properties =
+                        buildJsonObject {
+                            putJsonObject("text") {
+                                put("type", "string")
+                                put(
+                                    "description",
+                                    "Text to type (printable ASCII and newline only, " +
+                                        "max $MAX_VIRTUAL_KEYBOARD_TEXT_LENGTH characters)",
+                                )
+                            }
+                            putJustificationProperty()
+                        },
+                    required = listOf("text", "justification"),
+                ),
+        ) { request -> execute(request.arguments) }
+    }
+}
+
 fun registerRootTools(
     registrar: LoggedToolRegistrar,
     context: ShellToolContext,
+    appContext: Context,
     serverLogRepository: ServerLogRepository,
     toolNamePrefix: String,
     perms: ToolPermissionsConfig,
@@ -517,5 +635,8 @@ fun registerRootTools(
     }
     if (perms.isToolEnabled(RootToolNames.READ_ROOT_FILE)) {
         ReadRootFileHandler(runner).register(registrar, toolNamePrefix)
+    }
+    if (perms.isToolEnabled(RootToolNames.TYPE_VIRTUAL_KEYBOARD)) {
+        TypeVirtualKeyboardHandler(appContext, runner).register(registrar, toolNamePrefix)
     }
 }

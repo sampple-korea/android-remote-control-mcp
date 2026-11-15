@@ -1,5 +1,6 @@
 package com.danielealbano.androidremotecontrolmcp.integration
 
+import android.content.Context
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -402,7 +403,7 @@ object McpIntegrationTestHelper {
             perms,
         )
         registerShellTools(registrar, deps.shellToolContext, toolNamePrefix, perms)
-        registerRootTools(registrar, deps.shellToolContext, deps.serverLog, toolNamePrefix, perms)
+        registerRootTools(registrar, deps.shellToolContext, deps.context, deps.serverLog, toolNamePrefix, perms)
         registerFileTransferTools(registrar, deps.shellToolContext, toolNamePrefix, perms)
     }
 
@@ -683,4 +684,6 @@ data class MockDependencies(
     val inFlightToolCalls: InFlightToolCalls = InFlightToolCalls(),
     val shellToolContext: ShellToolContext =
         ShellToolContext(mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), "/scratch"),
+    /** Application context for tools that ship device-side helpers (relaxed: never exercised here). */
+    val context: Context = mockk(relaxed = true),
 )

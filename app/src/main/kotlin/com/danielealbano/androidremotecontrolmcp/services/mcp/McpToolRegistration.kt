@@ -94,6 +94,7 @@ class McpToolRegistration
             registerRootTools(
                 registrar,
                 shellContext,
+                shell.context,
                 serverLogRepository,
                 toolNamePrefix,
                 perms,

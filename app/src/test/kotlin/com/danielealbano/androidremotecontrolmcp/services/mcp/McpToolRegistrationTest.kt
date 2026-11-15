@@ -1,5 +1,6 @@
 package com.danielealbano.androidremotecontrolmcp.services.mcp
 
+import android.content.Context
 import com.danielealbano.androidremotecontrolmcp.data.model.ServerConfig
 import com.danielealbano.androidremotecontrolmcp.data.model.ToolPermissionsConfig
 import com.danielealbano.androidremotecontrolmcp.integration.McpIntegrationTestHelper
@@ -61,6 +62,7 @@ class McpToolRegistrationTest {
                 deps.shellToolContext.authorizer,
                 deps.shellToolContext.settingsRepository,
                 mockk<ShellScratchDirectory> { every { path() } returns File("/scratch") },
+                mockk<Context>(relaxed = true),
             ),
         )
 

@@ -1,5 +1,6 @@
 package com.danielealbano.androidremotecontrolmcp.services.mcp
 
+import android.content.Context
 import com.danielealbano.androidremotecontrolmcp.data.repository.SettingsRepository
 import com.danielealbano.androidremotecontrolmcp.privacy.PlaceholderSubstitutor
 import com.danielealbano.androidremotecontrolmcp.privacy.PrivacyToolGate
@@ -30,6 +31,7 @@ import com.danielealbano.androidremotecontrolmcp.services.shell.ShellProcessMana
 import com.danielealbano.androidremotecontrolmcp.services.shell.ShellScratchDirectory
 import com.danielealbano.androidremotecontrolmcp.services.storage.FileOperationProvider
 import com.danielealbano.androidremotecontrolmcp.services.storage.StorageLocationProvider
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 /** What the accessibility-driven tools (actions, node actions, text input, utilities) act through. */
@@ -95,4 +97,5 @@ class ShellToolDeps
         val authorizer: ShellCommandAuthorizer,
         val settingsRepository: SettingsRepository,
         val scratchDirectory: ShellScratchDirectory,
+        @ApplicationContext val context: Context,
     )

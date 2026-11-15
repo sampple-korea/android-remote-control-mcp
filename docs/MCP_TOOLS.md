@@ -54,7 +54,7 @@ The MCP server exposes 74 tools via the JSON-RPC 2.0 protocol, organized into 16
 | Notification | `android_notification_list`, `android_notification_open`, `android_notification_dismiss`, `android_notification_snooze`, `android_notification_action`, `android_notification_reply` | 32 |
 | Location | `android_get_location` | 43 |
 | Sharing | `android_get_shared_content`, `android_share_file_via_web` | 48 |
-| Shell | `android_shell_exec`, `android_shell_start`, `android_shell_output`, `android_shell_kill`, `android_shell_list`, `android_install_apk`, `android_uninstall_app`, `android_reboot_device`, `android_read_logcat`, `android_read_root_file`, `android_write_file_chunk`, `android_read_file_chunk`, `android_file_info` | 68 |
+| Shell | `android_shell_exec`, `android_shell_start`, `android_shell_output`, `android_shell_kill`, `android_shell_list`, `android_install_apk`, `android_uninstall_app`, `android_reboot_device`, `android_read_logcat`, `android_read_root_file`, `android_type_virtual_keyboard`, `android_write_file_chunk`, `android_read_file_chunk`, `android_file_info` | 69 |
 | Batch | `android_batch_actions` | - |
 
 ## Tool Naming Convention
@@ -3890,6 +3890,15 @@ Read a text file at any absolute path, running as root — including app-private
 | `offset` | integer | No | 1 | 1-based line number to start reading from |
 | `limit` | integer | No | 200 | Maximum number of lines to return (max 200) |
 | `justification` | string | Yes | - | Why the file is needed |
+
+### `android_type_virtual_keyboard`
+
+Type text into the currently focused field as a virtual USB keyboard created through `/dev/uinput`, running as root. The key events travel the input pipeline exactly like a hardware keyboard, so they reach fields that only accept IME-committed text — notably WebView inputs while every soft keyboard is disabled, where `android_edit_text` (an accessibility content set) cannot type. No soft keyboard is shown. The field must already be focused (tap it first). The text is fed to the keyboard helper from a file in the app's private storage: it never appears on a command line, in the server log or in the result, which reports only the character count.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `text` | string | Yes | - | Text to type: printable ASCII and newline (typed as Enter) only, max 500 characters — split longer text across calls |
+| `justification` | string | Yes | - | Why the typing is needed |
 
 ### `android_write_file_chunk`
 
