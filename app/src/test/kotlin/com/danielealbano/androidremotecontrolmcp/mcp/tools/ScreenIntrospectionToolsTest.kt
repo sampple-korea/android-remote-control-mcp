@@ -960,8 +960,10 @@ class ScreenIntrospectionToolsTest {
             )
 
         /** Root + 6 unchanged labels + 1 label = 8 listed nodes. */
-        private fun baseTree() =
-            screenTree((1..6).map { labelNode("node_same_$it", "same$it") } + labelNode("node_label", "Hello"))
+        private fun baseTree(): AccessibilityNodeData {
+            val labels = (1..6).map { labelNode("node_same_$it", "same$it") }
+            return screenTree(labels + labelNode("node_label", "Hello"))
+        }
 
         private fun stubCaptureWithTree(tree: AccessibilityNodeData) {
             every { mockAccessibilityServiceProvider.isReady() } returns true
@@ -982,8 +984,10 @@ class ScreenIntrospectionToolsTest {
             every { mockTreeParser.parseTree(mockRootNode, "root_w0", any()) } returns tree
         }
 
-        private suspend fun executeText(params: JsonObject?): String =
-            (handler.execute(params).content[0] as TextContent).text
+        private suspend fun executeText(params: JsonObject?): String {
+            val content = handler.execute(params).content[0] as TextContent
+            return content.text
+        }
 
         @Test
         @DisplayName("first diff call returns the full state (no baseline yet)")
@@ -1189,8 +1193,10 @@ class ScreenIntrospectionToolsTest {
             every { mockTreeParser.parseTree(mockRootNode, "root_w0", any()) } returns tree
         }
 
-        private suspend fun executeText(params: JsonObject?): String =
-            (handler.execute(params).content[0] as TextContent).text
+        private suspend fun executeText(params: JsonObject?): String {
+            val content = handler.execute(params).content[0] as TextContent
+            return content.text
+        }
 
         @Test
         @DisplayName("interactive_only lists the button but not the label or the root")
