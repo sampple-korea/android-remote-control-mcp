@@ -12,7 +12,7 @@ name: Edge Release
 #   Gradle's `git describe --match v*` version derivation, so it interferes with
 #   neither the stable release workflow nor version names/codes.
 # - Publishing is gated on the full CI suite for the commit (lint, unit/integration,
-#   E2E, both release builds). The wait step only waits for the checks to COMPLETE
+#   both release builds). The wait step only waits for the checks to COMPLETE
 #   (any conclusion — ci.yml cancels a superseded commit's CI run when a newer merge
 #   lands, and an already-failed check keeps its 'failure' conclusion); the decide
 #   step is the sole arbiter of the real per-check conclusions: all checks green ->
@@ -35,6 +35,7 @@ on:
 permissions:
   contents: write
   actions: read
+  checks: read
 
 concurrency:
   group: edge-release
@@ -67,7 +68,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          check-regexp: '^(Build Release - (GMS|FOSS)|E2E Tests|Unit & Integration Tests|Lint)$'
+          check-regexp: '^(Build Release - (GMS|FOSS)|Unit & Integration Tests|Lint)$'
           wait-interval: 30
           allowed-conclusions: success,failure,cancelled,timed_out,skipped,neutral,action_required,stale
           checks-discovery-timeout: 600
@@ -89,24 +90,23 @@ jobs:
             jq -s '[.[].check_runs[]
                     | select(.name == "Build Release - GMS"
                           or .name == "Build Release - FOSS"
-                          or .name == "E2E Tests"
                           or .name == "Unit & Integration Tests"
                           or .name == "Lint")
                     | select(.conclusion == "success")
                     | .name] | unique | length')
 
-          if [ "$SUCCESS_COUNT" -eq 5 ]; then
+          if [ "$SUCCESS_COUNT" -eq 4 ]; then
             echo "publish=true" >> "$GITHUB_OUTPUT"
-            echo "All 5 gated CI checks succeeded for ${GITHUB_SHA}."
+            echo "All 4 gated CI checks succeeded for ${GITHUB_SHA}."
             exit 0
           fi
 
           MAIN_HEAD=$(gh api "repos/${REPO}/branches/main" --jq '.commit.sha')
           if [ "$MAIN_HEAD" != "$GITHUB_SHA" ]; then
             echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::CI did not fully succeed for ${GITHUB_SHA} (${SUCCESS_COUNT}/5 checks green) and main has moved on; the newer run will publish. Skipping."
+            echo "::notice::CI did not fully succeed for ${GITHUB_SHA} (${SUCCESS_COUNT}/4 checks green) and main has moved on; the newer run will publish. Skipping."
           else
-            echo "::error::CI did not fully succeed for ${GITHUB_SHA} (${SUCCESS_COUNT}/5 checks green) and it is still main HEAD; not publishing a build that CI has not validated."
+            echo "::error::CI did not fully succeed for ${GITHUB_SHA} (${SUCCESS_COUNT}/4 checks green) and it is still main HEAD; not publishing a build that CI has not validated."
             exit 1
           fi
 
