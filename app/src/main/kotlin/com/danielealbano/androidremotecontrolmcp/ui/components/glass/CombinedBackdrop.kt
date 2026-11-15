@@ -35,5 +35,7 @@ class CombinedBackdrop(
 }
 
 @Composable
-fun rememberCombinedBackdrop(first: Backdrop, second: Backdrop): Backdrop =
-    remember(first, second) { CombinedBackdrop(first, second) }
+fun rememberCombinedBackdrop(
+    first: Backdrop,
+    second: Backdrop,
+): Backdrop = remember(first, second) { CombinedBackdrop(first, second) }

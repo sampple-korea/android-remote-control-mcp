@@ -33,8 +33,10 @@ fun rememberBlurBackdrop(): LayerBackdrop? {
 
 /** The color a bar drawn over [backdrop] uses: transparent when frosted, the surface otherwise. */
 @Composable
-fun blurredBarColor(backdrop: LayerBackdrop?): Color =
-    if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface
+fun blurredBarColor(backdrop: LayerBackdrop?): Color {
+    val surface = MiuixTheme.colorScheme.surface
+    return if (backdrop != null) Color.Transparent else surface
+}
 
 /** Frosts [content] (a top bar) with a blur of whatever scrolls beneath it in [backdrop]. */
 @Composable

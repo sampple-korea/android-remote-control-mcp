@@ -42,35 +42,57 @@ private suspend inline fun AwaitPointerEventScope.drag(
     pointerId: PointerId,
     onDrag: (PointerInputChange) -> Unit,
 ): PointerInputChange? {
-    val isPointerUp = currentEvent.changes.fastFirstOrNull { it.id == pointerId }?.pressed != true
-    if (isPointerUp) {
-        return null
-    }
     var pointer = pointerId
-    while (true) {
-        val change = awaitDragOrUp(pointer) ?: return null
-        if (change.changedToUpIgnoreConsumed()) {
-            return change
+    var upChange: PointerInputChange? = null
+    var done = currentEvent.changes.fastFirstOrNull { it.id == pointerId }?.pressed != true
+    while (!done) {
+        val change = awaitDragOrUp(pointer)
+        when {
+            change == null -> {
+                done = true
+            }
+
+            change.changedToUpIgnoreConsumed() -> {
+                upChange = change
+                done = true
+            }
+
+            else -> {
+                onDrag(change)
+                pointer = change.id
+            }
         }
-        onDrag(change)
-        pointer = change.id
     }
+    return upChange
 }
 
 private suspend inline fun AwaitPointerEventScope.awaitDragOrUp(pointerId: PointerId): PointerInputChange? {
     var pointer = pointerId
-    while (true) {
+    var result: PointerInputChange? = null
+    var done = false
+    while (!done) {
         val event = awaitPointerEvent(PointerEventPass.Initial)
-        val dragEvent = event.changes.fastFirstOrNull { it.id == pointer } ?: return null
-        if (dragEvent.changedToUpIgnoreConsumed()) {
-            val otherDown = event.changes.fastFirstOrNull { it.pressed }
-            if (otherDown == null) {
-                return dragEvent
-            } else {
-                pointer = otherDown.id
+        val dragEvent = event.changes.fastFirstOrNull { it.id == pointer }
+        when {
+            dragEvent == null -> {
+                done = true
             }
-        } else if (dragEvent.previousPosition != dragEvent.position) {
-            return dragEvent
+
+            dragEvent.changedToUpIgnoreConsumed() -> {
+                val otherDown = event.changes.fastFirstOrNull { it.pressed }
+                if (otherDown == null) {
+                    result = dragEvent
+                    done = true
+                } else {
+                    pointer = otherDown.id
+                }
+            }
+
+            dragEvent.previousPosition != dragEvent.position -> {
+                result = dragEvent
+                done = true
+            }
         }
     }
+    return result
 }

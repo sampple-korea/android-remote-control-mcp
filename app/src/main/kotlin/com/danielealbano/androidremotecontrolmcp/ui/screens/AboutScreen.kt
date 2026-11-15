@@ -150,7 +150,11 @@ fun AboutScreen(
                     AboutLinks.THIRD_PARTY_LICENSES_URL,
                 )
                 AboutLinkItem(R.string.about_link_issues, Icons.Default.ReportProblem, AboutLinks.ISSUES_URL)
-                AboutLinkItem(R.string.about_link_tunnel_status, Icons.Default.MonitorHeart, AboutLinks.TUNNEL_STATUS_URL)
+                AboutLinkItem(
+                    R.string.about_link_tunnel_status,
+                    Icons.Default.MonitorHeart,
+                    AboutLinks.TUNNEL_STATUS_URL,
+                )
                 AboutLinkItem(
                     R.string.about_link_tunnel_server_repository,
                     Icons.Default.Dns,

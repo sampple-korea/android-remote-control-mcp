@@ -122,7 +122,13 @@ fun MainScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     // The banner already sits under the status bar: the pages below must not pad for it again
-                    .then(if (availableUpdate != null) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier),
+                    .then(
+                        if (availableUpdate != null) {
+                            Modifier.consumeWindowInsets(WindowInsets.statusBars)
+                        } else {
+                            Modifier
+                        },
+                    ),
         ) {
             CompositionLocalProvider(LocalBottomBarInset provides barBottomPadding + FLOATING_BAR_HEIGHT_DP.dp) {
                 Box(modifier = Modifier.fillMaxSize().layerBackdrop(barBackdrop)) {

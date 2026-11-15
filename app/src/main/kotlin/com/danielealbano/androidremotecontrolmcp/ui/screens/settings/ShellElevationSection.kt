@@ -115,7 +115,10 @@ internal fun ShellPatternListEditor(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(pattern, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
                 IconButton(onClick = { onRemove(pattern) }) {
-                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.shell_pattern_remove, pattern))
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.shell_pattern_remove, pattern),
+                    )
                 }
             }
         }

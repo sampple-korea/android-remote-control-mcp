@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -104,7 +105,12 @@ fun AppTextField(
             Text(
                 text = note,
                 style = MiuixTheme.textStyles.footnote1,
-                color = if (error != null) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                color =
+                    if (error != null) {
+                        MiuixTheme.colorScheme.error
+                    } else {
+                        MiuixTheme.colorScheme.onSurfaceVariantSummary
+                    },
                 modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp),
             )
         }
@@ -146,8 +152,9 @@ fun SegmentedChoice(
                         .weight(1f)
                         .heightIn(min = 40.dp)
                         .clip(RoundedCornerShape(9.dp))
-                        .background(if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.secondaryContainer)
-                        .selectable(
+                        .background(
+                            if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.secondaryContainer,
+                        ).selectable(
                             selected = selected,
                             enabled = enabled,
                             role = Role.RadioButton,
@@ -170,7 +177,7 @@ fun ChoiceChip(
         modifier =
             modifier
                 .heightIn(min = 36.dp)
-                .clip(RoundedCornerShape(50))
+                .clip(CircleShape)
                 .background(
                     if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.secondaryContainer,
                 ).selectable(selected = selected, role = Role.Checkbox, onClick = onClick)

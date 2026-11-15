@@ -143,9 +143,10 @@ private class InnerShadowNode(
     }
 
     override fun onAttach() {
-        shadowLayer = requireGraphicsContext().createGraphicsLayer().apply {
-            compositingStrategy = CompositingStrategy.Offscreen
-        }
+        shadowLayer =
+            requireGraphicsContext().createGraphicsLayer().apply {
+                compositingStrategy = CompositingStrategy.Offscreen
+            }
     }
 
     override fun onDetach() {
@@ -156,6 +157,7 @@ private class InnerShadowNode(
     }
 }
 
-private val ShadowMaskPaint: Paint = Paint().apply {
-    blendMode = BlendMode.Clear
-}
+private val ShadowMaskPaint: Paint =
+    Paint().apply {
+        blendMode = BlendMode.Clear
+    }

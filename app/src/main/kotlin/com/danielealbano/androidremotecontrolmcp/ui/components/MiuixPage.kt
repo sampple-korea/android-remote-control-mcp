@@ -90,7 +90,10 @@ private fun PageScaffold(
             }
         },
         snackbarHost = { if (snackbarHostState != null) SnackbarHost(state = snackbarHostState) },
-        contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal),
+        contentWindowInsets =
+            WindowInsets.systemBars
+                .union(WindowInsets.displayCutout)
+                .only(WindowInsetsSides.Horizontal),
     ) { innerPadding ->
         Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
             body(
