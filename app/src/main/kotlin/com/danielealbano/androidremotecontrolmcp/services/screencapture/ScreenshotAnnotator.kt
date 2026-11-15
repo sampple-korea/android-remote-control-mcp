@@ -155,7 +155,16 @@ class ScreenshotAnnotator
 
                 drawGrid(canvas, sampling, viewLeft, viewTop, viewWidth, viewHeight, scaleX, scaleY, density)
                 drawElements(
-                    canvas, sampling, elements, copy.width, copy.height, viewLeft, viewTop, scaleX, scaleY, density,
+                    canvas,
+                    sampling,
+                    elements,
+                    copy.width,
+                    copy.height,
+                    viewLeft,
+                    viewTop,
+                    scaleX,
+                    scaleY,
+                    density,
                 )
 
                 return copy
@@ -339,7 +348,15 @@ class ScreenshotAnnotator
 
                 val label = elementLabel(element) ?: continue
                 drawElementLabel(
-                    canvas, source, labelTextPaint, label, rect, choice.ink, bitmapWidth, bitmapHeight, density,
+                    canvas,
+                    source,
+                    labelTextPaint,
+                    label,
+                    rect,
+                    choice.ink,
+                    bitmapWidth,
+                    bitmapHeight,
+                    density,
                 )
             }
         }
@@ -400,8 +417,13 @@ class ScreenshotAnnotator
             left = left.coerceIn(0f, max(0f, bitmapWidth - chipWidth))
             top = top.coerceIn(0f, max(0f, bitmapHeight - chipHeight))
             drawChipRect(
-                canvas, source, textPaint, text,
-                RectF(left, top, left + chipWidth, top + chipHeight), density, borderColor,
+                canvas,
+                source,
+                textPaint,
+                text,
+                RectF(left, top, left + chipWidth, top + chipHeight),
+                density,
+                borderColor,
             )
         }
 
@@ -522,8 +544,9 @@ class ScreenshotAnnotator
         }
 
         /** ITU-R BT.601 luma of a packed ARGB color, 0–255. */
-        internal fun luminanceOfColor(color: Int): Float =
-            luminanceOfRgb(Color.red(color), Color.green(color), Color.blue(color))
+        internal fun luminanceOfColor(color: Int): Float {
+            return luminanceOfRgb(Color.red(color), Color.green(color), Color.blue(color))
+        }
 
         /** ITU-R BT.601 luma of raw RGB channels, 0–255. Pure arithmetic, unit-testable without Android stubs. */
         internal fun luminanceOfRgb(

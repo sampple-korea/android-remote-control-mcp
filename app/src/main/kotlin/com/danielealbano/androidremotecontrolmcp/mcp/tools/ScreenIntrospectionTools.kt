@@ -117,7 +117,13 @@ class GetScreenStateHandler
                     ((cursorElement as? JsonPrimitive)?.contentOrNull?.isBlank() == true)
             return if (isFresh) {
                 handleFreshRequest(
-                    includeScreenshot, annotate, cropRegion, formatOptions, diff, settle, settleTimeoutMs,
+                    includeScreenshot,
+                    annotate,
+                    cropRegion,
+                    formatOptions,
+                    diff,
+                    settle,
+                    settleTimeoutMs,
                 )
             } else {
                 McpToolUtils.untrustedTextResult(buildPagedText(cursorElement, includeScreenshot))
@@ -152,8 +158,7 @@ class GetScreenStateHandler
          * `include_screenshot` does. Bounds are validated for shape here (non-negative,
          * right > left, bottom > top) and clamped to the actual screen at capture time.
          */
-        @Suppress("ThrowsCount")
-        @Suppress("ReturnCount")
+        @Suppress("ThrowsCount", "ReturnCount")
         private fun parseCropRegion(arguments: JsonObject?): CropRegion? {
             if (!includeScreenshotEnabled) return null
             val names = listOf(PARAM_CROP_LEFT, PARAM_CROP_TOP, PARAM_CROP_RIGHT, PARAM_CROP_BOTTOM)

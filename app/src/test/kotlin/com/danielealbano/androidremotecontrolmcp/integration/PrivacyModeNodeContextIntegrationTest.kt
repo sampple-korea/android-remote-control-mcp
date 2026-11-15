@@ -578,7 +578,9 @@ class PrivacyModeNodeContextIntegrationTest {
 
             val text =
                 typeToolResult(
-                    deps, "android_edit_text", mapOf("mode" to "append", "node_id" to "node_pwd", "text" to "9"),
+                    deps,
+                    "android_edit_text",
+                    mapOf("mode" to "append", "node_id" to "node_pwd", "text" to "9"),
                 )
 
             assertEquals("hunter2secret9", fieldText())
@@ -630,7 +632,8 @@ class PrivacyModeNodeContextIntegrationTest {
             McpIntegrationTestHelper.withTestApplication(deps) { client, _ ->
                 val result =
                     client.callTool(
-                        name = "android_edit_text", arguments = mapOf("mode" to "clear", "node_id" to "node_pwd"),
+                        name = "android_edit_text",
+                        arguments = mapOf("mode" to "clear", "node_id" to "node_pwd"),
                     )
                 assertEquals(true, result.isError)
                 val text = (result.content[0] as TextContent).text

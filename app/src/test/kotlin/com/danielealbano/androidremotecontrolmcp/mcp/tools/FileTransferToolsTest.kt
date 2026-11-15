@@ -266,7 +266,13 @@ class FileTransferToolsTest {
         scratchDir: File,
     ): DeviceFileChunkStore {
         val context =
-            ShellToolContext(processManager, authorizer, settingsRepository, scratchDir.absolutePath, timeSource)
+            ShellToolContext(
+                processManager,
+                authorizer,
+                settingsRepository,
+                scratchDir.absolutePath,
+                timeSource,
+            )
         return DeviceFileChunkStore(context, scratchDir)
     }
 
@@ -281,7 +287,13 @@ class FileTransferToolsTest {
         val sizeAfterFirst = store.writeChunk(target, 0, payload.copyOf(3_000), truncate = true, justification = "test")
         assertEquals(3_000L, sizeAfterFirst)
         val sizeAfterSecond =
-            store.writeChunk(target, 3_000, payload.copyOfRange(3_000, 5_000), truncate = false, justification = "test")
+            store.writeChunk(
+                target,
+                3_000,
+                payload.copyOfRange(3_000, 5_000),
+                truncate = false,
+                justification = "test",
+            )
         assertEquals(5_000L, sizeAfterSecond)
 
         val back = store.readChunk(target, 1_000, 2_000, justification = "test")
@@ -408,7 +420,11 @@ class FileTransferToolsTest {
 
         assertThrows<McpToolException.PermissionDenied> {
             store.writeChunk(
-                "/data/local/tmp/blob.bin", 0, "hello".toByteArray(), truncate = true, justification = "upload",
+                "/data/local/tmp/blob.bin",
+                0,
+                "hello".toByteArray(),
+                truncate = true,
+                justification = "upload",
             )
         }
         assertNull(scratch.listFiles()?.firstOrNull { it.name.startsWith("xfer-") })

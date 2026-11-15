@@ -99,8 +99,7 @@ class BatchActionsHandler(
         val text: String,
     )
 
-    @Suppress("TooGenericExceptionCaught")
-    @Suppress("ReturnCount")
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     private suspend fun executeStep(step: BatchStep): StepOutcome {
         val handler =
             toolHandlers.handlerFor(step.toolName)
@@ -133,8 +132,7 @@ class BatchActionsHandler(
      * outcome never depends on it. The capture's own untrusted-content warning is stripped: the
      * batch result already carries it once at the top.
      */
-    @Suppress("TooGenericExceptionCaught")
-    @Suppress("ReturnCount")
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     private suspend fun captureScreenStateSection(): String {
         val header = "--- screen state (fresh ${GetScreenStateHandler.TOOL_NAME} capture)"
         val handler =

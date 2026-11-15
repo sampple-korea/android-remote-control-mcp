@@ -267,8 +267,10 @@ class TextInputIntegrationTest {
                         name = "android_edit_text",
                         arguments =
                             mapOf(
-                                "mode" to "clear", "by" to "class_name",
-                                "value" to "android.widget.EditText", "exact_match" to true,
+                                "mode" to "clear",
+                                "by" to "class_name",
+                                "value" to "android.widget.EditText",
+                                "exact_match" to true,
                             ),
                     )
                 assertNotEquals(true, result.isError)

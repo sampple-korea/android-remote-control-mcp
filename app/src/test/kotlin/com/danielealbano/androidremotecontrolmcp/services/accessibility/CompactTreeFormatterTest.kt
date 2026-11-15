@@ -1303,7 +1303,10 @@ class CompactTreeFormatterTest {
                                 children =
                                     listOf(
                                         makeNode(
-                                            id = "node_item_button", text = "Open", clickable = true, visible = true,
+                                            id = "node_item_button",
+                                            text = "Open",
+                                            clickable = true,
+                                            visible = true,
                                         ),
                                     ),
                             ),

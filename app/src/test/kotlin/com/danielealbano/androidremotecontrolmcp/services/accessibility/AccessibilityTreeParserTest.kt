@@ -422,11 +422,15 @@ class AccessibilityTreeParserTest {
             val bounds = BoundsData(10, 20, 100, 80)
             val first =
                 createMockNode(
-                    className = "android.widget.EditText", editable = true, labeledByText = "Maximum running processes",
+                    className = "android.widget.EditText",
+                    editable = true,
+                    labeledByText = "Maximum running processes",
                 )
             val second =
                 createMockNode(
-                    className = "android.widget.EditText", editable = true, labeledByText = "Finished processes kept",
+                    className = "android.widget.EditText",
+                    editable = true,
+                    labeledByText = "Finished processes kept",
                 )
 
             // Act & Assert

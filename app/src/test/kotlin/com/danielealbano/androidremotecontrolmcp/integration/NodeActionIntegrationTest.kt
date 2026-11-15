@@ -364,8 +364,11 @@ class NodeActionIntegrationTest {
                         name = "android_scroll",
                         arguments =
                             mapOf(
-                                "mode" to "until", "by" to "text", "value" to "OK",
-                                "exact_match" to true, "direction" to "down",
+                                "mode" to "until",
+                                "by" to "text",
+                                "value" to "OK",
+                                "exact_match" to true,
+                                "direction" to "down",
                             ),
                     )
                 assertNotEquals(true, result.isError)
