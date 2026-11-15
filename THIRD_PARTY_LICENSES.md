@@ -28,6 +28,7 @@ Gradle Plugin, ...) are not part of the app and are not listed.
 | Material Components for Android | Apache-2.0 | https://github.com/material-components/material-components-android |
 | Accompanist | Apache-2.0 | https://github.com/google/accompanist |
 | Miuix (`top.yukonga.miuix.kmp`) | Apache-2.0 | https://github.com/compose-miuix-ui/miuix |
+| KernelSU manager floating bottom bar and liquid glass effects (source files under `ui/components/liquid`, adapted from the Miuix example and Kyant0/AndroidLiquidGlass) | GPL-3.0-or-later (KernelSU), Apache-2.0 (originals) | https://github.com/tiann/KernelSU |
 | Google Play services client libraries (`com.google.android.gms`, `gms` flavor only) | Android Software Development Kit License | https://developer.android.com/studio/terms |
 | Guava (`guava`, `failureaccess`, `listenablefuture`) | Apache-2.0 | https://github.com/google/guava |
 | J2ObjC annotations | Apache-2.0 | https://github.com/google/j2objc |
