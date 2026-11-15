@@ -9,6 +9,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.danielealbano.androidremotecontrolmcp.ui.navigation.ServerRoute
+import com.danielealbano.androidremotecontrolmcp.ui.navigation.navEnterTransition
+import com.danielealbano.androidremotecontrolmcp.ui.navigation.navExitTransition
+import com.danielealbano.androidremotecontrolmcp.ui.navigation.navPopEnterTransition
+import com.danielealbano.androidremotecontrolmcp.ui.navigation.navPopExitTransition
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 
@@ -27,6 +31,10 @@ fun ServerTabScreen(
         navController = navController,
         startDestination = ServerRoute.Index.route,
         modifier = modifier,
+        enterTransition = navEnterTransition,
+        exitTransition = navExitTransition,
+        popEnterTransition = navPopEnterTransition,
+        popExitTransition = navPopExitTransition,
     ) {
         composable(ServerRoute.Index.route) {
             ServerScreen(
