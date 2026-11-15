@@ -20,7 +20,7 @@ Replace `<app-id>` with the application ID for your build:
 - **Runtime** — granted with `pm grant`.
 - **Special access** — granted with `settings put secure` / `cmd notification`, **not** `pm grant`.
 
-See the [Permissions Reference](../README.md#permissions-reference) in the README for what each permission is used for.
+See the [Permissions Reference](../README.md#권한-참조) in the README for what each permission is used for.
 
 ## Runtime permissions
 
