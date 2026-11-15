@@ -517,6 +517,14 @@ androidComponents {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // The live tunnel integration tests (CloudflareTunnelIntegrationTest, NgrokTunnelIntegrationTest) need a
+    // real cloudflared binary, a real NGROK_AUTHTOKEN and the ngrok host native library, so they are excluded
+    // by tag everywhere by default; run them explicitly with -PrunLiveIntegrationTests.
+    if (!project.hasProperty("runLiveIntegrationTests")) {
+        useJUnitPlatform {
+            excludeTags("live-integration")
+        }
+    }
     // AboutLegalNoticesTest reads these files; declare them so a change re-runs the tests instead of being served
     // FROM-CACHE / UP-TO-DATE. RELATIVE path sensitivity keeps the cache key independent of the checkout location.
     inputs
