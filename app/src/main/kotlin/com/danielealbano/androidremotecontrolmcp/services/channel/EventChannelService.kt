@@ -165,7 +165,7 @@ class EventChannelService : Service() {
         val channel =
             NotificationChannel(
                 CHANNEL_ID,
-                "Event Channel",
+                "이벤트 채널",
                 NotificationManager.IMPORTANCE_LOW,
             )
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -174,7 +174,7 @@ class EventChannelService : Service() {
     private fun buildForegroundNotification(): Notification =
         Notification
             .Builder(this, CHANNEL_ID)
-            .setContentTitle("Event Channel active")
+            .setContentTitle("이벤트 채널 활성")
             .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
             .build()

@@ -258,14 +258,14 @@ class MainViewModelTest {
     fun `updateTunnelLocalPort reports an invalid port and saves nothing`() =
         runTest {
             every { settingsRepository.validatePort(70000) } returns
-                Result.failure(IllegalArgumentException("Port must be between 1 and 65535"))
+                Result.failure(IllegalArgumentException("포트는 1~65535 사이여야 합니다"))
 
             viewModel.updateTunnelLocalPort("70000")
-            assertEquals("Port must be between 1 and 65535", viewModel.tunnelLocalPortError.value)
+            assertEquals("포트는 1~65535 사이여야 합니다", viewModel.tunnelLocalPortError.value)
             viewModel.updateTunnelLocalPort("")
-            assertEquals("Port is required", viewModel.tunnelLocalPortError.value)
+            assertEquals("포트를 입력하세요", viewModel.tunnelLocalPortError.value)
             viewModel.updateTunnelLocalPort("49x")
-            assertEquals("Port must be a number", viewModel.tunnelLocalPortError.value)
+            assertEquals("포트는 숫자여야 합니다", viewModel.tunnelLocalPortError.value)
             advanceUntilIdle()
 
             assertEquals("49x", viewModel.tunnelLocalPortInput.value)
@@ -311,7 +311,7 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             assertEquals("0", viewModel.portInput.value)
-            assertEquals("Port must be between 1 and 65535", viewModel.portError.value)
+            assertEquals("포트는 1~65535 사이여야 합니다", viewModel.portError.value)
             coVerify(exactly = 0) { settingsRepository.updatePort(0) }
         }
 
@@ -324,7 +324,7 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             assertEquals("65536", viewModel.portInput.value)
-            assertEquals("Port must be between 1 and 65535", viewModel.portError.value)
+            assertEquals("포트는 1~65535 사이여야 합니다", viewModel.portError.value)
             coVerify(exactly = 0) { settingsRepository.updatePort(65536) }
         }
 
@@ -337,7 +337,7 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             assertEquals("abc", viewModel.portInput.value)
-            assertEquals("Port must be a number", viewModel.portError.value)
+            assertEquals("포트는 숫자여야 합니다", viewModel.portError.value)
         }
 
     @Test
@@ -349,7 +349,7 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             assertEquals("", viewModel.portInput.value)
-            assertEquals("Port is required", viewModel.portError.value)
+            assertEquals("포트를 입력하세요", viewModel.portError.value)
         }
 
     @Test
@@ -461,12 +461,12 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             every { settingsRepository.validateCertificateHostname("") } returns
-                Result.failure(IllegalArgumentException("Certificate hostname must not be empty"))
+                Result.failure(IllegalArgumentException("인증서 호스트 이름을 입력하세요"))
             viewModel.updateCertificateHostname("")
             advanceUntilIdle()
 
             assertEquals("", viewModel.hostnameInput.value)
-            assertEquals("Certificate hostname must not be empty", viewModel.hostnameError.value)
+            assertEquals("인증서 호스트 이름을 입력하세요", viewModel.hostnameError.value)
             coVerify(exactly = 0) { settingsRepository.updateCertificateHostname("") }
         }
 
@@ -478,8 +478,8 @@ class MainViewModelTest {
             every { settingsRepository.validateCertificateHostname("-invalid") } returns
                 Result.failure(
                     IllegalArgumentException(
-                        "Certificate hostname contains invalid characters. " +
-                            "Use only letters, digits, hyphens, and dots.",
+                        "인증서 호스트 이름에 사용할 수 없는 문자가 있습니다. " +
+                            "영문자, 숫자, 하이픈, 마침표만 사용하세요.",
                     ),
                 )
             viewModel.updateCertificateHostname("-invalid")
@@ -487,8 +487,8 @@ class MainViewModelTest {
 
             assertEquals("-invalid", viewModel.hostnameInput.value)
             assertEquals(
-                "Certificate hostname contains invalid characters. " +
-                    "Use only letters, digits, hyphens, and dots.",
+                "인증서 호스트 이름에 사용할 수 없는 문자가 있습니다. " +
+                    "영문자, 숫자, 하이픈, 마침표만 사용하세요.",
                 viewModel.hostnameError.value,
             )
             coVerify(exactly = 0) { settingsRepository.updateCertificateHostname("-invalid") }
@@ -884,7 +884,7 @@ class MainViewModelTest {
             viewModel.updateLocationAllowWrite("loc1", true)
             advanceUntilIdle()
 
-            assertTrue(errors.any { it.contains("Failed to update write permission") })
+            assertTrue(errors.any { it.contains("쓰기 권한을 업데이트하지 못했습니다") })
             coVerify(exactly = 1) { storageLocationProvider.getAllLocations() }
             job.cancel()
         }
@@ -962,7 +962,7 @@ class MainViewModelTest {
             viewModel.updateLocationAllowDelete("loc1", true)
             advanceUntilIdle()
 
-            assertTrue(errors.any { it.contains("Failed to update delete permission") })
+            assertTrue(errors.any { it.contains("삭제 권한을 업데이트하지 못했습니다") })
             coVerify(exactly = 1) { storageLocationProvider.getAllLocations() }
             job.cancel()
         }
@@ -1052,13 +1052,13 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             every { settingsRepository.validateFileSizeLimit(0) } returns
-                Result.failure(IllegalArgumentException("File size limit must be between 1 and 500 MB"))
+                Result.failure(IllegalArgumentException("파일 크기 제한은 1~500 MB 사이여야 합니다"))
 
             viewModel.updateFileSizeLimit("0")
             advanceUntilIdle()
 
             assertEquals("0", viewModel.fileSizeLimitInput.value)
-            assertEquals("File size limit must be between 1 and 500 MB", viewModel.fileSizeLimitError.value)
+            assertEquals("파일 크기 제한은 1~500 MB 사이여야 합니다", viewModel.fileSizeLimitError.value)
             coVerify(exactly = 0) { settingsRepository.updateFileSizeLimit(any()) }
         }
 
@@ -1071,7 +1071,7 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             assertEquals("", viewModel.fileSizeLimitInput.value)
-            assertEquals("File size limit is required", viewModel.fileSizeLimitError.value)
+            assertEquals("파일 크기 제한을 입력하세요", viewModel.fileSizeLimitError.value)
         }
 
     @Test
@@ -1083,7 +1083,7 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             assertEquals("abc", viewModel.fileSizeLimitInput.value)
-            assertEquals("Must be a number", viewModel.fileSizeLimitError.value)
+            assertEquals("숫자여야 합니다", viewModel.fileSizeLimitError.value)
         }
 
     @Test
@@ -1107,14 +1107,14 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             every { settingsRepository.validateDownloadTimeout(5) } returns
-                Result.failure(IllegalArgumentException("Download timeout must be between 10 and 300 seconds"))
+                Result.failure(IllegalArgumentException("다운로드 제한 시간은 10~300초 사이여야 합니다"))
 
             viewModel.updateDownloadTimeout("5")
             advanceUntilIdle()
 
             assertEquals("5", viewModel.downloadTimeoutInput.value)
             assertEquals(
-                "Download timeout must be between 10 and 300 seconds",
+                "다운로드 제한 시간은 10~300초 사이여야 합니다",
                 viewModel.downloadTimeoutError.value,
             )
             coVerify(exactly = 0) { settingsRepository.updateDownloadTimeout(any()) }
@@ -1129,7 +1129,7 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             assertEquals("", viewModel.downloadTimeoutInput.value)
-            assertEquals("Download timeout is required", viewModel.downloadTimeoutError.value)
+            assertEquals("다운로드 제한 시간을 입력하세요", viewModel.downloadTimeoutError.value)
         }
 
     // ─── Device Slug Tests ──────────────────────────────────────────────
@@ -1166,7 +1166,7 @@ class MainViewModelTest {
             every { settingsRepository.validateDeviceSlug("work-phone") } returns
                 Result.failure(
                     IllegalArgumentException(
-                        "Device slug can only contain letters, digits, and underscores",
+                        "기기 슬러그에는 영문자, 숫자, 밑줄만 사용할 수 있습니다",
                     ),
                 )
 
@@ -1175,7 +1175,7 @@ class MainViewModelTest {
 
             assertEquals("work-phone", viewModel.deviceSlugInput.value)
             assertEquals(
-                "Device slug can only contain letters, digits, and underscores",
+                "기기 슬러그에는 영문자, 숫자, 밑줄만 사용할 수 있습니다",
                 viewModel.deviceSlugError.value,
             )
             coVerify(exactly = 0) { settingsRepository.updateDeviceSlug(any()) }
@@ -1186,13 +1186,13 @@ class MainViewModelTest {
         runTest {
             val longSlug = "a".repeat(21)
             every { settingsRepository.validateDeviceSlug(longSlug) } returns
-                Result.failure(IllegalArgumentException("Device slug must be at most 20 characters"))
+                Result.failure(IllegalArgumentException("기기 슬러그는 최대 20자까지 입력할 수 있습니다"))
 
             viewModel.updateDeviceSlug(longSlug)
             advanceUntilIdle()
 
             assertEquals(longSlug, viewModel.deviceSlugInput.value)
-            assertEquals("Device slug must be at most 20 characters", viewModel.deviceSlugError.value)
+            assertEquals("기기 슬러그는 최대 20자까지 입력할 수 있습니다", viewModel.deviceSlugError.value)
             coVerify(exactly = 0) { settingsRepository.updateDeviceSlug(any()) }
         }
 

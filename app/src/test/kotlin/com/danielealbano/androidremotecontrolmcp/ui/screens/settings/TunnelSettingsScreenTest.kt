@@ -26,7 +26,7 @@ class TunnelSettingsScreenTest {
 
     @Test
     fun `the tunnel port field shows the input's own error first`() {
-        assertEquals("Port must be a number", tunnelLocalPortFieldError("Port must be a number", conflict))
+        assertEquals("포트는 숫자여야 합니다", tunnelLocalPortFieldError("포트는 숫자여야 합니다", conflict))
     }
 
     @Test

@@ -211,18 +211,18 @@ class MainViewModel
             _portInput.value = portString
 
             if (portString.isBlank()) {
-                _portError.value = "Port is required"
+                _portError.value = "포트를 입력하세요"
                 return
             }
 
             val port = portString.toIntOrNull()
             if (port == null) {
-                _portError.value = "Port must be a number"
+                _portError.value = "포트는 숫자여야 합니다"
                 return
             }
 
             if (port < ServerConfig.MIN_PORT || port > ServerConfig.MAX_PORT) {
-                _portError.value = "Port must be between ${ServerConfig.MIN_PORT} and ${ServerConfig.MAX_PORT}"
+                _portError.value = "포트는 ${ServerConfig.MIN_PORT}~${ServerConfig.MAX_PORT} 사이여야 합니다"
                 return
             }
 
@@ -252,8 +252,8 @@ class MainViewModel
             val port = portString.toIntOrNull()
             val error =
                 when {
-                    portString.isBlank() -> "Port is required"
-                    port == null -> "Port must be a number"
+                    portString.isBlank() -> "포트를 입력하세요"
+                    port == null -> "포트는 숫자여야 합니다"
                     else -> settingsRepository.validatePort(port).exceptionOrNull()?.message
                 }
             _tunnelLocalPortError.value = error
@@ -431,7 +431,7 @@ class MainViewModel
                     refreshStorageLocations()
                 } catch (e: Exception) {
                     Logger.e(TAG, "Failed to add storage location", e)
-                    _storageError.tryEmit("Failed to add storage location: ${e.message}")
+                    _storageError.tryEmit("저장 위치를 추가하지 못했습니다: ${e.message}")
                 }
             }
         }
@@ -444,7 +444,7 @@ class MainViewModel
                     refreshStorageLocations()
                 } catch (e: Exception) {
                     Logger.e(TAG, "Failed to remove storage location $locationId", e)
-                    _storageError.tryEmit("Failed to remove storage location: ${e.message}")
+                    _storageError.tryEmit("저장 위치를 제거하지 못했습니다: ${e.message}")
                 }
             }
         }
@@ -460,7 +460,7 @@ class MainViewModel
                     refreshStorageLocations()
                 } catch (e: Exception) {
                     Logger.e(TAG, "Failed to update description for $locationId", e)
-                    _storageError.tryEmit("Failed to update description: ${e.message}")
+                    _storageError.tryEmit("설명을 업데이트하지 못했습니다: ${e.message}")
                 }
             }
         }
@@ -481,7 +481,7 @@ class MainViewModel
                 } catch (e: Exception) {
                     Logger.e(TAG, "Failed to update allowWrite for $locationId", e)
                     refreshStorageLocations()
-                    _storageError.tryEmit("Failed to update write permission: ${e.message}")
+                    _storageError.tryEmit("쓰기 권한을 업데이트하지 못했습니다: ${e.message}")
                 }
             }
         }
@@ -502,7 +502,7 @@ class MainViewModel
                 } catch (e: Exception) {
                     Logger.e(TAG, "Failed to update allowDelete for $locationId", e)
                     refreshStorageLocations()
-                    _storageError.tryEmit("Failed to update delete permission: ${e.message}")
+                    _storageError.tryEmit("삭제 권한을 업데이트하지 못했습니다: ${e.message}")
                 }
             }
         }
@@ -514,13 +514,13 @@ class MainViewModel
             _fileSizeLimitInput.value = limitString
 
             if (limitString.isBlank()) {
-                _fileSizeLimitError.value = "File size limit is required"
+                _fileSizeLimitError.value = "파일 크기 제한을 입력하세요"
                 return
             }
 
             val limit = limitString.toIntOrNull()
             if (limit == null) {
-                _fileSizeLimitError.value = "Must be a number"
+                _fileSizeLimitError.value = "숫자여야 합니다"
                 return
             }
 
@@ -541,13 +541,13 @@ class MainViewModel
             _downloadTimeoutInput.value = timeoutString
 
             if (timeoutString.isBlank()) {
-                _downloadTimeoutError.value = "Download timeout is required"
+                _downloadTimeoutError.value = "다운로드 제한 시간을 입력하세요"
                 return
             }
 
             val timeout = timeoutString.toIntOrNull()
             if (timeout == null) {
-                _downloadTimeoutError.value = "Must be a number"
+                _downloadTimeoutError.value = "숫자여야 합니다"
                 return
             }
 

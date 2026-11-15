@@ -225,7 +225,7 @@ fun ServerScreen(
                 specificAddressRefused = listenerCheck.specificAddressError != null,
                 onCopyAll = { text ->
                     scope.launch {
-                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Server details", text)))
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("서버 정보", text)))
                         Toast.makeText(context, copiedToClipboardMessage, Toast.LENGTH_SHORT).show()
                     }
                 },

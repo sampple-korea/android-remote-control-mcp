@@ -407,14 +407,14 @@ class SettingsRepositoryImpl
             return try {
                 val parsed = URL(url)
                 if (parsed.protocol != "http" && parsed.protocol != "https") {
-                    Result.failure(IllegalArgumentException("URL must use http or https protocol"))
+                    Result.failure(IllegalArgumentException("URL은 http 또는 https 프로토콜을 사용해야 합니다"))
                 } else {
                     Result.success(url)
                 }
             } catch (
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
-                Result.failure(IllegalArgumentException("Invalid URL format: ${e.message}"))
+                Result.failure(IllegalArgumentException("URL 형식이 올바르지 않습니다: ${e.message}"))
             }
         }
 
@@ -593,8 +593,8 @@ class SettingsRepositoryImpl
             } else {
                 Result.failure(
                     IllegalArgumentException(
-                        "File size limit must be between ${ServerConfig.MIN_FILE_SIZE_LIMIT_MB} and " +
-                            "${ServerConfig.MAX_FILE_SIZE_LIMIT_MB} MB",
+                        "파일 크기 제한은 ${ServerConfig.MIN_FILE_SIZE_LIMIT_MB}~" +
+                            "${ServerConfig.MAX_FILE_SIZE_LIMIT_MB} MB 사이여야 합니다",
                     ),
                 )
             }
@@ -766,8 +766,8 @@ class SettingsRepositoryImpl
             } else {
                 Result.failure(
                     IllegalArgumentException(
-                        "Download timeout must be between ${ServerConfig.MIN_DOWNLOAD_TIMEOUT_SECONDS} and " +
-                            "${ServerConfig.MAX_DOWNLOAD_TIMEOUT_SECONDS} seconds",
+                        "다운로드 제한 시간은 ${ServerConfig.MIN_DOWNLOAD_TIMEOUT_SECONDS}~" +
+                            "${ServerConfig.MAX_DOWNLOAD_TIMEOUT_SECONDS}초 사이여야 합니다",
                     ),
                 )
             }
@@ -777,14 +777,14 @@ class SettingsRepositoryImpl
             if (slug.length > ServerConfig.MAX_DEVICE_SLUG_LENGTH) {
                 return Result.failure(
                     IllegalArgumentException(
-                        "Device slug must be at most ${ServerConfig.MAX_DEVICE_SLUG_LENGTH} characters",
+                        "기기 슬러그는 최대 ${ServerConfig.MAX_DEVICE_SLUG_LENGTH}자까지 입력할 수 있습니다",
                     ),
                 )
             }
             if (!ServerConfig.DEVICE_SLUG_PATTERN.matches(slug)) {
                 return Result.failure(
                     IllegalArgumentException(
-                        "Device slug can only contain letters, digits, and underscores",
+                        "기기 슬러그에는 영문자, 숫자, 밑줄만 사용할 수 있습니다",
                     ),
                 )
             }
@@ -939,7 +939,7 @@ class SettingsRepositoryImpl
             } else {
                 Result.failure(
                     IllegalArgumentException(
-                        "Port must be between ${ServerConfig.MIN_PORT} and ${ServerConfig.MAX_PORT}",
+                        "포트는 ${ServerConfig.MIN_PORT}~${ServerConfig.MAX_PORT} 사이여야 합니다",
                     ),
                 )
             }
@@ -948,15 +948,15 @@ class SettingsRepositoryImpl
         override fun validateCertificateHostname(hostname: String): Result<String> {
             if (hostname.isBlank()) {
                 return Result.failure(
-                    IllegalArgumentException("Certificate hostname must not be empty"),
+                    IllegalArgumentException("인증서 호스트 이름을 입력하세요"),
                 )
             }
 
             if (!HOSTNAME_PATTERN.matches(hostname)) {
                 return Result.failure(
                     IllegalArgumentException(
-                        "Certificate hostname contains invalid characters. " +
-                            "Use only letters, digits, hyphens, and dots.",
+                        "인증서 호스트 이름에 사용할 수 없는 문자가 있습니다. " +
+                            "영문자, 숫자, 하이픈, 마침표만 사용하세요.",
                     ),
                 )
             }

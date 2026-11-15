@@ -127,7 +127,7 @@ class ChannelViewModelTest {
         fun `updateEndpointUrl with empty string sets error`() =
             runTest {
                 every { settingsRepository.validateEndpointUrl("") } returns
-                    Result.failure(IllegalArgumentException("Endpoint URL cannot be empty"))
+                    Result.failure(IllegalArgumentException("엔드포인트 URL을 입력하세요"))
 
                 viewModel.updateEndpointUrl("")
                 advanceUntilIdle()

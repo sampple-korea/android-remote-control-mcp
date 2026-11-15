@@ -525,7 +525,7 @@ private fun CloudflareTokenFields(
             IconButton(
                 onClick = {
                     scope.launch {
-                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Service URL", serviceUrl)))
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("서비스 URL", serviceUrl)))
                     }
                 },
             ) {

@@ -130,7 +130,7 @@ fun ChannelSettingsScreen(
                                 onClick = {
                                     scope.launch {
                                         clipboard.setClipEntry(
-                                            ClipEntry(ClipData.newPlainText("Auth token", authTokenInput)),
+                                            ClipEntry(ClipData.newPlainText("인증 토큰", authTokenInput)),
                                         )
                                     }
                                 },

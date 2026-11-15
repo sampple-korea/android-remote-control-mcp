@@ -99,6 +99,6 @@ class AccessViewModel
 
         fun copyBearerToken(context: Context) {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("Bearer token", serverConfig.value.bearerToken))
+            clipboard.setPrimaryClip(ClipData.newPlainText("Bearer 토큰", serverConfig.value.bearerToken))
         }
     }

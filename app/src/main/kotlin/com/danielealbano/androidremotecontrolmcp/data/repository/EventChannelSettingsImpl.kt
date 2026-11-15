@@ -81,19 +81,19 @@ class EventChannelSettingsImpl
 
         override fun validateEndpointUrl(url: String): Result<String> {
             if (url.isBlank()) {
-                return Result.failure(IllegalArgumentException("Endpoint URL cannot be empty"))
+                return Result.failure(IllegalArgumentException("엔드포인트 URL을 입력하세요"))
             }
             return try {
                 val parsed = URL(url)
                 if (parsed.protocol != "http" && parsed.protocol != "https") {
-                    Result.failure(IllegalArgumentException("URL must use http or https protocol"))
+                    Result.failure(IllegalArgumentException("URL은 http 또는 https 프로토콜을 사용해야 합니다"))
                 } else {
                     Result.success(url)
                 }
             } catch (
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
-                Result.failure(IllegalArgumentException("Invalid URL format: ${e.message}"))
+                Result.failure(IllegalArgumentException("URL 형식이 올바르지 않습니다: ${e.message}"))
             }
         }
 

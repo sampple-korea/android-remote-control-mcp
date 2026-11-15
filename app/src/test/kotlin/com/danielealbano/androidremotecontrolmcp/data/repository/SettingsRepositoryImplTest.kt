@@ -1055,7 +1055,7 @@ class SettingsRepositoryImplTest {
         fun `rejects slug with hyphens`() {
             val result = repository.validateDeviceSlug("work-phone")
             assertTrue(result.isFailure)
-            assertTrue(result.exceptionOrNull()?.message?.contains("letters, digits, and underscores") == true)
+            assertTrue(result.exceptionOrNull()?.message?.contains("영문자, 숫자, 밑줄") == true)
         }
 
         @Test
