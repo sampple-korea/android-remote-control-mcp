@@ -4,11 +4,13 @@ import android.graphics.Bitmap
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.AccessibilityServiceProvider
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.McpAccessibilityService
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -20,6 +22,7 @@ class ScreenCaptureProviderImplTest {
     private lateinit var screenshotEncoder: ScreenshotEncoder
     private lateinit var mockApiLevelProvider: ApiLevelProvider
     private lateinit var mockAccessibilityServiceProvider: AccessibilityServiceProvider
+    private lateinit var mockRootScreenCapture: RootScreenCapture
     private lateinit var provider: ScreenCaptureProviderImpl
     private lateinit var mockService: McpAccessibilityService
 
@@ -28,6 +31,10 @@ class ScreenCaptureProviderImplTest {
         screenshotEncoder = mockk(relaxed = true)
         mockApiLevelProvider = mockk()
         mockAccessibilityServiceProvider = mockk()
+        // Root capture is unavailable by default: existing tests exercise the accessibility path
+        mockRootScreenCapture = mockk()
+        coEvery { mockRootScreenCapture.captureBitmap() } returns null
+        every { mockRootScreenCapture.hasSuBinary() } returns false
         // Return API 30 (Android R) — minimum for screenshot capability
         every { mockApiLevelProvider.getSdkInt() } returns 30
 
@@ -38,7 +45,13 @@ class ScreenCaptureProviderImplTest {
         every { mockAccessibilityServiceProvider.isReady() } returns true
         every { mockAccessibilityServiceProvider.getContext() } returns mockService
 
-        provider = ScreenCaptureProviderImpl(screenshotEncoder, mockApiLevelProvider, mockAccessibilityServiceProvider)
+        provider =
+            ScreenCaptureProviderImpl(
+                screenshotEncoder,
+                mockApiLevelProvider,
+                mockAccessibilityServiceProvider,
+                mockRootScreenCapture,
+            )
     }
 
     @Nested
@@ -129,6 +142,35 @@ class ScreenCaptureProviderImplTest {
             }
 
         @Test
+        fun `uses root capture without consulting the accessibility service`() =
+            runTest {
+                val bitmap = mockk<Bitmap>(relaxed = true)
+                coEvery { mockRootScreenCapture.captureBitmap() } returns bitmap
+                every { screenshotEncoder.resizeBitmapProportional(bitmap, 700, 700) } returns bitmap
+                // Accessibility is down: the root path must still deliver
+                every { mockAccessibilityServiceProvider.isReady() } returns false
+
+                val result = provider.captureScreenshotBitmap(maxWidth = 700, maxHeight = 700)
+
+                assertTrue(result.isSuccess)
+                assertEquals(bitmap, result.getOrNull())
+                coVerify(exactly = 0) { mockService.takeScreenshotBitmap() }
+            }
+
+        @Test
+        fun `falls back to accessibility when root capture returns null`() =
+            runTest {
+                val bitmap = mockk<Bitmap>(relaxed = true)
+                coEvery { mockService.takeScreenshotBitmap() } returns bitmap
+                every { screenshotEncoder.resizeBitmapProportional(bitmap, null, null) } returns bitmap
+
+                val result = provider.captureScreenshotBitmap(maxWidth = null, maxHeight = null)
+
+                assertTrue(result.isSuccess)
+                coVerify(exactly = 1) { mockService.takeScreenshotBitmap() }
+            }
+
+        @Test
         fun `passes through null maxWidth and maxHeight`() =
             runTest {
                 val bitmap = mockk<Bitmap>(relaxed = true)
@@ -142,5 +184,24 @@ class ScreenCaptureProviderImplTest {
                 assertTrue(result.isSuccess)
                 verify(exactly = 0) { bitmap.recycle() }
             }
+    }
+
+    @Nested
+    @DisplayName("isScreenCaptureAvailable")
+    inner class IsScreenCaptureAvailableTests {
+        @Test
+        fun `true when a su binary exists even if accessibility is not ready`() {
+            every { mockRootScreenCapture.hasSuBinary() } returns true
+            every { mockAccessibilityServiceProvider.isReady() } returns false
+
+            assertTrue(provider.isScreenCaptureAvailable())
+        }
+
+        @Test
+        fun `false when no su binary and accessibility is not ready`() {
+            every { mockAccessibilityServiceProvider.isReady() } returns false
+
+            assertFalse(provider.isScreenCaptureAvailable())
+        }
     }
 }

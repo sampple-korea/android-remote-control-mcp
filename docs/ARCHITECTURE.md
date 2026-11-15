@@ -371,7 +371,8 @@ storage location permissions, the Privacy Mode settings and the shell settings.
 | KILL_BACKGROUND_PROCESSES| Normal        | Auto-granted (manifest)            | Closing background apps   |
 | POST_NOTIFICATIONS       | Runtime (13+) | System dialog                      | Foreground notifications  |
 | Accessibility Service    | Special       | User enables in Settings           | UI introspection/actions  |
-| AccessibilityService takeScreenshot | Special | User enables in Settings | Screenshots (Android 11+) |
+| AccessibilityService takeScreenshot | Special | User enables in Settings | Screenshots fallback (Android 11+) |
+| Root `screencap` (su) | Special | Working `su` (root) | Preferred screenshots: direct SurfaceFlinger capture via `screencap -p`, no 334 ms pacing |
 | CAMERA                   | Runtime       | System dialog                      | Camera photo/video tools  |
 | RECORD_AUDIO             | Runtime       | System dialog                      | Video recording with audio|
 | ACCESS_FINE_LOCATION     | Runtime       | System dialog                      | Device location tool      |

@@ -55,8 +55,14 @@ import com.danielealbano.androidremotecontrolmcp.services.notifications.Notifica
 import com.danielealbano.androidremotecontrolmcp.services.notifications.NotificationProviderImpl
 import com.danielealbano.androidremotecontrolmcp.services.screencapture.ApiLevelProvider
 import com.danielealbano.androidremotecontrolmcp.services.screencapture.DefaultApiLevelProvider
+import com.danielealbano.androidremotecontrolmcp.services.screencapture.BitmapFactoryPngDecoder
+import com.danielealbano.androidremotecontrolmcp.services.screencapture.PngBitmapDecoder
+import com.danielealbano.androidremotecontrolmcp.services.screencapture.ProcessScreencapRunner
+import com.danielealbano.androidremotecontrolmcp.services.screencapture.RootScreenCapture
+import com.danielealbano.androidremotecontrolmcp.services.screencapture.RootScreenCaptureImpl
 import com.danielealbano.androidremotecontrolmcp.services.screencapture.ScreenCaptureProvider
 import com.danielealbano.androidremotecontrolmcp.services.screencapture.ScreenCaptureProviderImpl
+import com.danielealbano.androidremotecontrolmcp.services.screencapture.ScreencapRunner
 import com.danielealbano.androidremotecontrolmcp.services.sharing.EphemeralFileLinkService
 import com.danielealbano.androidremotecontrolmcp.services.sharing.EphemeralFileLinkServiceImpl
 import com.danielealbano.androidremotecontrolmcp.services.sharing.SharedContentInbox
@@ -243,6 +249,16 @@ abstract class ServiceModule {
     @Binds
     @Singleton
     abstract fun bindScreenCaptureProvider(impl: ScreenCaptureProviderImpl): ScreenCaptureProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindRootScreenCapture(impl: RootScreenCaptureImpl): RootScreenCapture
+
+    @Binds
+    abstract fun bindScreencapRunner(impl: ProcessScreencapRunner): ScreencapRunner
+
+    @Binds
+    abstract fun bindPngBitmapDecoder(impl: BitmapFactoryPngDecoder): PngBitmapDecoder
 
     @Binds
     abstract fun bindCloudflareBinaryResolver(impl: AndroidCloudflareBinaryResolver): CloudflaredBinaryResolver

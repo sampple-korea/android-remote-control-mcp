@@ -6,7 +6,8 @@ import com.danielealbano.androidremotecontrolmcp.data.model.ScreenshotData
 /**
  * Abstracts access to screenshot capture functionality.
  *
- * Production implementation uses AccessibilityService.takeScreenshot() (Android 11+).
+ * Production implementation prefers the root `screencap` path when a working `su` is present
+ * and falls back to AccessibilityService.takeScreenshot() (Android 11+).
  * Tools use this interface to enable JVM-based testing with mock implementations.
  */
 interface ScreenCaptureProvider {

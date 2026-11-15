@@ -10,11 +10,15 @@ import com.danielealbano.androidremotecontrolmcp.services.accessibility.McpAcces
 import javax.inject.Inject
 
 /**
- * Production implementation of [ScreenCaptureProvider] that uses
- * AccessibilityService.takeScreenshot() for capturing screenshots.
+ * Production implementation of [ScreenCaptureProvider].
  *
- * This approach does NOT require user consent or additional permissions beyond
- * the accessibility service being enabled with canTakeScreenshot="true".
+ * Capture order:
+ * 1. Root path ([RootScreenCapture]) when a working `su` is present — `screencap` asks
+ *    SurfaceFlinger for the display directly, so captures are not subject to the accessibility
+ *    API's 334 ms pacing, its callback timeouts, or the accessibility service being connected.
+ * 2. AccessibilityService.takeScreenshot() — the fallback for non-rooted devices. This does NOT
+ *    require user consent or additional permissions beyond the accessibility service being
+ *    enabled with canTakeScreenshot="true".
  *
  * This class is Hilt-injectable and stateless.
  */
@@ -24,7 +28,18 @@ class ScreenCaptureProviderImpl
         private val screenshotEncoder: ScreenshotEncoder,
         private val apiLevelProvider: ApiLevelProvider,
         private val accessibilityServiceProvider: AccessibilityServiceProvider,
+        private val rootScreenCapture: RootScreenCapture,
     ) : ScreenCaptureProvider {
+        private sealed class RawCapture {
+            data class Captured(
+                val bitmap: Bitmap,
+            ) : RawCapture()
+
+            data class Failed(
+                val error: McpToolException,
+            ) : RawCapture()
+        }
+
         private sealed class ServiceValidation {
             data class Valid(
                 val service: McpAccessibilityService,
@@ -41,17 +56,11 @@ class ScreenCaptureProviderImpl
             maxWidth: Int?,
             maxHeight: Int?,
         ): Result<ScreenshotData> {
-            val validation = validateService()
-            if (validation is ServiceValidation.Invalid) {
-                return Result.failure(validation.error)
-            }
-            val service = (validation as ServiceValidation.Valid).service
-
             val bitmap =
-                service.takeScreenshotBitmap()
-                    ?: return Result.failure(
-                        McpToolException.ActionFailed("Screenshot capture failed or timed out"),
-                    )
+                when (val raw = captureRawBitmap()) {
+                    is RawCapture.Captured -> raw.bitmap
+                    is RawCapture.Failed -> return Result.failure(raw.error)
+                }
 
             var resizedBitmap: Bitmap? = null
             return try {
@@ -75,17 +84,11 @@ class ScreenCaptureProviderImpl
             maxWidth: Int?,
             maxHeight: Int?,
         ): Result<Bitmap> {
-            val validation = validateService()
-            if (validation is ServiceValidation.Invalid) {
-                return Result.failure(validation.error)
-            }
-            val service = (validation as ServiceValidation.Valid).service
-
             val bitmap =
-                service.takeScreenshotBitmap()
-                    ?: return Result.failure(
-                        McpToolException.ActionFailed("Screenshot capture failed or timed out"),
-                    )
+                when (val raw = captureRawBitmap()) {
+                    is RawCapture.Captured -> raw.bitmap
+                    is RawCapture.Failed -> return Result.failure(raw.error)
+                }
 
             return try {
                 val resizedBitmap = screenshotEncoder.resizeBitmapProportional(bitmap, maxWidth, maxHeight)
@@ -102,6 +105,27 @@ class ScreenCaptureProviderImpl
                     McpToolException.ActionFailed("Screenshot resize failed"),
                 )
             }
+        }
+
+        /**
+         * Root capture first; the accessibility validation/capture runs only when the root
+         * path delivered nothing, so its error messages stay the ones callers see on failure.
+         */
+        private suspend fun captureRawBitmap(): RawCapture {
+            rootScreenCapture.captureBitmap()?.let { return RawCapture.Captured(it) }
+
+            val validation = validateService()
+            if (validation is ServiceValidation.Invalid) {
+                return RawCapture.Failed(validation.error)
+            }
+            val service = (validation as ServiceValidation.Valid).service
+
+            val bitmap =
+                service.takeScreenshotBitmap()
+                    ?: return RawCapture.Failed(
+                        McpToolException.ActionFailed("Screenshot capture failed or timed out"),
+                    )
+            return RawCapture.Captured(bitmap)
         }
 
         @Suppress("ReturnCount")
@@ -139,6 +163,9 @@ class ScreenCaptureProviderImpl
 
         @Suppress("ReturnCount")
         override fun isScreenCaptureAvailable(): Boolean {
+            // A su binary makes capture available through the root path even when the
+            // accessibility service is down; the actual root probe runs at capture time.
+            if (rootScreenCapture.hasSuBinary()) return true
             if (!accessibilityServiceProvider.isReady()) return false
             val service = accessibilityServiceProvider.getContext() as? McpAccessibilityService ?: return false
             return apiLevelProvider.getSdkInt() >= API_LEVEL_R && service.canTakeScreenshot()
