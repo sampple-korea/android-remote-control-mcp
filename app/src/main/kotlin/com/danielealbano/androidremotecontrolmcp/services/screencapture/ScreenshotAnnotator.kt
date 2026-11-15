@@ -545,7 +545,10 @@ class ScreenshotAnnotator
 
         /** ITU-R BT.601 luma of a packed ARGB color, 0–255. */
         internal fun luminanceOfColor(color: Int): Float {
-            return luminanceOfRgb(Color.red(color), Color.green(color), Color.blue(color))
+            val red = Color.red(color)
+            val green = Color.green(color)
+            val blue = Color.blue(color)
+            return luminanceOfRgb(red, green, blue)
         }
 
         /** ITU-R BT.601 luma of raw RGB channels, 0–255. Pure arithmetic, unit-testable without Android stubs. */

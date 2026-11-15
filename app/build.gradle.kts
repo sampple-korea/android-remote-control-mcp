@@ -483,7 +483,12 @@ dependencies {
     // ngrok-java host native library packaged as JAR for classpath-based loading.
     // Runtime.load() uses Class.getResourceAsStream() to extract the .so/.dylib,
     // so the native library must be inside a JAR on the classpath (not a loose directory).
-    testRuntimeOnly(files("../vendor/ngrok-java/ngrok-java-native/target/ngrok-java-native-host.jar"))
+    // Only the live NgrokTunnelIntegrationTest loads it, and that test is excluded unless
+    // -PrunLiveIntegrationTests is passed (see tasks.withType<Test> below); the jar needs a
+    // Rust build, so it joins the test runtime classpath only in that mode.
+    if (project.hasProperty("runLiveIntegrationTests")) {
+        testRuntimeOnly(files("../vendor/ngrok-java/ngrok-java-native/target/ngrok-java-native-host.jar"))
+    }
 }
 
 // Offline IP-geolocation database, generated at build time from the CURRENT month's DB-IP City Lite

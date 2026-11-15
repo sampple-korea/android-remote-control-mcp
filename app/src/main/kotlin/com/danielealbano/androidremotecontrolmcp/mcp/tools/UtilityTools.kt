@@ -600,7 +600,8 @@ class WaitForIdleTool
         }
 
         private fun generateCurrentFingerprint(): IntArray {
-            return generateCurrentTreeFingerprint(accessibilityServiceProvider, treeFingerprint)
+            val fingerprint = generateCurrentTreeFingerprint(accessibilityServiceProvider, treeFingerprint)
+            return fingerprint
         }
 
         fun register(

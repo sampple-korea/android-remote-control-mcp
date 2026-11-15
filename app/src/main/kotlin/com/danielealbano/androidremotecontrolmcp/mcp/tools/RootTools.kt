@@ -578,7 +578,8 @@ internal class TypeVirtualKeyboardHandler(
     }
 
     private fun sha256(bytes: ByteArray): String {
-        return MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+        val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
+        return digest.joinToString("") { "%02x".format(it) }
     }
 
     fun register(
