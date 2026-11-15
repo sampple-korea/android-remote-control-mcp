@@ -123,7 +123,6 @@ class ProcessScreencapRunner
 
 @Singleton
 class RootScreenCaptureImpl
-    @Inject
     constructor(
         private val su: SuShell,
         private val runner: ScreencapRunner,
