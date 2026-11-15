@@ -1048,7 +1048,7 @@ class SettingsRepositoryImplTest {
             val slug = "a".repeat(ServerConfig.MAX_DEVICE_SLUG_LENGTH + 1)
             val result = repository.validateDeviceSlug(slug)
             assertTrue(result.isFailure)
-            assertTrue(result.exceptionOrNull()?.message?.contains("at most") == true)
+            assertTrue(result.exceptionOrNull()?.message?.contains("최대") == true)
         }
 
         @Test
