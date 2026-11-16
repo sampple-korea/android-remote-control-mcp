@@ -176,7 +176,6 @@ fun AboutScreen(
                     onClick = { openUrl(AboutLinks.PRIVACY_MODEL_URL) },
                     onClickLabel = openLink,
                 )
-                BasicComponent(summary = stringResource(R.string.about_attribution_android_robot))
             }
         }
 
