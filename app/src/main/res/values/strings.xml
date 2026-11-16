@@ -40,7 +40,7 @@
     <string name="settings_security_title">보안</string>
     <string name="settings_security_subtitle">HTTPS, 인증서</string>
     <string name="settings_tunnel_title">터널</string>
-    <string name="settings_tunnel_subtitle">무료 E2E 터널, Cloudflare, ngrok</string>
+    <string name="settings_tunnel_subtitle">Cloudflare, ngrok</string>
     <string name="settings_mcp_tools_title">MCP 도구</string>
     <string name="settings_mcp_tools_subtitle">도구 사용 설정 및 해제</string>
     <string name="settings_mcp_tools_placeholder">도구 권한 — 다음 업데이트에서 제공됩니다</string>
@@ -249,7 +249,7 @@
     <string name="server_network_access_suggestion_title">이 기기에서만 접근 가능</string>
     <string name="server_network_access_suggestion_wifi">Wi-Fi 접근 사용</string>
     <string name="server_network_access_suggestion_arc_tunnel">무료 E2E 터널 사용</string>
-    <string name="server_network_access_suggestion_other_tunnels">다른 터널</string>
+    <string name="server_network_access_suggestion_other_tunnels">터널 사용</string>
     <string name="server_arc_tunnel_ct_alert_title">다른 키로 인증서가 발급됨</string>
     <string name="server_arc_tunnel_ct_alert_body">%1$s의 공개 인증서가 이 기기에 없는 키로 발급되었습니다. 다른 사람이 클라이언트에 이 인증서를 제시할 수 있습니다. 새 이름을 받는 것을 고려하세요.</string>
     <string name="server_arc_tunnel_ct_alert_change_name">이름 변경</string>

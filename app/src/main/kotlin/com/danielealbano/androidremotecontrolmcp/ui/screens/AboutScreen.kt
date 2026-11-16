@@ -22,8 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -161,16 +159,6 @@ fun AboutScreen(
                     AboutLinks.THIRD_PARTY_LICENSES_URL,
                 )
                 AboutLinkItem(R.string.about_link_issues, Icons.Default.ReportProblem, AboutLinks.ISSUES_URL)
-                AboutLinkItem(
-                    R.string.about_link_tunnel_status,
-                    Icons.Default.MonitorHeart,
-                    AboutLinks.TUNNEL_STATUS_URL,
-                )
-                AboutLinkItem(
-                    R.string.about_link_tunnel_server_repository,
-                    Icons.Default.Dns,
-                    AboutLinks.TUNNEL_SERVER_REPOSITORY_URL,
-                )
             }
         }
 

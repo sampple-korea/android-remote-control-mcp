@@ -61,7 +61,7 @@ data class ServerConfig(
     val certificateSource: CertificateSource = CertificateSource.AUTO_GENERATED,
     val certificateHostname: String = DEFAULT_CERTIFICATE_HOSTNAME,
     val tunnelEnabled: Boolean = false,
-    val tunnelProvider: TunnelProviderType = TunnelProviderType.ARC_TUNNEL,
+    val tunnelProvider: TunnelProviderType = TunnelProviderType.CLOUDFLARE,
     val ngrokAuthtoken: String = "",
     val ngrokDomain: String = "",
     val cloudflareTunnelMode: CloudflareTunnelMode = CloudflareTunnelMode.FREE,

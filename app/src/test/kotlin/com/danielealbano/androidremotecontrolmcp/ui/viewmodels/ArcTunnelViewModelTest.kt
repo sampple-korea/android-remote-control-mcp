@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test
 @DisplayName("ArcTunnelViewModel")
 class ArcTunnelViewModelTest {
     private val dispatcher: TestDispatcher = StandardTestDispatcher()
-    private val config = MutableStateFlow(ServerConfig())
+    private val config = MutableStateFlow(ServerConfig(tunnelProvider = TunnelProviderType.ARC_TUNNEL))
     private val enrollmentState = MutableStateFlow<ArcTunnelEnrollmentState>(ArcTunnelEnrollmentState.Idle)
     private val alert = MutableStateFlow<ArcTunnelCtAlert?>(null)
     private val repository = mockk<SettingsRepository>(relaxed = true)

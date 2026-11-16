@@ -121,7 +121,7 @@ fun TunnelSettingsScreen(
             SmallTitle(text = stringResource(R.string.remote_access_provider_label))
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.selectableGroup()) {
-                    TunnelProviderType.entries.forEach { provider ->
+                    selectableTunnelProviders.forEach { provider ->
                         RadioButtonPreference(
                             title = providerTitle(provider),
                             summary = providerDescription(provider),
@@ -232,6 +232,10 @@ fun TunnelSettingsScreen(
         }
     }
 }
+
+/** The providers offered in the picker: the free E2E tunnel is not, because it refuses builds of this fork. */
+internal val selectableTunnelProviders: List<TunnelProviderType> =
+    TunnelProviderType.entries.filter { it != TunnelProviderType.ARC_TUNNEL }
 
 /**
  * Where Cloudflare and ngrok forward, also the service URL to enter in the Cloudflare dashboard for a token-mode

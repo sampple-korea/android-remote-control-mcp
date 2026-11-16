@@ -104,7 +104,7 @@ private fun mapPreferencesToServerConfig(prefs: Preferences): ServerConfig {
     val bindingAddressName = prefs[BINDING_ADDRESS_KEY] ?: BindingAddress.LOCALHOST.name
     val certificateSourceName = prefs[CERTIFICATE_SOURCE_KEY] ?: CertificateSource.AUTO_GENERATED.name
 
-    val tunnelProviderName = prefs[TUNNEL_PROVIDER_KEY] ?: TunnelProviderType.ARC_TUNNEL.name
+    val tunnelProviderName = prefs[TUNNEL_PROVIDER_KEY] ?: TunnelProviderType.CLOUDFLARE.name
     val cloudflareTunnelModeName =
         prefs[CLOUDFLARE_TUNNEL_MODE_KEY] ?: CloudflareTunnelMode.FREE.name
 
@@ -129,7 +129,7 @@ private fun mapPreferencesToServerConfig(prefs: Preferences): ServerConfig {
         tunnelEnabled = prefs[TUNNEL_ENABLED_KEY] ?: false,
         tunnelProvider =
             TunnelProviderType.entries.firstOrNull { it.name == tunnelProviderName }
-                ?: TunnelProviderType.ARC_TUNNEL,
+                ?: TunnelProviderType.CLOUDFLARE,
         ngrokAuthtoken = prefs[NGROK_AUTHTOKEN_KEY] ?: "",
         ngrokDomain = prefs[NGROK_DOMAIN_KEY] ?: "",
         cloudflareTunnelMode =
@@ -168,7 +168,7 @@ private fun generateTokenString(): String = UUID.randomUUID().toString()
 /**
  * One-time tunnel-provider migration: an install that ever wrote a tunnel setting without choosing a
  * provider was using the old default (Cloudflare) and keeps it; a fresh install (no tunnel key at all)
- * gets the new default, the free E2E tunnel.
+ * gets the default, Cloudflare.
  */
 private fun migrateTunnelProvider(prefs: MutablePreferences) {
     if (prefs[TUNNEL_PROVIDER_MIGRATED_KEY] == true) return
@@ -541,7 +541,7 @@ class SettingsRepositoryImpl
                 TUNNEL_PROVIDER_KEY,
                 "tunnel_provider",
                 provider.name,
-                TunnelProviderType.ARC_TUNNEL.name,
+                TunnelProviderType.CLOUDFLARE.name,
             ) { o, n ->
                 "Tunnel provider changed $o → $n"
             }

@@ -112,7 +112,7 @@ class SettingsRepositoryImplTest {
                 assertEquals(CertificateSource.AUTO_GENERATED, config.certificateSource)
                 assertEquals(ServerConfig.DEFAULT_CERTIFICATE_HOSTNAME, config.certificateHostname)
                 assertFalse(config.tunnelEnabled)
-                assertEquals(TunnelProviderType.ARC_TUNNEL, config.tunnelProvider)
+                assertEquals(TunnelProviderType.CLOUDFLARE, config.tunnelProvider)
                 assertEquals("", config.ngrokAuthtoken)
                 assertEquals("", config.ngrokDomain)
                 assertEquals("", config.deviceSlug)
@@ -791,7 +791,7 @@ class SettingsRepositoryImplTest {
             testScope.runTest {
                 repository.ensureAuthModelMigrated()
 
-                assertEquals(TunnelProviderType.ARC_TUNNEL, repository.serverConfig.first().tunnelProvider)
+                assertEquals(TunnelProviderType.CLOUDFLARE, repository.serverConfig.first().tunnelProvider)
                 assertEquals(null, dataStore.data.first()[stringPreferencesKey("tunnel_provider")])
             }
 
@@ -806,7 +806,7 @@ class SettingsRepositoryImplTest {
                 repository.ensureAuthModelMigrated()
                 repository.ensureAuthModelMigrated()
 
-                assertEquals(TunnelProviderType.ARC_TUNNEL, repository.serverConfig.first().tunnelProvider)
+                assertEquals(TunnelProviderType.CLOUDFLARE, repository.serverConfig.first().tunnelProvider)
             }
 
         @Test

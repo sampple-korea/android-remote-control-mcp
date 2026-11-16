@@ -124,10 +124,6 @@ fun ServerScreen(
         if (serverConfig.bindingAddress == BindingAddress.LOCALHOST && !serverConfig.tunnelEnabled) {
             NetworkAccessSuggestionCard(
                 enabled = serverStatus is ServerStatus.Stopped,
-                onEnableFreeTunnel = {
-                    arcTunnelViewModel.enableFreeTunnel()
-                    onNavigateToTunnelSettings()
-                },
                 onEnableWifi = {
                     viewModel.updateBindingAddress(BindingAddress.NETWORK)
                     onNavigateToNetworkSettings()
@@ -225,7 +221,6 @@ private fun NoAuthWarningCard() {
 @Composable
 private fun NetworkAccessSuggestionCard(
     enabled: Boolean,
-    onEnableFreeTunnel: () -> Unit,
     onEnableWifi: () -> Unit,
     onOtherTunnels: () -> Unit,
 ) {
@@ -233,11 +228,6 @@ private fun NetworkAccessSuggestionCard(
         icon = Icons.Default.Info,
         title = stringResource(R.string.server_network_access_suggestion_title),
     ) {
-        TextButton(
-            text = stringResource(R.string.server_network_access_suggestion_arc_tunnel),
-            onClick = onEnableFreeTunnel,
-            enabled = enabled,
-        )
         TextButton(
             text = stringResource(R.string.server_network_access_suggestion_wifi),
             onClick = onEnableWifi,
