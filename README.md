@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/arc-mcp-logo.png" alt="ARC MCP, Android Remote Control MCP" width="640">
+  <img src="docs/assets/logo.png" alt="Android Remote Control MCP" width="640">
 </p>
 
 # Android Remote Control MCP
