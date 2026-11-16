@@ -31,9 +31,42 @@ class SemanticVersionTest {
     @Test
     fun `returns null for malformed input`() {
         assertNull(SemanticVersion.parse("not-a-version"))
-        assertNull(SemanticVersion.parse("1.2"))
+        assertNull(SemanticVersion.parse("1"))
         assertNull(SemanticVersion.parse(""))
         assertNull(SemanticVersion.parse("1.2.x"))
+        assertNull(SemanticVersion.parse("1.2.3.4"))
+    }
+
+    @Test
+    fun `parses a two-part version with the patch defaulting to zero`() {
+        assertEquals(SemanticVersion(0, 1, 0), SemanticVersion.parse("0.1"))
+    }
+
+    @Test
+    fun `parses a v-prefixed two-part version`() {
+        assertEquals(SemanticVersion(0, 2, 0), SemanticVersion.parse("v0.2"))
+    }
+
+    @Test
+    fun `captures the pre-release segment of a two-part version`() {
+        assertEquals(SemanticVersion(0, 2, 0, "beta"), SemanticVersion.parse("0.2-beta"))
+    }
+
+    @Test
+    fun `a two-part version equals the matching three-part version`() {
+        assertEquals(SemanticVersion.parse("0.1.0"), SemanticVersion.parse("0.1"))
+        assertEquals(0, SemanticVersion.parse("0.1")!!.compareTo(SemanticVersion.parse("0.1.0")!!))
+    }
+
+    @Test
+    fun `orders two-part versions`() {
+        assertTrue(SemanticVersion.parse("0.1")!! < SemanticVersion.parse("0.2")!!)
+        assertTrue(SemanticVersion.parse("0.2")!! > SemanticVersion.parse("0.1.0")!!)
+    }
+
+    @Test
+    fun `a two-part pre-release sorts below the matching release`() {
+        assertTrue(SemanticVersion.parse("0.2-beta")!! < SemanticVersion.parse("0.2")!!)
     }
 
     @Test
@@ -74,5 +107,10 @@ class SemanticVersionTest {
     @Test
     fun `toCoreString drops prefix and suffixes`() {
         assertEquals("1.11.0", SemanticVersion.parse("v1.11.0-dev.3+abc")!!.toCoreString())
+    }
+
+    @Test
+    fun `toCoreString of a two-part version includes the defaulted patch`() {
+        assertEquals("0.2.0", SemanticVersion.parse("v0.2")!!.toCoreString())
     }
 }

@@ -2,9 +2,10 @@ package com.danielealbano.androidremotecontrolmcp.services.update
 
 /**
  * A Semantic Versioning value used to compare the installed app version against the latest published
- * GitHub release. The `major.minor.patch` core plus the pre-release segment participate in ordering;
+ * GitHub release. The numeric core plus the pre-release segment participate in ordering;
  * build metadata (the `+…` suffix, e.g. the git-describe commit hash) is parsed but ignored, per the
- * SemVer spec.
+ * SemVer spec. This fork publishes two-part versions (`0.1`, `0.2`, …), so [parse] also accepts a
+ * `major.minor` core and treats the missing patch component as 0.
  *
  * Ordering follows SemVer precedence: cores compare numerically; a version WITH a pre-release sorts
  * below the matching release (`1.2.0-beta < 1.2.0`); two pre-releases of the same core compare by
@@ -26,18 +27,21 @@ data class SemanticVersion(
     fun toCoreString(): String = "$major.$minor.$patch"
 
     companion object {
-        // Optional leading `v`, then the numeric core, then an optional `-pre-release` segment and an
-        // optional `+build` metadata segment (either/both may be absent).
+        // Optional leading `v`, then the numeric core (group 3, the patch component, is optional and
+        // defaults to 0 when absent), then an optional `-pre-release` segment and an optional `+build`
+        // metadata segment (either/both may be absent). Making the patch a non-capturing optional
+        // segment keeps the group indices stable: 1=major, 2=minor, 3=patch, 4=pre-release, 5=build.
         private val PATTERN =
-            Regex("""^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$""")
+            Regex("""^v?(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$""")
 
-        /** Parses a version string (e.g. `v1.11.0`, `1.11.0-dev.7+abc1234`), or returns null if malformed. */
+        /** Parses a version string (e.g. `v1.11.0`, `1.11.0-dev.7+abc1234`, `v0.2`), or returns null if malformed. */
         fun parse(raw: String): SemanticVersion? {
             val match = PATTERN.matchEntire(raw.trim()) ?: return null
             // Groups 1-3 are `\d+`, so toIntOrNull can only fail on overflow; treat that as malformed.
+            // An unmatched optional group reads as "", so an absent patch segment means a patch of 0.
             val major = match.groupValues[1].toIntOrNull()
             val minor = match.groupValues[2].toIntOrNull()
-            val patch = match.groupValues[3].toIntOrNull()
+            val patch = match.groupValues[3].let { if (it.isEmpty()) 0 else it.toIntOrNull() }
             return if (major != null && minor != null && patch != null) {
                 SemanticVersion(major, minor, patch, preRelease = match.groupValues[4])
             } else {
