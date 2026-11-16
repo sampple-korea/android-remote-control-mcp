@@ -254,6 +254,10 @@ jobs:
             - **`android_batch_actions`** — new tool that runs a sequence of UI actions in a single MCP call (allowlist of 29 action tools; stops at the first failure unless `continue_on_error` is set).
             - **`interactive_only` snapshot filter** — opt-in `android_get_screen_state` filter that keeps only interactive elements (clickable, long-clickable, editable, scrollable, or carrying accessibility actions); composes with diff mode.
 
+            ### v0.2
+
+            - **Update check actually works now** — the version parser only accepted three-part versions, so on v0.1 the installed version failed to parse and the update check misreported the build as a development build and disabled itself (the About screen showed "update checks are disabled on development builds" even with auto-check on). Two-part versions now parse (a missing patch counts as 0), so v0.1 devices can detect and offer this release, and future releases are picked up the same way.
+
             ### v0.1
 
             - **Versioning reset** — first release after the repository went public. The version name restarts at 0.1; the version code keeps increasing from the git-history-derived sequence used by the v1.13.x–v1.14.x releases, so this build still installs as an upgrade over them.
