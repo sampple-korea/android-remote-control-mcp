@@ -28,7 +28,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.danielealbano.androidremotecontrolmcp.R
-import com.danielealbano.androidremotecontrolmcp.data.model.ChannelConnectionStatus
 import com.danielealbano.androidremotecontrolmcp.data.model.ServerStatus
 import com.danielealbano.androidremotecontrolmcp.ui.theme.AndroidRemoteControlMcpTheme
 import com.danielealbano.androidremotecontrolmcp.ui.theme.isInDarkTheme
@@ -47,16 +46,11 @@ private const val BUTTON_PROGRESS_SIZE_DP = 16
 @Composable
 fun ServerStatusCard(
     serverStatus: ServerStatus,
-    channelStatus: ChannelConnectionStatus,
-    channelEnabled: Boolean,
     onMcpStartClick: () -> Unit,
     onMcpStopClick: () -> Unit,
-    onChannelStartClick: () -> Unit,
-    onChannelStopClick: () -> Unit,
     startEnabled: Boolean,
     modifier: Modifier = Modifier,
     mcpStartBlockedMessage: String? = null,
-    channelStatusKnown: Boolean = true,
     mcpBusy: Boolean = false,
 ) {
     Card(
@@ -90,19 +84,6 @@ fun ServerStatusCard(
                     color = MiuixTheme.colorScheme.error,
                 )
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            // Event Channel row
-            ServiceRow(
-                label = stringResource(R.string.event_channel_name),
-                statusText = channelStatusToText(channelStatus, channelEnabled),
-                statusColor = channelStatusToColor(channelStatus, channelEnabled, isInDarkTheme()),
-                running = channelEnabled,
-                statusKnown = channelStatusKnown,
-                buttonEnabled = channelStartStopButtonEnabled(channelEnabled, startEnabled),
-                onButtonClick = if (channelEnabled) onChannelStopClick else onChannelStartClick,
-            )
         }
     }
 }
@@ -257,56 +238,14 @@ private fun serverStatusToColor(
         }
     }
 
-@Composable
-private fun channelStatusToText(
-    status: ChannelConnectionStatus,
-    enabled: Boolean,
-): String =
-    if (!enabled) {
-        stringResource(R.string.server_status_stopped)
-    } else {
-        when (status) {
-            is ChannelConnectionStatus.Idle -> stringResource(R.string.channel_status_idle)
-            is ChannelConnectionStatus.Active -> stringResource(R.string.channel_status_active)
-            is ChannelConnectionStatus.Error -> status.message
-        }
-    }
-
-private fun channelStatusToColor(
-    status: ChannelConnectionStatus,
-    enabled: Boolean,
-    isDarkTheme: Boolean,
-): Color =
-    if (!enabled) {
-        if (isDarkTheme) Color(0xFFEF5350) else Color(0xFFF44336)
-    } else {
-        when (status) {
-            is ChannelConnectionStatus.Idle -> {
-                Color.Gray
-            }
-
-            is ChannelConnectionStatus.Active -> {
-                if (isDarkTheme) Color(0xFF81C784) else Color(0xFF4CAF50)
-            }
-
-            is ChannelConnectionStatus.Error -> {
-                if (isDarkTheme) Color(0xFFFFB74D) else Color(0xFFFF9800)
-            }
-        }
-    }
-
 @Preview(showBackground = true)
 @Composable
 private fun ServerStatusCardStoppedPreview() {
     AndroidRemoteControlMcpTheme {
         ServerStatusCard(
             serverStatus = ServerStatus.Stopped,
-            channelStatus = ChannelConnectionStatus.Idle,
-            channelEnabled = false,
             onMcpStartClick = {},
             onMcpStopClick = {},
-            onChannelStartClick = {},
-            onChannelStopClick = {},
             startEnabled = true,
         )
     }

@@ -163,7 +163,7 @@ make install  # 연결된 기기/에뮬레이터에 설치합니다
 
    - **접근성 서비스** — **필수.** UI 조회, 동작 실행, 스크린샷을 담당하며, 이 권한 없이는 아무것도 동작하지 않습니다.
      - **토글이 회색으로 비활성화되어 있다면** (Android 13 이상, APK로 설치한 앱에서 Samsung/One UI에 흔함): Android의 "제한된 설정" 보호 기능 때문입니다. *"제한된 설정 — 보안을 위해 현재 이 설정을 사용할 수 없습니다."* 라는 대화상자가 표시됩니다. 차단을 해제하려면 **설정 → 애플리케이션 → Android Remote Control MCP → 앱 정보**로 이동해 **⋮ 메뉴**(오른쪽 위)를 탭하고 **제한된 설정 허용**을 선택한 다음, PIN/패턴/생체 인증으로 확인한 뒤 접근성 서비스를 사용 설정하세요. (Play 스토어 / F-Droid로 설치한 경우에는 해당하지 않습니다.)
-   - **알림** — **선택 사항** (OAuth 사용 시 권장). OAuth 로그인 승인 요청(Claude.ai / Claude Desktop, ChatGPT 또는 서드파티 OAuth 클라이언트)이 헤드업 알림으로 도착하며, 이를 탭해 2자리 코드를 확인하고 승인합니다. 다만 OAuth 로그인에 **더 이상 필수는 아닙니다.** 이 권한을 부여하지 않아도, 대기 중인 요청이 **앱의 서버 화면에 카드**로 표시되어 탭해서 검토하고 승인/거부할 수 있습니다. **이벤트 채널** 푸시 기능(예: 기기 이벤트를 Claude Code로 푸시)은 포그라운드 서비스로 실행되며, Android 13 이상에서는 이 권한을 통해 상태 알림을 게시합니다.
+   - **알림** — **선택 사항** (OAuth 사용 시 권장). OAuth 로그인 승인 요청(Claude.ai / Claude Desktop, ChatGPT 또는 서드파티 OAuth 클라이언트)이 헤드업 알림으로 도착하며, 이를 탭해 2자리 코드를 확인하고 승인합니다. 다만 OAuth 로그인에 **더 이상 필수는 아닙니다.** 이 권한을 부여하지 않아도, 대기 중인 요청이 **앱의 서버 화면에 카드**로 표시되어 탭해서 검토하고 승인/거부할 수 있습니다.
    - **기타 권한** (선택 사항) — 카메라, 마이크, 위치 권한은 각각에 해당하는 MCP 도구를 사용할 수 있게 합니다. 이 권한들이 없어도 앱은 동작하며, 권한을 부여하기 전까지 해당 기능만 비활성화됩니다. 전체 목록은 아래의 [권한 참조](#권한-참조)를 참고하세요.
    - **저장 위치** — 파일 도구를 사용할 계획이라면 설정 > 저장소에서 구성하세요 (다운로드 같은 자동 위치와 SAF를 통한 사용자 지정 위치).
 
@@ -559,20 +559,20 @@ adb shell am start \
 | `ACCESS_NETWORK_STATE` | 일반 | 네트워크 연결 상태 감지 |
 | `FOREGROUND_SERVICE` | 일반 | MCP 서버를 포그라운드 서비스로 실행 |
 | `FOREGROUND_SERVICE_SPECIAL_USE` | 일반 | MCP 서버의 포그라운드 서비스 유형 |
-| `FOREGROUND_SERVICE_LOCATION` | 일반 | 이벤트 채널(지오펜스/WiFi)의 포그라운드 서비스 유형 |
+| `FOREGROUND_SERVICE_LOCATION` | 일반 | 이벤트 채널(이 포크에서는 메뉴에서 제외됨)(지오펜스/WiFi)의 포그라운드 서비스 유형 |
 | `FOREGROUND_SERVICE_DATA_SYNC` | 일반 | 원본 프로젝트의 무료 E2E 터널 등록용 포그라운드 서비스 유형 (이 포크에서는 메뉴에서 제외됨) |
 | `RECEIVE_BOOT_COMPLETED` | 일반 | 기기 부팅 시 서버 자동 시작 |
 | `QUERY_ALL_PACKAGES` | 일반 | 앱 관리 도구를 위한 설치된 앱 목록 조회 |
 | `KILL_BACKGROUND_PROCESSES` | 일반 | 앱 관리 도구로 백그라운드 앱 중지 |
-| `ACCESS_WIFI_STATE` | 일반 | 이벤트 채널을 위한 WiFi 상태 읽기 |
-| `CHANGE_WIFI_STATE` | 일반 | 이벤트 채널을 위한 WiFi 관리 |
+| `ACCESS_WIFI_STATE` | 일반 | 이벤트 채널(이 포크에서는 메뉴에서 제외됨)을 위한 WiFi 상태 읽기 |
+| `CHANGE_WIFI_STATE` | 일반 | 이벤트 채널(이 포크에서는 메뉴에서 제외됨)을 위한 WiFi 관리 |
 | `POST_NOTIFICATIONS` | 런타임 | 포그라운드 서비스 알림 표시(Android 13 이상) |
 | `CAMERA` | 런타임 | 카메라 사진/동영상 MCP 도구 |
 | `RECORD_AUDIO` | 런타임 | 카메라 동영상 도구의 오디오 녹음 |
 | `ACCESS_FINE_LOCATION` | 런타임 | 위치 도구 및 지오펜스 이벤트 |
 | `ACCESS_COARSE_LOCATION` | 런타임 | 대략적인 위치 |
 | `ACCESS_BACKGROUND_LOCATION` | 런타임 | 앱이 백그라운드에 있는 동안의 위치/지오펜스 이벤트 |
-| `NEARBY_WIFI_DEVICES` | 런타임 | 이벤트 채널을 위한 WiFi 스캔(Android 13 이상) |
+| `NEARBY_WIFI_DEVICES` | 런타임 | 이벤트 채널(이 포크에서는 메뉴에서 제외됨)을 위한 WiFi 스캔(Android 13 이상) |
 | `READ_MEDIA_IMAGES` | 런타임 | 기본 제공 이미지 저장 위치의 "모든 파일" 모드(Android 13 이상) |
 | `READ_MEDIA_VIDEO` | 런타임 | 기본 제공 동영상 저장 위치의 "모든 파일" 모드(Android 13 이상) |
 | `READ_MEDIA_AUDIO` | 런타임 | 기본 제공 오디오 저장 위치의 "모든 파일" 모드(Android 13 이상) |

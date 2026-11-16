@@ -12,10 +12,8 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
@@ -31,7 +29,6 @@ import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTu
 import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTunnelServiceProblem
 import com.danielealbano.androidremotecontrolmcp.services.tunnel.arctunnel.ArcTunnelStatusPage
 import com.danielealbano.androidremotecontrolmcp.ui.ApprovalActivity
-import com.danielealbano.androidremotecontrolmcp.ui.components.AppDialog
 import com.danielealbano.androidremotecontrolmcp.ui.components.BatteryOptimizationCard
 import com.danielealbano.androidremotecontrolmcp.ui.components.CalloutCard
 import com.danielealbano.androidremotecontrolmcp.ui.components.ConnectionInfoCard
@@ -41,7 +38,6 @@ import com.danielealbano.androidremotecontrolmcp.ui.components.ServerLogsSection
 import com.danielealbano.androidremotecontrolmcp.ui.components.ServerStatusCard
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelRenewalViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ArcTunnelViewModel
-import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.ChannelViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.LogsViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.MainViewModel
 import com.danielealbano.androidremotecontrolmcp.ui.viewmodels.PrivacyViewModel
@@ -58,7 +54,6 @@ fun ServerScreen(
     onOpenPrivacySettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MainViewModel = hiltViewModel(),
-    channelViewModel: ChannelViewModel = hiltViewModel(),
     privacyViewModel: PrivacyViewModel = hiltViewModel(),
     arcTunnelViewModel: ArcTunnelViewModel = hiltViewModel(),
     arcTunnelRenewalViewModel: ArcTunnelRenewalViewModel = hiltViewModel(),
@@ -80,16 +75,12 @@ fun ServerScreen(
     val isBatteryOptimizationIgnored by viewModel.isBatteryOptimizationIgnored.collectAsStateWithLifecycle()
     val pendingApprovalCount by viewModel.pendingApprovalCount.collectAsStateWithLifecycle()
 
-    val channelConfig by channelViewModel.eventChannelConfig.collectAsStateWithLifecycle()
-    val channelStatus by channelViewModel.channelConnectionStatus.collectAsStateWithLifecycle()
-    val channelEnabled by channelViewModel.channelEnabled.collectAsStateWithLifecycle()
     val ctAlert by arcTunnelViewModel.ctAlert.collectAsStateWithLifecycle()
     val tunnelServiceProblem by arcTunnelViewModel.serviceProblem.collectAsStateWithLifecycle()
     val renewal by arcTunnelRenewalViewModel.renewal.collectAsStateWithLifecycle()
 
     val deviceIp = remember(context) { NetworkUtils.getDeviceIpAddress(context) }
     val copiedToClipboardMessage = stringResource(R.string.copied_to_clipboard)
-    var showChannelNotConfiguredDialog by remember { mutableStateOf(false) }
 
     MiuixPage(title = stringResource(R.string.tab_server), modifier = modifier) {
         if (!isAccessibilityEnabled) {
@@ -144,20 +135,8 @@ fun ServerScreen(
 
         ServerStatusCard(
             serverStatus = serverStatus,
-            channelStatus = channelStatus,
-            // Off until the saved configuration is read, and only from then on a state worth announcing
-            channelEnabled = channelEnabled ?: false,
-            channelStatusKnown = channelEnabled != null,
             onMcpStartClick = { viewModel.startServer(context) },
             onMcpStopClick = { viewModel.stopServer(context) },
-            onChannelStartClick = {
-                if (channelConfig.endpointUrl.isBlank()) {
-                    showChannelNotConfiguredDialog = true
-                } else {
-                    channelViewModel.startChannel()
-                }
-            },
-            onChannelStopClick = { channelViewModel.stopChannel() },
             startEnabled = isAccessibilityEnabled,
             mcpStartBlockedMessage = listenerCheck.startError,
             mcpBusy = renewal.inProgress,
@@ -196,16 +175,6 @@ fun ServerScreen(
         ServerLogsSection(
             logs = recentServerLogs,
             onShowMore = onShowAllLogs,
-        )
-    }
-
-    if (showChannelNotConfiguredDialog) {
-        AppDialog(
-            title = stringResource(R.string.channel_not_configured_dialog_title),
-            message = stringResource(R.string.channel_not_configured_dialog_body),
-            confirmText = stringResource(R.string.channel_not_configured_dialog_ok),
-            onConfirm = { showChannelNotConfiguredDialog = false },
-            onDismissRequest = { showChannelNotConfiguredDialog = false },
         )
     }
 }

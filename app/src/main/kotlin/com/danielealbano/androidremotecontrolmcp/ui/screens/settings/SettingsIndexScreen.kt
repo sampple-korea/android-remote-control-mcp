@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Key
@@ -108,12 +107,6 @@ private val SETTINGS_INDEX_ENTRIES =
             titleRes = R.string.settings_storage_title,
             subtitleRes = R.string.settings_storage_subtitle,
             route = SettingsRoute.Storage.route,
-        ),
-        SettingsIndexEntry(
-            icon = Icons.Default.CellTower,
-            titleRes = R.string.event_channel_name,
-            subtitleRes = R.string.event_channel_subtitle,
-            route = SettingsRoute.ChannelSettings.route,
         ),
     )
 

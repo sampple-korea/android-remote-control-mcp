@@ -171,9 +171,6 @@ fun PermissionsSettingsScreen(
                 onAction = onRequestLocationPermission,
                 actionEnabled = !isLocationPermissionGranted,
             )
-
-            // Background Location is geofence-only; rendered via a flavor seam (gms only).
-            BackgroundLocationPermissionRow()
         }
 
         // ---- Optional ----

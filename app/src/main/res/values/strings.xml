@@ -232,7 +232,7 @@
     <string name="permission_section_optional_subtitle">있으면 좋지만, 없어도 모든 기능이 동작합니다.</string>
     <!-- Permissions screen: per-permission rationale (default / foss values) -->
     <string name="permission_accessibility_rationale">화면을 읽고 탭, 스와이프, 입력을 수행합니다.</string>
-    <string name="permission_notifications_rationale">OAuth 승인 요청, 이벤트 채널 알림, 서버 상태를 표시합니다.</string>
+    <string name="permission_notifications_rationale">OAuth 승인 요청과 서버 상태를 표시합니다.</string>
     <string name="permission_notification_listener_rationale">기기 알림을 읽고 처리합니다.</string>
     <string name="permission_camera_rationale">사진을 촬영하고 동영상을 녹화합니다.</string>
     <string name="permission_location_rationale">GPS 위치를 읽습니다.</string>
