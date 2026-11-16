@@ -93,7 +93,7 @@ class GithubReleaseCheckerImpl
         companion object {
             private const val TAG = "MCP:UpdateChecker"
             private const val LATEST_RELEASE_URL =
-                "https://api.github.com/repos/danielealbano/android-remote-control-mcp/releases/latest"
+                "https://api.github.com/repos/sampple-korea/android-remote-control-mcp/releases/latest"
             private const val GITHUB_ACCEPT = "application/vnd.github+json"
             private const val USER_AGENT = "android-remote-control-mcp"
             private const val REQUEST_TIMEOUT_MS = 15_000L
