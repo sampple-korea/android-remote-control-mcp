@@ -126,13 +126,24 @@ fun AboutScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 BasicComponent(title = stringResource(R.string.about_author_name))
                 NavigationPreference(
-                    title = stringResource(R.string.about_author_linkedin),
-                    onClick = { openUrl(AboutLinks.LINKEDIN_URL) },
+                    title = stringResource(R.string.about_author_github),
+                    onClick = { openUrl(AboutLinks.MAINTAINER_URL) },
                     onClickLabel = openLink,
                 )
+            }
+        }
+
+        // Fork section: the project this app is derived from and its author
+        Column {
+            SmallTitle(text = stringResource(R.string.about_fork_section))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                BasicComponent(
+                    title = stringResource(R.string.about_fork_author_name),
+                    summary = stringResource(R.string.about_fork_notice),
+                )
                 NavigationPreference(
-                    title = stringResource(R.string.about_author_x),
-                    onClick = { openUrl(AboutLinks.X_URL) },
+                    title = stringResource(R.string.about_fork_upstream),
+                    onClick = { openUrl(AboutLinks.UPSTREAM_URL) },
                     onClickLabel = openLink,
                 )
             }

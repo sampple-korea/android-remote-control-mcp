@@ -1,5 +1,6 @@
 Android Remote Control MCP
 Copyright 2026-2027 Daniele Salvatore Albano
+Fork modifications Copyright 2026 sampple-korea
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software

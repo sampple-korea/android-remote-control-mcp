@@ -137,9 +137,13 @@
     <!-- About Screen -->
     <string name="about_version">v%1$s</string>
     <string name="about_author_section">개발자</string>
-    <string name="about_author_name">Daniele Salvatore Albano</string>
-    <string name="about_author_linkedin">linkedin.com/in/danielesalvatorealbano</string>
-    <string name="about_author_x">x.com/daniele_dll</string>
+    <string name="about_author_name">sampple-korea</string>
+    <string name="about_author_github">github.com/sampple-korea</string>
+    <!-- The project this app is a fork of, and its author -->
+    <string name="about_fork_section">원본 프로젝트</string>
+    <string name="about_fork_author_name">Daniele Salvatore Albano</string>
+    <string name="about_fork_notice">이 앱은 Daniele Salvatore Albano가 만든 Android Remote Control MCP의 포크입니다.</string>
+    <string name="about_fork_upstream">원본 GitHub 저장소</string>
     <string name="about_links_section">링크</string>
     <string name="about_link_github">GitHub 저장소</string>
     <string name="about_link_license">GNU GPLv3 or later</string>
@@ -151,7 +155,7 @@
     <string name="about_attribution_dbip">IP 위치 정보 데이터는 DB-IP(db-ip.com)에서 제공하며, CC BY 4.0 라이선스를 따릅니다.</string>
     <string name="about_attribution_privacy_model">프라이버시 모드의 개인정보 탐지 모델은 Ai4Privacy에서 제공합니다(MIT 라이선스). Built with Llama.</string>
     <string name="about_attribution_android_robot">Android 로봇은 Google에서 제작하여 공유한 저작물을 복제하거나 수정한 것으로, Creative Commons 3.0 저작자 표시 라이선스의 약관에 따라 사용되었습니다.</string>
-    <string name="about_footer">Copyright 2026–2027 Daniele Salvatore Albano. Licensed under GPLv3 or later, without warranty.</string>
+    <string name="about_footer">Copyright 2026–2027 Daniele Salvatore Albano. Fork modifications copyright 2026 sampple-korea. Licensed under GPLv3 or later, without warranty.</string>
 
     <!-- Clipboard -->
     <string name="copied_to_clipboard">클립보드에 복사됨</string>
