@@ -19,11 +19,11 @@
         android:pathData="M47.5,30h13a6.5,6.5 0,0 1,6.5 6.5v35a6.5,6.5 0,0 1,-6.5 6.5h-13a6.5,6.5 0,0 1,-6.5 -6.5v-35a6.5,6.5 0,0 1,6.5 -6.5z" />
     <!-- Screen -->
     <path
-        android:fillColor="#A72B2F"
+        android:fillColor="#1A1029"
         android:pathData="M47.5,36h13a2.5,2.5 0,0 1,2.5 2.5v25a2.5,2.5 0,0 1,-2.5 2.5h-13a2.5,2.5 0,0 1,-2.5 -2.5v-25a2.5,2.5 0,0 1,2.5 -2.5z" />
     <!-- Home button -->
     <path
-        android:fillColor="#A72B2F"
+        android:fillColor="#1A1029"
         android:pathData="M52,72a2,2 0,1 0,4 0a2,2 0,1 0,-4 0" />
     <!-- Orbiting dot: the remote controller -->
     <path
