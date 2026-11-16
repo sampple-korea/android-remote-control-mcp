@@ -4,9 +4,11 @@
 
 # Android Remote Control MCP
 
-[![CI](https://github.com/danielealbano/android-remote-control-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/danielealbano/android-remote-control-mcp/actions/workflows/ci.yml)
+[![CI](https://github.com/sampple-korea/android-remote-control-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sampple-korea/android-remote-control-mcp/actions/workflows/ci.yml)
 [![License: GPL v3 or later](https://img.shields.io/badge/License-GPLv3%2B-blue.svg)](LICENSE.md)
 [![Tunnel status](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fstatus.arc-tunnel.io%2Findex.json&query=%24.data.attributes.aggregate_state&label=tunnel&color=blue)](https://status.arc-tunnel.io/)
+
+> 이 저장소는 Daniele Salvatore Albano의 [Android Remote Control MCP](https://github.com/danielealbano/android-remote-control-mcp)를 포크한 것으로, [sampple-korea](https://github.com/sampple-korea)가 관리합니다. 앱 UI 한글화와 Miuix 스타일 UI가 적용되어 있습니다.
 
 **MCP(Model Context Protocol) 서버**로 동작하는 Android 애플리케이션입니다. 접근성 서비스와 스크린샷 캡처를 이용해 AI 모델이 원격에서 **Android 기기를 완전히 제어**할 수 있게 해 줍니다.
 
@@ -18,7 +20,7 @@
 
 > **경고:** 이 소프트웨어는 어떠한 종류의 보증도 없이 "있는 그대로" 제공되며, **연구 및 교육 목적으로만** 제공됩니다. 저작자는 이 도구를 불법적이거나 승인되지 않았거나 비윤리적인 활동에 사용하는 것을 용인하지 않습니다. 관련 법률과 규정을 준수해 사용할 책임은 전적으로 사용자에게 있습니다. 이 소프트웨어를 사용함으로써 사용자는 책임감 있게, 그리고 본인의 책임하에 사용하는 데 동의하는 것입니다.
 
-> **경고:** 무료 E2E HTTPS 터널은 이 저장소의 [Releases](https://github.com/danielealbano/android-remote-control-mcp/releases)에서 제공하는 서명된 빌드에서만 동작합니다. 그 외의 빌드는 보안상의 이유로 거부됩니다.
+> **경고:** 무료 E2E HTTPS 터널은 [원본 프로젝트의 Releases](https://github.com/danielealbano/android-remote-control-mcp/releases)에서 제공하는 서명된 빌드에서만 동작합니다. 이 포크의 빌드를 포함한 그 외의 빌드는 보안상의 이유로 거부됩니다.
 
 ---
 
@@ -130,13 +132,13 @@
 
 ### 방법 A: 휴대전화에서 다운로드 (가장 쉬움)
 
-1. 휴대전화 브라우저에서 [Releases](https://github.com/danielealbano/android-remote-control-mcp/releases) 페이지를 엽니다
+1. 휴대전화 브라우저에서 [Releases](https://github.com/sampple-korea/android-remote-control-mcp/releases) 페이지를 엽니다
 2. 최신 릴리스에서 APK를 다운로드합니다
 3. 다운로드한 APK를 열고 안내에 따라 설치합니다 (출처를 알 수 없는 앱 설치를 허용해야 할 수 있습니다)
 
 ### 방법 B: PC에서 다운로드하여 ADB로 설치
 
-1. [Releases](https://github.com/danielealbano/android-remote-control-mcp/releases) 페이지에서 APK를 다운로드합니다
+1. [Releases](https://github.com/sampple-korea/android-remote-control-mcp/releases) 페이지에서 APK를 다운로드합니다
 2. USB로 휴대전화를 연결합니다 (USB 디버깅 사용 설정 필요)
 3. APK를 설치합니다 (다운로드한 GMS 또는 FOSS 파일 사용):
 ```bash
@@ -146,7 +148,7 @@ adb install android-remote-control-mcp-<version>-gms-release.apk
 ### 방법 C: 소스에서 빌드
 
 ```bash
-git clone https://github.com/danielealbano/android-remote-control-mcp.git
+git clone https://github.com/sampple-korea/android-remote-control-mcp.git
 cd android-remote-control-mcp
 make build
 make install  # 연결된 기기/에뮬레이터에 설치합니다

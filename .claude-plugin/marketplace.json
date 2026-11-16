@@ -2,8 +2,7 @@
   "name": "android-remote-control-mcp",
   "description": "Android Remote Control MCP plugin marketplace",
   "owner": {
-    "name": "Daniele Salvatore Albano",
-    "email": "d.albano@gmail.com"
+    "name": "sampple-korea"
   },
   "plugins": [
     {
