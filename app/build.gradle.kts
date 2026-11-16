@@ -46,7 +46,7 @@ fun getGitDescribeVersion(): String? {
         // Using (.+) for the version part lets the regex engine backtrack correctly
         // even when pre-release segments contain hyphens (e.g. v1.0.0-rc1-3-g1234567).
         val describePattern = Regex("""^v(.+)-(\d+)-g([0-9a-f]+)$""")
-        val tagPattern = Regex("""^v(\d+\.\d+\.\d+(?:-.+)?)$""")
+        val tagPattern = Regex("""^v(\d+\.\d+(?:\.\d+)?(?:-.+)?)$""")
 
         when {
             describePattern.matches(output) -> {
