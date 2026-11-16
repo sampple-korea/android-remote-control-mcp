@@ -762,7 +762,7 @@ MCP tools return data originating from the Android device (UI element text, cont
 - **HTTPS**: Disabled by default (HTTP is the primary transport). When enabled by the user, uses auto-generated self-signed certificate with hostname "android-mcp.local", 1-year validity. Clients must allow insecure/self-signed certificates.
 - **Auto-start on Boot**: Disabled
 - **Remote Access Tunnel**: Disabled by default
-- **Tunnel Provider**: Free E2E tunnel (`android-remote-control-mcp-tunneld`, no account) for fresh installs. Existing installs that ever wrote a tunnel setting keep **Cloudflare** (one-time migration, `tunnel_provider_migrated`)
+- **Tunnel Provider**: **Cloudflare**. The free E2E tunnel (`android-remote-control-mcp-tunneld`) refuses builds of this fork, so it is not offered in the provider picker, the Server screen or the About links; its code stays and it can still be selected with the `tunnel_provider` adb extra
 - **Free E2E tunnel base address**: `arc-tunnel.io`
 - **Free E2E tunnel CT check**: Enabled
 - **Free E2E tunnel status check**: Enabled

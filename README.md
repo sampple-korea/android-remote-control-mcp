@@ -6,7 +6,6 @@
 
 [![CI](https://github.com/sampple-korea/android-remote-control-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sampple-korea/android-remote-control-mcp/actions/workflows/ci.yml)
 [![License: GPL v3 or later](https://img.shields.io/badge/License-GPLv3%2B-blue.svg)](LICENSE.md)
-[![Tunnel status](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fstatus.arc-tunnel.io%2Findex.json&query=%24.data.attributes.aggregate_state&label=tunnel&color=blue)](https://status.arc-tunnel.io/)
 
 > 이 저장소는 Daniele Salvatore Albano의 [Android Remote Control MCP](https://github.com/danielealbano/android-remote-control-mcp)를 포크한 것으로, [sampple-korea](https://github.com/sampple-korea)가 관리합니다. 앱 UI 한글화와 Miuix 스타일 UI가 적용되어 있습니다.
 
@@ -16,11 +15,9 @@
 
 선택 기능인 [프라이버시 모드](#프라이버시-모드)는 도구가 반환하는 내용에서 이메일, 카드 번호, 자격 증명, 이름 같은 개인정보를 탐지해, 기기를 떠나 AI 제공업체로 전달되기 전에 가립니다. 탐지는 전부 기기 안에서 이루어집니다. 노출을 줄여 주지만, 개인정보가 전혀 새어 나가지 않는다고 보장하지는 못합니다.
 
-어디서든 휴대전화에 접속할 수 있도록, 무료 종단 간 암호화 HTTPS 터널이 계정이나 가입 없이 공개 URL을 제공합니다. TLS가 휴대전화에서 종료되므로 터널 서비스는 암호화된 바이트만 중계할 뿐 트래픽을 읽을 수 없습니다. Cloudflare와 ngrok도 지원하지만, 이들은 TLS를 직접 종료하므로 트래픽을 읽을 수 있습니다.
+어디서든 휴대전화에 접속할 수 있도록 Cloudflare 또는 ngrok 터널로 공개 HTTPS URL을 만들 수 있습니다. 두 서비스 모두 TLS를 직접 종료하므로 트래픽을 읽을 수 있다는 점에 유의하세요.
 
 > **경고:** 이 소프트웨어는 어떠한 종류의 보증도 없이 "있는 그대로" 제공되며, **연구 및 교육 목적으로만** 제공됩니다. 저작자는 이 도구를 불법적이거나 승인되지 않았거나 비윤리적인 활동에 사용하는 것을 용인하지 않습니다. 관련 법률과 규정을 준수해 사용할 책임은 전적으로 사용자에게 있습니다. 이 소프트웨어를 사용함으로써 사용자는 책임감 있게, 그리고 본인의 책임하에 사용하는 데 동의하는 것입니다.
-
-> **경고:** 무료 E2E HTTPS 터널은 [원본 프로젝트의 Releases](https://github.com/danielealbano/android-remote-control-mcp/releases)에서 제공하는 서명된 빌드에서만 동작합니다. 이 포크의 빌드를 포함한 그 외의 빌드는 보안상의 이유로 거부됩니다.
 
 ---
 
@@ -70,7 +67,7 @@
 - 자동 생성되는 자체 서명 TLS 인증서 (또는 사용자 지정 인증서 업로드)
 - 바인딩 주소 설정 가능: 로컬호스트(127.0.0.1), 네트워크(0.0.0.0) 또는 기기의 특정 IP 주소
 - 부팅 시 자동 시작
-- 무료 종단 간 암호화 터널(계정 불필요), Cloudflare Quick Tunnels 또는 ngrok을 통한 원격 접근 터널 (공개 HTTPS URL)
+- Cloudflare Quick Tunnels 또는 ngrok을 통한 원격 접근 터널 (공개 HTTPS URL)
 
 ### 15개 카테고리, 65개 MCP 도구
 
@@ -86,7 +83,7 @@
 - 연결 정보 표시 (IP, 포트, 토큰, 터널 URL)
 - 도구별·매개변수별 권한 (개별 MCP 도구 사용 설정/해제)
 - 권한 관리 (접근성, 알림, 카메라, 마이크)
-- 원격 접근 터널 구성 (무료 E2E 터널 / Cloudflare / ngrok)
+- 원격 접근 터널 구성 (Cloudflare / ngrok)
 - 저장 위치 관리 (자동 위치 + 파일 도구를 위한 SAF 권한 부여)
 - 서버 로그 뷰어 (MCP 도구 호출, 터널 이벤트)
 - ADB를 통한 헤드리스 설정 (UI 없이 구성, 권한 부여, 서버 시작/중지)
@@ -253,7 +250,7 @@ AI 도구가 계속 동작함) 완전히 가려집니다. 탐지는 최선을 �
 Claude.ai(웹)와 Claude Desktop은 OAuth 2.1을 사용하는 **커스텀 커넥터**(원격 MCP)로 연결합니다. 앱 자체가 OAuth 인증 서버이므로 외부 계정이나 사전 등록이 필요 없습니다. 이를 위해서는 서버가 **공개 HTTPS URL**로 접근 가능해야 하므로, 먼저 [원격 접근 터널](#원격-접근-터널-사용하기)을 사용 설정해야 합니다. `localhost`/LAN 주소나 `adb` 포트 포워딩으로는 동작하지 **않습니다.**
 
 1. **OAuth는 기본적으로 사용 설정되어 있습니다** — 별도 조치가 필요 없습니다(이전에 사용 중지했다면 **설정 → 접근**에서 다시 사용 설정하세요). Bearer 토큰도 계속 사용 설정되어 있으며, 둘 다 허용됩니다.
-2. **설정 → 터널**을 열고 **원격 접근 사용**을 켠 다음(기본값인 무료 E2E 터널은 계정이 필요 없으며, 첫 설정에 약 10~30초가 걸립니다) 서버를 시작합니다. 서버 탭에서 공개 `https://…` URL을 복사하고 뒤에 `/mcp`를 붙입니다(예: `https://<name>.d.arc-tunnel.io/mcp`).
+2. **설정 → 터널**을 열고 **원격 접근 사용**을 켠 다음(기본값인 Cloudflare Quick Tunnel은 계정이 필요 없습니다) 서버를 시작합니다. 서버 탭에서 공개 `https://…` URL을 복사하고 뒤에 `/mcp`를 붙입니다(예: `https://<name>.trycloudflare.com/mcp`).
 3. Claude에서 **[Customize → Connectors → Add custom connector](https://claude.ai/customize/connectors?modal=add-custom-connector)** 메뉴를 열고 `https://…/mcp` URL을 붙여 넣은 다음, **OAuth Client ID와 Client Secret은 비워 둡니다**(앱이 동적 클라이언트 등록을 사용합니다). **Add**를 클릭합니다.
 4. Claude가 **2자리 코드**를 표시하는 브라우저 승인 페이지를 엽니다. 기기에서 헤드업 알림을 탭하거나 — 알림 권한이 꺼져 있다면 앱의 **서버** 화면을 열어 **대기 중인 연결 승인** 카드를 탭해 — 승인 화면을 열고, 코드가 일치하는지 확인한 뒤 **승인**합니다.
 5. 연결된 클라이언트는 **설정 → 접근 → 연결된 클라이언트**에서 언제든지 관리하거나 권한을 취소할 수 있습니다. 권한을 취소하면 해당 클라이언트의 토큰이 즉시 무효화됩니다.
@@ -335,7 +332,7 @@ Bearer 토큰은 앱의 연결 정보에 표시되며 바로 복사할 수 있�
 | HTTPS | 사용 안 함 | 자동 생성된 자체 서명 인증서(호스트 이름 설정 가능)로 HTTPS를 사용하거나 사용자 지정 .p12/.pfx를 업로드합니다 |
 | 부팅 시 자동 시작 | 사용 안 함 | 기기가 부팅되면 MCP 서버를 자동으로 시작합니다 |
 | 기기 슬러그 | 비어 있음 | 도구 이름 접두사에 쓰이는 선택적 기기 식별자(예: `pixel7`이면 도구가 `android_pixel7_tap`이 됨) |
-| 원격 접근 터널 | 사용 안 함 | 공개 HTTPS URL로 서버를 노출합니다(기본값은 무료 E2E 터널, Cloudflare Quick Tunnels 또는 ngrok) |
+| 원격 접근 터널 | 사용 안 함 | 공개 HTTPS URL로 서버를 노출합니다(기본값은 Cloudflare Quick Tunnels, 또는 ngrok) |
 | 터널 로컬 포트 | 이 설정이 생기기 전에 설치된 경우 서버 포트(HTTPS 때문에 Cloudflare/ngrok 터널이 꺼져 있던 경우 제외), 그 외에는 61000-65535 범위의 무작위 포트 | Cloudflare와 ngrok이 전달하는 포트(`http://localhost:<port>`). 서버가 `127.0.0.1`의 같은 포트에서 일반 HTTP를 제공하면(로컬호스트, 네트워크 또는 특정 IP 127.0.0.1) 터널이 그 포트를 사용하고, 그렇지 않으면 서버가 같은 인증을 적용한 일반 HTTP 리스너를 `127.0.0.1:<port>`에 별도로 엽니다. HTTPS를 켜고 이런 바인딩을 사용한다면 서버 포트와 다른 포트를 선택하세요 |
 | 도구 권한 | 모두 사용 | 도구별·매개변수별 사용 설정/해제(설정 > MCP 도구) |
 | 파일 크기 제한 | 50 MB | 파일 작업의 최대 파일 크기(범위 1-500 MB) |
@@ -387,9 +384,8 @@ curl -X POST http://localhost:8080/mcp \
 
 포트 포워딩 없이 로컬 네트워크 외부에서 연결하려면:
 
-1. **무료 E2E 터널** (기본값, 계정 불필요): 종단 간 암호화됩니다. 휴대전화가 하드웨어 키 증명으로 등록해 `d.arc-tunnel.io` 아래의 이름과 자신의 키로 발급된 공개 인증서(Let's Encrypt, Google Trust Services 또는 ZeroSSL)를 받고, TLS를 직접 종료합니다. 터널 서비스는 암호문만 중계합니다(트래픽을 읽는 Cloudflare나 ngrok과 다름). URL 옆의 새로고침 아이콘을 누르면 새 이름으로 다시 등록합니다. 인증서 투명성(CT) 확인(기본적으로 켜짐)은 내 이름의 인증서가 다른 키로 발급되면 경고합니다. 상태 확인(기본적으로 켜짐)은 서버가 실행 중이거나 서버 화면이 열려 있는 동안 최대 30분마다 공개 상태 페이지를 읽고, 서비스에 문제가 보고되면 서버 화면과 알림으로 경고합니다. 자체 호스팅하는 경우 기본 주소를 변경합니다. 자체 호스팅에는 tunneld 0.8.0 이상이 필요합니다.
-2. **Cloudflare Quick Tunnels** (계정 불필요): 무작위 `*.trycloudflare.com` HTTPS URL을 가진 임시 터널을 만듭니다.
-3. **ngrok** (계정 필요): 선택적으로 커스텀 도메인을 지원합니다. ngrok 인증 토큰이 필요합니다(무료 요금제 제공). arm64-v8a 및 x86_64 기기에서 사용할 수 있습니다.
+1. **Cloudflare Quick Tunnels** (기본값, 계정 불필요): 무작위 `*.trycloudflare.com` HTTPS URL을 가진 임시 터널을 만듭니다.
+2. **ngrok** (계정 필요): 선택적으로 커스텀 도메인을 지원합니다. ngrok 인증 토큰이 필요합니다(무료 요금제 제공). arm64-v8a 및 x86_64 기기에서 사용할 수 있습니다.
 
 Cloudflare와 ngrok은 `http://localhost:<터널 로컬 포트>`(설정 → 터널)로 전달하므로 서버가 HTTPS를 제공하는 동안에도 동작합니다. 이때 서버는 이들을 위해 `127.0.0.1`에 별도의 일반 HTTP 리스너를 엽니다.
 
@@ -462,10 +458,7 @@ adb shell am broadcast \
   --es certificate_source "AUTO_GENERATED" \
   --es certificate_hostname "mcp.local" \
   --ez tunnel_enabled true \
-  --es tunnel_provider "android-remote-control-mcp-tunneld" \
-  --es arc_tunnel_base_address "arc-tunnel.io" \
-  --ez arc_tunnel_ct_check_enabled true \
-  --ez arc_tunnel_status_check_enabled true \
+  --es tunnel_provider "CLOUDFLARE" \
   --es cloudflare_tunnel_mode "TOKEN" \
   --es cloudflare_tunnel_token "your-cloudflare-tunnel-token" \
   --es cloudflare_tunnel_extra_args "--edge region1.v2.argotunnel.com:7844" \
@@ -506,11 +499,7 @@ Bearer 적용 여부는 값을 지우는 것이 아니라 `--ez bearer_token_ena
 | `certificate_source` | string | `AUTO_GENERATED` 또는 `CUSTOM` |
 | `certificate_hostname` | string | 자동 생성 인증서의 호스트 이름 |
 | `tunnel_enabled` | boolean | 원격 접근 터널 사용 설정 |
-| `tunnel_provider` | string | `android-remote-control-mcp-tunneld`(무료 E2E 터널), `CLOUDFLARE` 또는 `NGROK` |
-| `arc_tunnel_base_address` | string | 무료 E2E 터널 서비스의 기본 주소(기본값 `arc-tunnel.io`. `enroll.`, `connect.`, `d.` 호스트가 여기서 파생됨) |
-| `arc_tunnel_ct_check_enabled` | boolean | 무료 E2E 터널의 인증서 투명성(CT) 확인(기본값 `true`) |
-| `arc_tunnel_status_check_enabled` | boolean | 터널이 켜져 있을 때, 서버가 실행 중이거나 서버 화면이 열려 있는 동안 최대 30분마다 수행하는 공개 무료 E2E 터널 서비스 상태 확인(기본값 `true`) |
-| `arc_tunnel_enroll` | boolean | `true`이면 앱이 화면에 보이고 서버가 중지된 상태에서 같은 브로드캐스트의 설정으로 무료 E2E 터널을 등록합니다(또는 실패한 인증서 발급을 재개). 헤드리스 환경에서는 아래의 트램펄린 액션 `enroll-tunnel`을 사용하세요. 공개 URL은 서버 탭에 표시됩니다 |
+| `tunnel_provider` | string | `CLOUDFLARE` 또는 `NGROK` |
 | `cloudflare_tunnel_mode` | string | `FREE`(Quick Tunnel, 무작위 `*.trycloudflare.com` URL) 또는 `TOKEN`(고정 호스트 이름을 가진 명명된 터널) |
 | `cloudflare_tunnel_token` | string | Cloudflare 명명된 터널 토큰(`cloudflare_tunnel_mode`가 `TOKEN`일 때 사용) |
 | `cloudflare_tunnel_extra_args` | string | cloudflared에 전달할 선택적 추가 인수(예: `--edge region1.v2.argotunnel.com:7844`) |
@@ -558,18 +547,6 @@ adb shell am start \
   --es action stop
 ```
 
-#### 무료 E2E 터널 등록
-
-등록(기기의 이름과 인증서를 받는 과정)은 짧은 포그라운드 서비스에서 실행됩니다. 헤드리스 환경에서는 서버 시작과 동일한 트램펄린 Activity를 사용하세요. 실패한 인증서 발급도 재개합니다. 서버가 중지된 상태에서 실행하세요.
-
-```bash
-adb shell am start \
-  -n <app-id>/com.danielealbano.androidremotecontrolmcp.services.mcp.AdbServiceTrampolineActivity \
-  --es action enroll-tunnel
-```
-
-구성 브로드캐스트에 `--ez arc_tunnel_enroll true`를 넣어도 앱이 화면에 보이는 상태라면 같은 동작을 합니다. 백그라운드에서는 Android 12 이상이 포그라운드 서비스 시작을 거부하며 앱은 "background start refused"를 보고합니다.
-
 ---
 
 ## 권한 참조
@@ -583,7 +560,7 @@ adb shell am start \
 | `FOREGROUND_SERVICE` | 일반 | MCP 서버를 포그라운드 서비스로 실행 |
 | `FOREGROUND_SERVICE_SPECIAL_USE` | 일반 | MCP 서버의 포그라운드 서비스 유형 |
 | `FOREGROUND_SERVICE_LOCATION` | 일반 | 이벤트 채널(지오펜스/WiFi)의 포그라운드 서비스 유형 |
-| `FOREGROUND_SERVICE_DATA_SYNC` | 일반 | 무료 E2E 터널 등록(이름 + 인증서)의 포그라운드 서비스 유형 |
+| `FOREGROUND_SERVICE_DATA_SYNC` | 일반 | 원본 프로젝트의 무료 E2E 터널 등록용 포그라운드 서비스 유형 (이 포크에서는 메뉴에서 제외됨) |
 | `RECEIVE_BOOT_COMPLETED` | 일반 | 기기 부팅 시 서버 자동 시작 |
 | `QUERY_ALL_PACKAGES` | 일반 | 앱 관리 도구를 위한 설치된 앱 목록 조회 |
 | `KILL_BACKGROUND_PROCESSES` | 일반 | 앱 관리 도구로 백그라운드 앱 중지 |
